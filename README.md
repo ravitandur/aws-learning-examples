@@ -1,6 +1,10 @@
 # AWS Learning Examples
 
+**🔗 Repository**: https://github.com/ravitandur/aws-learning-examples
+
 A collection of hands-on AWS serverless architecture examples built with AWS CDK, demonstrating event-driven patterns, cost-optimized deployments, and comprehensive monitoring.
+
+**📊 Deployed to AWS Account**: `142649403032` (ap-south-1) using profile `account2`
 
 ## Projects
 
@@ -19,10 +23,17 @@ A collection of hands-on AWS serverless architecture examples built with AWS CDK
 - AWS profile `account2` configured for deployments
 
 ### Quick Start
-1. Clone repository
-2. Navigate to desired project directory
-3. Run deployment: `./deploy.sh -p account2`
-4. Monitor via CloudWatch Dashboard
+1. **Clone repository**: `git clone https://github.com/ravitandur/aws-learning-examples.git`
+2. **Navigate to project**: `cd aws-learning-examples/event-bridge-stepfunction-lambda`
+3. **Deploy**: `./deploy.sh -p account2`
+4. **Monitor**: Access [CloudWatch Dashboard](https://console.aws.amazon.com/cloudwatch/home?region=ap-south-1#dashboards:name=EventBridge-StepFunction-Lambda-Dashboard)
+
+### Current Deployments
+- **EventBridge-StepFunction-Lambda**: ✅ **Live** in `ap-south-1`
+  - Event Generator: `EventBridgeStepFunctionSt-EventGeneratorFunctionA1-1ssCPKx1uHV6`
+  - Time Printer: `EventBridgeStepFunctionSt-TimePrinterFunctionAD0D2-GFf7lQ7TBpFK`
+  - Step Function: `WaitAndInvokeStateMachine6463445A-lDc86b4pUV96`
+  - Dashboard: [EventBridge-StepFunction-Lambda-Dashboard](https://console.aws.amazon.com/cloudwatch/home?region=ap-south-1#dashboards:name=EventBridge-StepFunction-Lambda-Dashboard)
 
 ## Repository Structure
 

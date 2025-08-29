@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Overview
 
-This repository contains multiple AWS learning projects demonstrating various serverless architectures, event-driven patterns, and AWS service integrations using AWS CDK.
+**GitHub Repository**: https://github.com/ravitandur/aws-learning-examples
+
+This repository contains multiple AWS learning projects demonstrating various serverless architectures, event-driven patterns, and AWS service integrations using AWS CDK. Currently deployed and operational in AWS account `142649403032`.
 
 ## Shared Configuration
 
@@ -19,6 +21,7 @@ This repository contains multiple AWS learning projects demonstrating various se
 - `git status` - Check repository status across all projects
 - `git add .` - Stage all changes
 - `git commit -m "message"` - Commit changes
+- `git push origin main` - Push to GitHub repository
 
 #### CDK Operations (run from project directories)
 - `source venv/bin/activate` - Activate Python virtual environment

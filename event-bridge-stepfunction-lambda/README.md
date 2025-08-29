@@ -1,6 +1,10 @@
 # EventBridge-StepFunction-Lambda Workflow
 
-This project demonstrates an event-driven workflow using AWS EventBridge, Step Functions, and Lambda functions.
+**🔗 GitHub Repository**: https://github.com/ravitandur/aws-learning-examples  
+**🚀 Status**: ✅ **Currently Deployed** to AWS Account `142649403032` (ap-south-1)  
+**📊 Monitoring**: [CloudWatch Dashboard](https://console.aws.amazon.com/cloudwatch/home?region=ap-south-1#dashboards:name=EventBridge-StepFunction-Lambda-Dashboard)
+
+This project demonstrates an event-driven workflow using AWS EventBridge, Express Step Functions, and Lambda functions with comprehensive monitoring and cost optimization.
 
 ## Architecture Flow
 
@@ -55,7 +59,7 @@ event-bridge-stepfunction-lambda/
 
 3. **Run the deployment script:**
    ```bash
-   ./deploy.sh
+   ./deploy.sh -p account2
    ```
    
    This script will:
@@ -91,7 +95,7 @@ event-bridge-stepfunction-lambda/
 
 1. **Trigger the workflow by invoking Lambda Function 1:**
    ```bash
-   aws lambda invoke --function-name EventBridgeStepFunctionStack-EventGeneratorFunction* response.json
+   aws lambda invoke --function-name EventBridgeStepFunctionSt-EventGeneratorFunctionA1-1ssCPKx1uHV6 response.json --profile account2
    cat response.json
    ```
 
@@ -102,10 +106,13 @@ event-bridge-stepfunction-lambda/
 
 ## Key Features
 
+- **Express Step Functions**: 98% cost optimization (~$45/month vs $280/month for Standard)
 - **IST Timezone Support**: Event Generator uses Indian Standard Time for display
 - **UTC Conversion**: Automatically converts to UTC for EventBridge/Step Functions compatibility
+- **Comprehensive Monitoring**: CloudWatch Dashboard, alarms, and SNS alerts
+- **Cost Protection**: High-volume execution alarms to prevent surprise bills
 - **Error Handling**: Includes retry logic in Step Functions and error handling in Lambda functions
-- **Logging**: Comprehensive logging for debugging and monitoring
+- **Profile Validation**: Mandatory AWS profile verification in deployment script
 
 ## Clean Up
 

@@ -6,6 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is an AWS CDK project implementing an event-driven workflow using EventBridge, Express Step Functions, and Lambda functions. The architecture demonstrates scheduled execution with a 2-minute delay using Step Function Wait states.
 
+**🚀 Status**: Currently deployed and operational in AWS account `142649403032` (ap-south-1)
+**📊 Monitoring**: [CloudWatch Dashboard](https://console.aws.amazon.com/cloudwatch/home?region=ap-south-1#dashboards:name=EventBridge-StepFunction-Lambda-Dashboard)
+
 ## Key Commands
 
 ### Deployment
@@ -14,8 +17,9 @@ This is an AWS CDK project implementing an event-driven workflow using EventBrid
 - `source venv/bin/activate && cdk destroy` - Clean up resources
 
 ### Testing the Workflow
-- `aws lambda invoke --function-name EventBridgeStepFunctionStack-EventGeneratorFunction* response.json --profile PROFILE` - Trigger workflow
+- `aws lambda invoke --function-name EventBridgeStepFunctionSt-EventGeneratorFunctionA1-1ssCPKx1uHV6 response.json --profile account2` - Trigger workflow with deployed function
 - View execution logs in CloudWatch Log Group: `/aws/stepfunctions/WaitAndInvokeStateMachine`
+- Monitor Step Function: `WaitAndInvokeStateMachine6463445A-lDc86b4pUV96`
 
 ### Virtual Environment Management
 - Always activate the virtual environment: `source venv/bin/activate`
