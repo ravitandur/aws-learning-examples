@@ -1,13 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  Grid,
-  Alert,
-  Snackbar,
-} from '@mui/material';
-import { Add as AddIcon } from '@mui/icons-material';
+import { Plus } from 'lucide-react';
 import { BrokerAccount, CreateBrokerAccount } from '../../types';
 import brokerService from '../../services/brokerService';
 import BrokerAccountCard from './BrokerAccountCard';
@@ -141,64 +133,65 @@ const BrokerAccountsList: React.FC = () => {
 
   if (error) {
     return (
-      <Box>
+      <div>
         <ErrorAlert message={error} onClose={() => setError(null)} />
-        <Box sx={{ mt: 2, textAlign: 'center' }}>
-          <Button variant="outlined" onClick={fetchBrokerAccounts}>
+        <div className="mt-4 text-center">
+          <button 
+            className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            onClick={fetchBrokerAccounts}
+          >
             Retry
-          </Button>
-        </Box>
-      </Box>
+          </button>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Box>
-      <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
-        <Typography variant="h5" component="h2">
+    <div>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
           Broker Accounts
-        </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
+        </h2>
+        <button
+          className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
           onClick={() => setAddFormOpen(true)}
         >
+          <Plus className="w-4 h-4 mr-2" />
           Add Broker Account
-        </Button>
-      </Box>
+        </button>
+      </div>
 
       {accounts.length === 0 ? (
-        <Alert severity="info" sx={{ mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">
             No broker accounts connected
-          </Typography>
-          <Typography>
+          </h3>
+          <p className="text-blue-700 dark:text-blue-300 mb-4">
             Connect your trading account to start executing algorithmic strategies.
             Your credentials will be stored securely and encrypted.
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
+          </p>
+          <button
+            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
             onClick={() => setAddFormOpen(true)}
-            sx={{ mt: 2 }}
           >
+            <Plus className="w-4 h-4 mr-2" />
             Add Your First Broker Account
-          </Button>
-        </Alert>
+          </button>
+        </div>
       ) : (
-        <Grid container spacing={3}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {accounts.map((account) => (
-            <Grid item xs={12} sm={6} md={4} key={account.broker_account_id}>
-              <BrokerAccountCard
-                account={account}
-                onEdit={handleEditAccount}
-                onDelete={handleDeleteAccount}
-                onTest={handleTestConnection}
-                isTestingConnection={testingAccountId === account.broker_account_id}
-              />
-            </Grid>
+            <BrokerAccountCard
+              key={account.broker_account_id}
+              account={account}
+              onEdit={handleEditAccount}
+              onDelete={handleDeleteAccount}
+              onTest={handleTestConnection}
+              isTestingConnection={testingAccountId === account.broker_account_id}
+            />
           ))}
-        </Grid>
+        </div>
       )}
 
       <AddBrokerAccountForm
@@ -210,21 +203,32 @@ const BrokerAccountsList: React.FC = () => {
         onClearError={() => setAddError(null)}
       />
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert
-          onClose={handleCloseSnackbar}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </Box>
+      {/* Toast notification */}
+      {snackbar.open && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <div className={`rounded-lg shadow-lg p-4 max-w-sm ${
+            snackbar.severity === 'success'
+              ? 'bg-green-50 border border-green-200 text-green-800'
+              : 'bg-red-50 border border-red-200 text-red-800'
+          }`}>
+            <div className="flex">
+              <div className="flex-1">
+                <p className="text-sm font-medium">{snackbar.message}</p>
+              </div>
+              <button
+                className="ml-3 flex-shrink-0"
+                onClick={handleCloseSnackbar}
+              >
+                <span className="sr-only">Close</span>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

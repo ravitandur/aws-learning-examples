@@ -1,25 +1,12 @@
 import React, { useState } from 'react';
 import {
-  Box,
-  TextField,
-  Button,
-  Typography,
-  Paper,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  Select,
-  InputAdornment,
-  IconButton,
-} from '@mui/material';
-import {
-  Visibility,
-  VisibilityOff,
-  Person,
-  Email,
+  Eye,
+  EyeOff,
+  User,
+  Mail,
   Phone,
-  LocationOn,
-} from '@mui/icons-material';
+  MapPin,
+} from 'lucide-react';
 import { UserRegistration, INDIAN_STATES } from '../../types';
 import {
   validatePhoneNumber,
@@ -136,152 +123,190 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 4, maxWidth: 500, mx: 'auto' }}>
-      <Typography variant="h4" component="h1" gutterBottom align="center">
+    <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-lg mx-auto">
+      <h1 className="text-3xl font-bold text-center text-gray-900 mb-2">
         Create Account
-      </Typography>
+      </h1>
       
-      <Typography variant="body2" color="textSecondary" align="center" sx={{ mb: 3 }}>
+      <p className="text-center text-gray-600 mb-6">
         Join Quantleap Analytics algorithmic trading platform
-      </Typography>
+      </p>
 
       {error && (
-        <Box sx={{ mb: 2 }}>
+        <div className="mb-4">
           <ErrorAlert message={error} onClose={onClearError} />
-        </Box>
+        </div>
       )}
 
-      <Box component="form" onSubmit={handleSubmit} noValidate>
-        <TextField
-          fullWidth
-          margin="normal"
-          label="Full Name"
-          value={formData.full_name}
-          onChange={handleInputChange('full_name')}
-          error={!!fieldErrors.full_name}
-          helperText={fieldErrors.full_name}
-          required
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Person />
-              </InputAdornment>
-            ),
-          }}
-        />
-
-        <TextField
-          fullWidth
-          margin="normal"
-          label="Phone Number"
-          value={formData.phone_number}
-          onChange={handleInputChange('phone_number')}
-          error={!!fieldErrors.phone_number}
-          helperText={fieldErrors.phone_number || 'Format: +919876543210'}
-          required
-          placeholder="+919876543210"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Phone />
-              </InputAdornment>
-            ),
-          }}
-        />
-
-        <TextField
-          fullWidth
-          margin="normal"
-          label="Email"
-          type="email"
-          value={formData.email}
-          onChange={handleInputChange('email')}
-          error={!!fieldErrors.email}
-          helperText={fieldErrors.email}
-          required
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Email />
-              </InputAdornment>
-            ),
-          }}
-        />
-
-        <FormControl fullWidth margin="normal" error={!!fieldErrors.state}>
-          <InputLabel>State *</InputLabel>
-          <Select
-            value={formData.state}
-            label="State *"
-            onChange={(e) => {
-              setFormData(prev => ({ ...prev, state: e.target.value }));
-              if (fieldErrors.state) {
-                setFieldErrors(prev => ({ ...prev, state: undefined }));
-              }
-            }}
-            startAdornment={
-              <InputAdornment position="start">
-                <LocationOn />
-              </InputAdornment>
-            }
-          >
-            {INDIAN_STATES.map((state) => (
-              <MenuItem key={state} value={state}>
-                {state}
-              </MenuItem>
-            ))}
-          </Select>
-          {fieldErrors.state && (
-            <Typography variant="caption" color="error" sx={{ mt: 1, ml: 2 }}>
-              {fieldErrors.state}
-            </Typography>
+      <form onSubmit={handleSubmit} noValidate>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Full Name *
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <User className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              value={formData.full_name}
+              onChange={handleInputChange('full_name')}
+              className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                fieldErrors.full_name
+                  ? 'border-red-300 text-red-900 placeholder-red-300'
+                  : 'border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
+              required
+            />
+          </div>
+          {fieldErrors.full_name && (
+            <p className="mt-1 text-xs text-red-600">{fieldErrors.full_name}</p>
           )}
-        </FormControl>
+        </div>
 
-        <TextField
-          fullWidth
-          margin="normal"
-          label="Password"
-          type={showPassword ? 'text' : 'password'}
-          value={formData.password}
-          onChange={handleInputChange('password')}
-          error={!!fieldErrors.password}
-          helperText={fieldErrors.password || 'Must contain uppercase, lowercase, number and special character'}
-          required
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  aria-label="toggle password visibility"
-                  onClick={() => setShowPassword(!showPassword)}
-                  edge="end"
-                >
-                  {showPassword ? <VisibilityOff /> : <Visibility />}
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Phone Number *
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Phone className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="tel"
+              value={formData.phone_number}
+              onChange={handleInputChange('phone_number')}
+              className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                fieldErrors.phone_number
+                  ? 'border-red-300 text-red-900 placeholder-red-300'
+                  : 'border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
+              placeholder="+919876543210"
+              required
+            />
+          </div>
+          <p className={`mt-1 text-xs ${
+            fieldErrors.phone_number ? 'text-red-600' : 'text-gray-500'
+          }`}>
+            {fieldErrors.phone_number || 'Format: +919876543210'}
+          </p>
+        </div>
 
-        <Button
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Email *
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Mail className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={handleInputChange('email')}
+              className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                fieldErrors.email
+                  ? 'border-red-300 text-red-900 placeholder-red-300'
+                  : 'border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
+              required
+            />
+          </div>
+          {fieldErrors.email && (
+            <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>
+          )}
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            State *
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MapPin className="h-5 w-5 text-gray-400" />
+            </div>
+            <select
+              value={formData.state}
+              onChange={(e) => {
+                setFormData(prev => ({ ...prev, state: e.target.value }));
+                if (fieldErrors.state) {
+                  setFieldErrors(prev => ({ ...prev, state: undefined }));
+                }
+              }}
+              className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                fieldErrors.state
+                  ? 'border-red-300 text-red-900'
+                  : 'border-gray-300 text-gray-900'
+              }`}
+              required
+            >
+              <option value="">Select a state</option>
+              {INDIAN_STATES.map((state) => (
+                <option key={state} value={state}>
+                  {state}
+                </option>
+              ))}
+            </select>
+          </div>
+          {fieldErrors.state && (
+            <p className="mt-1 text-xs text-red-600">{fieldErrors.state}</p>
+          )}
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Password *
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={formData.password}
+              onChange={handleInputChange('password')}
+              className={`block w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                fieldErrors.password
+                  ? 'border-red-300 text-red-900 placeholder-red-300'
+                  : 'border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
+              required
+            />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <EyeOff className="h-5 w-5 text-gray-400" />
+              ) : (
+                <Eye className="h-5 w-5 text-gray-400" />
+              )}
+            </button>
+          </div>
+          <p className={`mt-1 text-xs ${
+            fieldErrors.password ? 'text-red-600' : 'text-gray-500'
+          }`}>
+            {fieldErrors.password || 'Must contain uppercase, lowercase, number and special character'}
+          </p>
+        </div>
+
+        <button
           type="submit"
-          fullWidth
-          variant="contained"
-          size="large"
           disabled={isLoading}
-          sx={{ mt: 3, mb: 2 }}
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium py-2 px-4 rounded-lg transition-colors mb-4"
         >
           {isLoading ? 'Creating Account...' : 'Create Account'}
-        </Button>
+        </button>
 
-        <Typography variant="body2" align="center">
+        <p className="text-center text-sm text-gray-600">
           Already have an account?{' '}
-          <Button variant="text" size="small">
+          <button
+            type="button"
+            className="text-blue-600 hover:text-blue-500 font-medium"
+          >
             Sign In
-          </Button>
-        </Typography>
-      </Box>
-    </Paper>
+          </button>
+        </p>
+      </form>
+    </div>
   );
 };
 

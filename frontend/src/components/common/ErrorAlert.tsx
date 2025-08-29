@@ -1,6 +1,5 @@
 import React from 'react';
-import { Alert, AlertTitle, IconButton } from '@mui/material';
-import { Close as CloseIcon } from '@mui/icons-material';
+import { X } from 'lucide-react';
 
 interface ErrorAlertProps {
   message: string;
@@ -17,25 +16,41 @@ const ErrorAlert: React.FC<ErrorAlertProps> = ({
 }) => {
   if (!message) return null;
 
+  const getSeverityStyles = () => {
+    switch (severity) {
+      case 'error':
+        return 'bg-red-50 border border-red-200 text-red-800';
+      case 'warning':
+        return 'bg-yellow-50 border border-yellow-200 text-yellow-800';
+      case 'info':
+        return 'bg-blue-50 border border-blue-200 text-blue-800';
+      case 'success':
+        return 'bg-green-50 border border-green-200 text-green-800';
+      default:
+        return 'bg-red-50 border border-red-200 text-red-800';
+    }
+  };
+
   return (
-    <Alert 
-      severity={severity}
-      action={
-        onClose && (
-          <IconButton
-            aria-label="close"
-            color="inherit"
-            size="small"
+    <div className={`rounded-lg p-4 ${getSeverityStyles()}`}>
+      <div className="flex">
+        <div className="flex-1">
+          {title && (
+            <h3 className="text-sm font-medium mb-1">{title}</h3>
+          )}
+          <p className="text-sm">{message}</p>
+        </div>
+        {onClose && (
+          <button
+            className="ml-3 flex-shrink-0 hover:opacity-70"
             onClick={onClose}
+            aria-label="Close"
           >
-            <CloseIcon fontSize="inherit" />
-          </IconButton>
-        )
-      }
-    >
-      {title && <AlertTitle>{title}</AlertTitle>}
-      {message}
-    </Alert>
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+    </div>
   );
 };
 

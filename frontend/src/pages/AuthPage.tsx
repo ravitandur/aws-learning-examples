@@ -1,11 +1,4 @@
 import React, { useState } from 'react';
-import {
-  Box,
-  Container,
-  Typography,
-  Alert,
-  Paper,
-} from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import LoginForm from '../components/auth/LoginForm';
 import RegisterForm from '../components/auth/RegisterForm';
@@ -48,46 +41,46 @@ const AuthPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Container maxWidth="sm" sx={{ mt: 8 }}>
+      <div className="max-w-sm mx-auto mt-20">
         <LoadingSpinner message="Authenticating..." />
-      </Container>
+      </div>
     );
   }
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        py: 4,
-      }}
-    >
-      <Container maxWidth="sm">
+    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-purple-800 flex items-center justify-center py-4">
+      <div className="w-full max-w-md px-4">
         {/* Header */}
-        <Box textAlign="center" sx={{ mb: 4 }}>
-          <Typography variant="h3" component="h1" sx={{ color: 'white', mb: 1, fontWeight: 'bold' }}>
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-white mb-2">
             Quantleap Analytics
-          </Typography>
-          <Typography variant="h6" sx={{ color: 'rgba(255,255,255,0.9)' }}>
+          </h1>
+          <p className="text-xl text-white/90">
             Algorithmic Trading Platform for Indian Markets
-          </Typography>
-        </Box>
+          </p>
+        </div>
 
         {/* Registration Success Message */}
         {registrationSuccess && (
-          <Box sx={{ mb: 3 }}>
-            <Alert severity="success">
-              <Typography variant="body2" gutterBottom>
-                <strong>Registration Successful!</strong>
-              </Typography>
-              <Typography variant="body2">
-                Your account has been created successfully. Please sign in to continue to your dashboard.
-              </Typography>
-            </Alert>
-          </Box>
+          <div className="mb-6">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-medium text-green-800 mb-1">
+                    <strong>Registration Successful!</strong>
+                  </p>
+                  <p className="text-sm text-green-700">
+                    Your account has been created successfully. Please sign in to continue to your dashboard.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Auth Forms */}
@@ -110,50 +103,44 @@ const AuthPage: React.FC = () => {
 
         {/* Additional Info for Register Form */}
         {authMode === 'register' && (
-          <Box sx={{ mt: 3, textAlign: 'center' }}>
-            <Paper elevation={1} sx={{ p: 2 }}>
-              <Typography variant="body2" color="textSecondary" gutterBottom>
+          <div className="mt-6 text-center">
+            <div className="bg-white rounded-lg shadow-md p-4">
+              <p className="text-sm font-medium text-gray-700 mb-2">
                 <strong>Why Quantleap Analytics?</strong>
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                • Secure AWS-based infrastructure<br />
-                • Indian market specialized algorithms<br />
-                • Zerodha integration for seamless trading<br />
-                • Advanced risk management tools
-              </Typography>
-            </Paper>
-          </Box>
+              </p>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p>• Secure AWS-based infrastructure</p>
+                <p>• Indian market specialized algorithms</p>
+                <p>• Zerodha integration for seamless trading</p>
+                <p>• Advanced risk management tools</p>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Switch Auth Mode */}
         {authMode === 'register' && (
-          <Box sx={{ mt: 2, textAlign: 'center' }}>
-            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+          <div className="mt-4 text-center">
+            <p className="text-sm text-white/80">
               Already have an account?{' '}
-              <Box
-                component="span"
-                sx={{
-                  color: 'white',
-                  textDecoration: 'underline',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                }}
+              <button
+                className="text-white underline font-semibold hover:text-white/90"
                 onClick={switchToLogin}
               >
                 Sign In Here
-              </Box>
-            </Typography>
-          </Box>
+              </button>
+            </p>
+          </div>
         )}
 
         {/* Footer */}
-        <Box textAlign="center" sx={{ mt: 4 }}>
-          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+        <div className="text-center mt-8">
+          <p className="text-sm text-white/70">
             Module 2: User Authentication & Broker Management
-          </Typography>
-        </Box>
-      </Container>
-    </Box>
+          </p>
+        </div>
+      </div>
+    </div>
   );
 };
 

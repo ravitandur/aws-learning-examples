@@ -1,19 +1,9 @@
 import React, { useState } from 'react';
 import {
-  Box,
-  TextField,
-  Button,
-  Typography,
-  Paper,
-  InputAdornment,
-  IconButton,
-  Link,
-} from '@mui/material';
-import {
-  Visibility,
-  VisibilityOff,
-  AccountCircle,
-} from '@mui/icons-material';
+  Eye,
+  EyeOff,
+  User,
+} from 'lucide-react';
 import { UserLogin } from '../../types';
 import { validatePhoneNumber, validateEmail, formatPhoneForInput } from '../../utils/validation';
 import ErrorAlert from '../common/ErrorAlert';
@@ -138,91 +128,112 @@ const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 4, maxWidth: 400, mx: 'auto' }}>
-      <Typography variant="h4" component="h1" gutterBottom align="center">
+    <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md mx-auto">
+      <h1 className="text-3xl font-bold text-center text-gray-900 mb-2">
         Sign In
-      </Typography>
+      </h1>
       
-      <Typography variant="body2" color="textSecondary" align="center" sx={{ mb: 3 }}>
+      <p className="text-center text-gray-600 mb-6">
         Welcome back to Quantleap Analytics
-      </Typography>
+      </p>
 
       {error && (
-        <Box sx={{ mb: 2 }}>
+        <div className="mb-4">
           <ErrorAlert message={error} onClose={onClearError} />
-        </Box>
+        </div>
       )}
 
-      <Box component="form" onSubmit={handleSubmit} noValidate>
-        <TextField
-          fullWidth
-          margin="normal"
-          label="Email or Phone Number"
-          value={formData.username}
-          onChange={handleInputChange('username')}
-          error={!!fieldErrors.username}
-          helperText={getUsernameHelperText()}
-          required
-          placeholder="user@example.com or +919876543210"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <AccountCircle />
-              </InputAdornment>
-            ),
-          }}
-        />
+      <form onSubmit={handleSubmit} noValidate>
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Email or Phone Number *
+          </label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <User className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              value={formData.username}
+              onChange={handleInputChange('username')}
+              className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                fieldErrors.username
+                  ? 'border-red-300 text-red-900 placeholder-red-300'
+                  : 'border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
+              placeholder="user@example.com or +919876543210"
+              required
+            />
+          </div>
+          <p className={`mt-1 text-xs ${
+            fieldErrors.username ? 'text-red-600' : 'text-gray-500'
+          }`}>
+            {getUsernameHelperText()}
+          </p>
+        </div>
 
-        <TextField
-          fullWidth
-          margin="normal"
-          label="Password"
-          type={showPassword ? 'text' : 'password'}
-          value={formData.password}
-          onChange={handleInputChange('password')}
-          error={!!fieldErrors.password}
-          helperText={fieldErrors.password}
-          required
-          InputProps={{
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton
-                  aria-label="toggle password visibility"
-                  onClick={() => setShowPassword(!showPassword)}
-                  edge="end"
-                >
-                  {showPassword ? <VisibilityOff /> : <Visibility />}
-                </IconButton>
-              </InputAdornment>
-            ),
-          }}
-        />
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Password *
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={formData.password}
+              onChange={handleInputChange('password')}
+              className={`block w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                fieldErrors.password
+                  ? 'border-red-300 text-red-900 placeholder-red-300'
+                  : 'border-gray-300 text-gray-900 placeholder-gray-500'
+              }`}
+              required
+            />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <EyeOff className="h-5 w-5 text-gray-400" />
+              ) : (
+                <Eye className="h-5 w-5 text-gray-400" />
+              )}
+            </button>
+          </div>
+          {fieldErrors.password && (
+            <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p>
+          )}
+        </div>
 
-        <Box sx={{ textAlign: 'right', mt: 1, mb: 2 }}>
-          <Link href="#" variant="body2" color="primary">
+        <div className="text-right mb-4">
+          <button
+            type="button"
+            className="text-sm text-blue-600 hover:text-blue-500"
+          >
             Forgot password?
-          </Link>
-        </Box>
+          </button>
+        </div>
 
-        <Button
+        <button
           type="submit"
-          fullWidth
-          variant="contained"
-          size="large"
           disabled={isLoading}
-          sx={{ mt: 2, mb: 2 }}
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium py-2 px-4 rounded-lg transition-colors mb-4"
         >
           {isLoading ? 'Signing In...' : 'Sign In'}
-        </Button>
+        </button>
 
-        <Typography variant="body2" align="center">
+        <p className="text-center text-sm text-gray-600">
           Don't have an account?{' '}
-          <Button variant="text" size="small" onClick={onRegisterClick}>
+          <button
+            type="button"
+            onClick={onRegisterClick}
+            className="text-blue-600 hover:text-blue-500 font-medium"
+          >
             Create Account
-          </Button>
-        </Typography>
-      </Box>
-    </Paper>
+          </button>
+        </p>
+      </form>
+    </div>
   );
 };
 

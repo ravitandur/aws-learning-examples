@@ -1,26 +1,21 @@
 import React from 'react';
-import {
-  Box,
-  Typography,
-  Container,
-} from '@mui/material';
 import BrokerAccountsList from '../components/broker/BrokerAccountsList';
 
 const BrokersPage: React.FC = () => {
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
+    <div className="max-w-7xl mx-auto">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
           Broker Accounts
-        </Typography>
-        <Typography variant="body1" color="textSecondary">
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300">
           Manage your trading accounts and API connections. Your credentials are stored securely
           and encrypted using AWS Secrets Manager.
-        </Typography>
-      </Box>
+        </p>
+      </div>
 
       <BrokerAccountsList />
-    </Container>
+    </div>
   );
 };
 

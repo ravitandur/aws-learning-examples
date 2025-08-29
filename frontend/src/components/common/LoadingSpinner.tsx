@@ -1,5 +1,5 @@
 import React from 'react';
-import { CircularProgress, Box, Typography } from '@mui/material';
+import { Loader2 } from 'lucide-react';
 
 interface LoadingSpinnerProps {
   message?: string;
@@ -8,24 +8,17 @@ interface LoadingSpinnerProps {
 
 const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
   message = 'Loading...', 
-  size = 40 
+  size = 24 
 }) => {
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      minHeight="200px"
-      gap={2}
-    >
-      <CircularProgress size={size} />
+    <div className="flex flex-col items-center justify-center min-h-[200px] gap-2">
+      <Loader2 className="animate-spin text-blue-600" size={size} />
       {message && (
-        <Typography variant="body2" color="textSecondary">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           {message}
-        </Typography>
+        </p>
       )}
-    </Box>
+    </div>
   );
 };
 

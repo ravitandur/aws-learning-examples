@@ -33,6 +33,7 @@ export interface BrokerAccount {
   broker_account_id: string;
   user_id: string;
   broker_name: string;
+  account_name: string;
   account_type: string;
   account_status: 'active' | 'inactive' | 'pending';
   created_at: string;
@@ -46,8 +47,10 @@ export interface BrokerAccount {
 
 export interface CreateBrokerAccount {
   broker_name: string;
+  account_name: string;
   api_key: string;
   api_secret: string;
+  account_status: 'active' | 'inactive' | 'pending';
 }
 
 export interface UpdateBrokerAccount {

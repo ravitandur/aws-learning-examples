@@ -1,29 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Box,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  Button,
-  Alert,
-  Chip,
-} from '@mui/material';
-import {
-  AccountBalance as AccountBalanceIcon,
-  TrendingUp as TrendingUpIcon,
-  Person as PersonIcon,
-  Add as AddIcon,
-} from '@mui/icons-material';
+  Building2,
+  TrendingUp,
+  User,
+  Plus,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { formatPhoneNumber } from '../utils/validation';
 import brokerService from '../services/brokerService';
 
-interface DashboardProps {
-  onNavigate: (page: string) => void;
-}
-
-const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
+const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const [brokerAccountCount, setBrokerAccountCount] = useState<number>(0);
 
@@ -46,22 +32,25 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       title: 'Broker Accounts',
       value: brokerAccountCount.toString(),
       subtitle: 'Connected accounts',
-      icon: <AccountBalanceIcon sx={{ fontSize: 40 }} />,
-      color: '#1976d2',
+      icon: <Building2 className="w-10 h-10" />,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
     },
     {
       title: 'Active Strategies',
       value: '0', // TODO: Implement in future modules
       subtitle: 'Running algorithms',
-      icon: <TrendingUpIcon sx={{ fontSize: 40 }} />,
-      color: '#2e7d32',
+      icon: <TrendingUp className="w-10 h-10" />,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50 dark:bg-green-900/20',
     },
     {
       title: 'P&L Today',
       value: '₹0.00', // TODO: Implement in future modules
       subtitle: 'Trading profit/loss',
-      icon: <TrendingUpIcon sx={{ fontSize: 40 }} />,
-      color: '#ed6c02',
+      icon: <TrendingUp className="w-10 h-10" />,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-50 dark:bg-orange-900/20',
     },
   ];
 
@@ -73,136 +62,113 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   };
 
   return (
-    <Box>
+    <div className="space-y-6">
       {/* Welcome Section */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
+      <div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
           {getWelcomeMessage()}, {user?.fullName?.split(' ')[0]}! 👋
-        </Typography>
-        <Typography variant="body1" color="textSecondary">
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300">
           Welcome to your algorithmic trading dashboard. Monitor your strategies, manage broker accounts, and track performance.
-        </Typography>
-      </Box>
+        </p>
+      </div>
 
       {/* User Profile Summary */}
-      <Card sx={{ mb: 4 }}>
-        <CardContent>
-          <Box display="flex" alignItems="center" sx={{ mb: 2 }}>
-            <PersonIcon sx={{ mr: 1, color: 'primary.main' }} />
-            <Typography variant="h6">Profile Summary</Typography>
-          </Box>
-          <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="body2" color="textSecondary">
-                Full Name
-              </Typography>
-              <Typography variant="body1">{user?.fullName}</Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="body2" color="textSecondary">
-                Email
-              </Typography>
-              <Typography variant="body1">{user?.email}</Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="body2" color="textSecondary">
-                Phone Number
-              </Typography>
-              <Typography variant="body1">
-                {user?.phoneNumber && formatPhoneNumber(user.phoneNumber)}
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="body2" color="textSecondary">
-                State
-              </Typography>
-              <Chip label={user?.state} color="primary" variant="outlined" size="small" />
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <div className="flex items-center mb-4">
+          <User className="w-5 h-5 text-blue-600 mr-2" />
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Profile Summary</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Full Name</p>
+            <p className="text-gray-900 dark:text-white">{user?.fullName}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Email</p>
+            <p className="text-gray-900 dark:text-white">{user?.email}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Phone Number</p>
+            <p className="text-gray-900 dark:text-white">
+              {user?.phoneNumber && formatPhoneNumber(user.phoneNumber)}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">State</p>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+              {user?.state}
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* Quick Stats */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {quickStats.map((stat, index) => (
-          <Grid item xs={12} sm={6} md={4} key={index}>
-            <Card>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between">
-                  <Box>
-                    <Typography variant="h4" component="div" gutterBottom>
-                      {stat.value}
-                    </Typography>
-                    <Typography variant="h6" color="textSecondary">
-                      {stat.title}
-                    </Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      {stat.subtitle}
-                    </Typography>
-                  </Box>
-                  <Box sx={{ color: stat.color }}>
-                    {stat.icon}
-                  </Box>
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
+          <div key={index} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+                  {stat.value}
+                </p>
+                <p className="text-lg font-medium text-gray-700 dark:text-gray-200">
+                  {stat.title}
+                </p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {stat.subtitle}
+                </p>
+              </div>
+              <div className={`${stat.bgColor} ${stat.color} p-3 rounded-lg`}>
+                {stat.icon}
+              </div>
+            </div>
+          </div>
         ))}
-      </Grid>
+      </div>
 
       {/* Getting Started Section */}
-      <Card>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Getting Started
-          </Typography>
-          
-          <Alert severity="info" sx={{ mb: 3 }}>
-            <Typography variant="body2">
-              <strong>Welcome to Quantleap Analytics!</strong> You've successfully set up your account. 
-              Now let's connect your broker account to start algorithmic trading.
-            </Typography>
-          </Alert>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Getting Started
+        </h2>
+        
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+          <p className="text-sm text-blue-800 dark:text-blue-200">
+            <strong>Welcome to Quantleap Analytics!</strong> You've successfully set up your account. 
+            Now let's connect your broker account to start algorithmic trading.
+          </p>
+        </div>
 
-          <Box>
-            <Typography variant="body1" gutterBottom>
-              <strong>Next Steps:</strong>
-            </Typography>
-            <Box component="ol" sx={{ pl: 2, mb: 2 }}>
-              <Box component="li" sx={{ mb: 1 }}>
-                <Typography variant="body2">
-                  Connect your Zerodha account to enable trading
-                </Typography>
-              </Box>
-              <Box component="li" sx={{ mb: 1 }}>
-                <Typography variant="body2">
-                  Test your broker connection to ensure everything works
-                </Typography>
-              </Box>
-              <Box component="li" sx={{ mb: 1 }}>
-                <Typography variant="body2" color="textSecondary">
-                  Set up your first trading strategy (Module 3 - Coming soon)
-                </Typography>
-              </Box>
-              <Box component="li">
-                <Typography variant="body2" color="textSecondary">
-                  Monitor and optimize your portfolio (Module 4 - Coming soon)
-                </Typography>
-              </Box>
-            </Box>
+        <div>
+          <p className="text-gray-900 dark:text-white font-medium mb-3">
+            <strong>Next Steps:</strong>
+          </p>
+          <ol className="list-decimal list-inside space-y-2 mb-6 text-gray-700 dark:text-gray-300">
+            <li>
+              Connect your Zerodha account to enable trading
+            </li>
+            <li>
+              Test your broker connection to ensure everything works
+            </li>
+            <li className="text-gray-500 dark:text-gray-400">
+              Set up your first trading strategy (Module 3 - Coming soon)
+            </li>
+            <li className="text-gray-500 dark:text-gray-400">
+              Monitor and optimize your portfolio (Module 4 - Coming soon)
+            </li>
+          </ol>
 
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => onNavigate('brokers')}
-              size="large"
-            >
-              Connect Broker Account
-            </Button>
-          </Box>
-        </CardContent>
-      </Card>
-    </Box>
+          <button
+            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+            onClick={() => window.location.href = '/brokers'}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Connect Broker Account
+          </button>
+        </div>
+      </div>
+    </div>
   );
 };
 

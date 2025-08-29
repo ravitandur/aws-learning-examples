@@ -1,58 +1,22 @@
-import React, { useState } from 'react';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { CssBaseline, Box } from '@mui/material';
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import Navigation from './components/common/Navigation';
+import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import BrokersPage from './pages/BrokersPage';
 import AuthPage from './pages/AuthPage';
 import LoadingSpinner from './components/common/LoadingSpinner';
 
-// Create Material-UI theme
-const theme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#1976d2',
-      light: '#42a5f5',
-      dark: '#1565c0',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-    background: {
-      default: '#f5f5f5',
-    },
-  },
-  typography: {
-    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h4: {
-      fontWeight: 600,
-    },
-    h6: {
-      fontWeight: 500,
-    },
-  },
-  shape: {
-    borderRadius: 8,
-  },
-});
-
 // Main App Component (inside AuthProvider)
 const AppContent: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
-  const [currentPage, setCurrentPage] = useState<string>('dashboard');
-
-  const handleNavigate = (page: string) => {
-    setCurrentPage(page);
-  };
 
   // Show loading spinner while checking authentication
   if (isLoading) {
     return (
-      <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <LoadingSpinner message="Loading application..." />
-      </Box>
+      </div>
     );
   }
 
@@ -61,37 +25,36 @@ const AppContent: React.FC = () => {
     return <AuthPage />;
   }
 
-  // Render main application
-  const renderCurrentPage = () => {
-    switch (currentPage) {
-      case 'dashboard':
-        return <Dashboard onNavigate={handleNavigate} />;
-      case 'brokers':
-        return <BrokersPage />;
-      default:
-        return <Dashboard onNavigate={handleNavigate} />;
-    }
-  };
-
+  // Render main application with routing
   return (
-    <Box sx={{ flexGrow: 1, minHeight: '100vh', backgroundColor: 'background.default' }}>
-      <Navigation onNavigate={handleNavigate} currentPage={currentPage} />
-      <Box component="main">
-        {renderCurrentPage()}
-      </Box>
-    </Box>
+    <BrowserRouter future={{
+      v7_startTransition: true,
+      v7_relativeSplatPath: true
+    }}>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="brokers" element={<BrokersPage />} />
+          <Route path="strategies" element={<div className="p-4">Strategies Page (Coming Soon)</div>} />
+          <Route path="portfolio" element={<div className="p-4">Portfolio Page (Coming Soon)</div>} />
+          <Route path="analytics" element={<div className="p-4">Analytics Page (Coming Soon)</div>} />
+          <Route path="settings" element={<div className="p-4">Settings Page</div>} />
+          <Route path="account" element={<div className="p-4">Account Page</div>} />
+        </Route>
+        
+        {/* Fallback route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 };
 
 // Root App Component
 const App: React.FC = () => {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 

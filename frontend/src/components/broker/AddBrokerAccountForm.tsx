@@ -1,33 +1,6 @@
 import React, { useState } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  Button,
-  Box,
-  Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Alert,
-  List,
-  ListItem,
-  ListItemText,
-  InputAdornment,
-  IconButton,
-} from '@mui/material';
-import {
-  Visibility,
-  VisibilityOff,
-  VpnKey as VpnKeyIcon,
-  Security as SecurityIcon,
-} from '@mui/icons-material';
+import { X, Eye, EyeOff } from 'lucide-react';
 import { CreateBrokerAccount } from '../../types';
-import { validateApiKey, validateApiSecret } from '../../utils/validation';
-import { BrokerService } from '../../services/brokerService';
 import ErrorAlert from '../common/ErrorAlert';
 
 interface AddBrokerAccountFormProps {
@@ -48,24 +21,22 @@ const AddBrokerAccountForm: React.FC<AddBrokerAccountFormProps> = ({
   onClearError,
 }) => {
   const [formData, setFormData] = useState<CreateBrokerAccount>({
-    broker_name: '',
+    broker_name: 'Zerodha',
+    account_name: '',
     api_key: '',
     api_secret: '',
+    account_status: 'active',
   });
-
+  
   const [showApiSecret, setShowApiSecret] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof CreateBrokerAccount, string>>>({});
 
-  const supportedBrokers = BrokerService.getSupportedBrokers();
-
   const handleInputChange = (field: keyof CreateBrokerAccount) => (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    const value = event.target.value;
-
     setFormData(prev => ({
       ...prev,
-      [field]: value,
+      [field]: event.target.value,
     }));
 
     // Clear field error when user starts typing
@@ -76,7 +47,7 @@ const AddBrokerAccountForm: React.FC<AddBrokerAccountFormProps> = ({
       }));
     }
 
-    // Clear general error when user makes changes
+    // Clear general error
     if (error && onClearError) {
       onClearError();
     }
@@ -85,21 +56,16 @@ const AddBrokerAccountForm: React.FC<AddBrokerAccountFormProps> = ({
   const validateForm = (): boolean => {
     const errors: Partial<Record<keyof CreateBrokerAccount, string>> = {};
 
-    // Validate broker selection
-    if (!formData.broker_name) {
-      errors.broker_name = 'Please select a broker';
+    if (!formData.account_name.trim()) {
+      errors.account_name = 'Account name is required';
     }
 
-    // Validate API key
-    const apiKeyValidation = validateApiKey(formData.broker_name, formData.api_key);
-    if (!apiKeyValidation.isValid) {
-      errors.api_key = apiKeyValidation.error;
+    if (!formData.api_key.trim()) {
+      errors.api_key = 'API Key is required';
     }
 
-    // Validate API secret
-    const apiSecretValidation = validateApiSecret(formData.broker_name, formData.api_secret);
-    if (!apiSecretValidation.isValid) {
-      errors.api_secret = apiSecretValidation.error;
+    if (!formData.api_secret.trim()) {
+      errors.api_secret = 'API Secret is required';
     }
 
     setFieldErrors(errors);
@@ -108,173 +74,175 @@ const AddBrokerAccountForm: React.FC<AddBrokerAccountFormProps> = ({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-
+    
     if (!validateForm()) {
       return;
     }
 
     try {
       await onSubmit(formData);
-      handleClose();
+      // Reset form on success
+      setFormData({
+        broker_name: 'Zerodha',
+        account_name: '',
+        api_key: '',
+        api_secret: '',
+        account_status: 'active',
+      });
+      setFieldErrors({});
     } catch (error) {
-      // Error handling is managed by parent component
+      // Error handling is managed by parent
     }
   };
 
   const handleClose = () => {
-    // Reset form when closing
     setFormData({
-      broker_name: '',
+      broker_name: 'Zerodha',
+      account_name: '',
       api_key: '',
       api_secret: '',
+      account_status: 'active',
     });
     setFieldErrors({});
-    setShowApiSecret(false);
+    if (onClearError) {
+      onClearError();
+    }
     onClose();
   };
 
-  const selectedBroker = supportedBrokers.find(b => b.id === formData.broker_name);
-  const instructions = selectedBroker ? BrokerService.getBrokerInstructions(selectedBroker.id) : null;
+  if (!open) return null;
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle>Add Broker Account</DialogTitle>
-      
-      <DialogContent>
-        {error && (
-          <Box sx={{ mb: 2 }}>
-            <ErrorAlert message={error} onClose={onClearError} />
-          </Box>
-        )}
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            Add Broker Account
+          </h2>
+          <button
+            onClick={handleClose}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
 
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-          <FormControl fullWidth margin="normal" error={!!fieldErrors.broker_name}>
-            <InputLabel>Select Broker *</InputLabel>
-            <Select
-              value={formData.broker_name}
-              label="Select Broker *"
-              onChange={(e) => {
-                setFormData(prev => ({ 
-                  ...prev, 
-                  broker_name: e.target.value,
-                  // Clear credentials when changing broker
-                  api_key: '',
-                  api_secret: '',
-                }));
-                if (fieldErrors.broker_name) {
-                  setFieldErrors(prev => ({ ...prev, broker_name: undefined }));
-                }
-              }}
-            >
-              {supportedBrokers.map((broker) => (
-                <MenuItem key={broker.id} value={broker.id}>
-                  <Box>
-                    <Typography variant="body1">{broker.name}</Typography>
-                    <Typography variant="body2" color="textSecondary">
-                      {broker.description}
-                    </Typography>
-                  </Box>
-                </MenuItem>
-              ))}
-            </Select>
-            {fieldErrors.broker_name && (
-              <Typography variant="caption" color="error" sx={{ mt: 1, ml: 2 }}>
-                {fieldErrors.broker_name}
-              </Typography>
-            )}
-          </FormControl>
-
-          {instructions && (
-            <Box sx={{ mt: 2, mb: 2 }}>
-              <Alert severity="info" sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" gutterBottom>
-                  {instructions.title}
-                </Typography>
-                <List dense>
-                  {instructions.steps.map((step, index) => (
-                    <ListItem key={index} sx={{ py: 0 }}>
-                      <ListItemText primary={step} />
-                    </ListItem>
-                  ))}
-                </List>
-              </Alert>
-            </Box>
+        {/* Content */}
+        <div className="p-6">
+          {error && (
+            <div className="mb-4">
+              <ErrorAlert message={error} onClose={onClearError} />
+            </div>
           )}
 
-          {formData.broker_name && (
-            <>
-              <TextField
-                fullWidth
-                margin="normal"
-                label={instructions?.apiKeyLabel || 'API Key'}
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                Broker *
+              </label>
+              <select
+                value={formData.broker_name}
+                onChange={handleInputChange('broker_name')}
+                className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              >
+                <option value="Zerodha">Zerodha</option>
+              </select>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                Account Name *
+              </label>
+              <input
+                type="text"
+                value={formData.account_name}
+                onChange={handleInputChange('account_name')}
+                className={`block w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                  fieldErrors.account_name
+                    ? 'border-red-300 dark:border-red-600'
+                    : 'border-gray-300 dark:border-gray-600'
+                }`}
+                placeholder="My Trading Account"
+              />
+              {fieldErrors.account_name && (
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.account_name}</p>
+              )}
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                API Key *
+              </label>
+              <input
+                type="text"
                 value={formData.api_key}
                 onChange={handleInputChange('api_key')}
-                error={!!fieldErrors.api_key}
-                helperText={fieldErrors.api_key}
-                required
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <VpnKeyIcon />
-                    </InputAdornment>
-                  ),
-                }}
+                className={`block w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                  fieldErrors.api_key
+                    ? 'border-red-300 dark:border-red-600'
+                    : 'border-gray-300 dark:border-gray-600'
+                }`}
+                placeholder="Your Zerodha API Key"
               />
+              {fieldErrors.api_key && (
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.api_key}</p>
+              )}
+            </div>
 
-              <TextField
-                fullWidth
-                margin="normal"
-                label={instructions?.apiSecretLabel || 'API Secret'}
-                type={showApiSecret ? 'text' : 'password'}
-                value={formData.api_secret}
-                onChange={handleInputChange('api_secret')}
-                error={!!fieldErrors.api_secret}
-                helperText={fieldErrors.api_secret}
-                required
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SecurityIcon />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        aria-label="toggle api secret visibility"
-                        onClick={() => setShowApiSecret(!showApiSecret)}
-                        edge="end"
-                      >
-                        {showApiSecret ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                API Secret *
+              </label>
+              <div className="relative">
+                <input
+                  type={showApiSecret ? 'text' : 'password'}
+                  value={formData.api_secret}
+                  onChange={handleInputChange('api_secret')}
+                  className={`block w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                    fieldErrors.api_secret
+                      ? 'border-red-300 dark:border-red-600'
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}
+                  placeholder="Your Zerodha API Secret"
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowApiSecret(!showApiSecret)}
+                >
+                  {showApiSecret ? (
+                    <EyeOff className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400" />
+                  )}
+                </button>
+              </div>
+              {fieldErrors.api_secret && (
+                <p className="mt-1 text-xs text-red-600">{fieldErrors.api_secret}</p>
+              )}
+            </div>
 
-              <Alert severity="warning" sx={{ mt: 2 }}>
-                <Typography variant="body2">
-                  Your API credentials will be encrypted and stored securely in AWS Secrets Manager. 
-                  They will only be used for authenticated trading operations.
-                </Typography>
-              </Alert>
-            </>
-          )}
-        </Box>
-      </DialogContent>
-
-      <DialogActions>
-        <Button onClick={handleClose} disabled={isLoading}>
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          variant="contained"
-          disabled={isLoading || !formData.broker_name}
-        >
-          {isLoading ? 'Adding Account...' : 'Add Account'}
-        </Button>
-      </DialogActions>
-    </Dialog>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white rounded-lg transition-colors"
+              >
+                {isLoading ? 'Adding...' : 'Add Account'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   );
 };
 
