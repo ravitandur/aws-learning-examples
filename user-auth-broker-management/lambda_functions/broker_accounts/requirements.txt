@@ -1,0 +1,3 @@
+# boto3 and botocore are provided by AWS Lambda Python runtime
+# Only add packages NOT available in Lambda runtime here
+# Example: requests, pandas, numpy, etc.

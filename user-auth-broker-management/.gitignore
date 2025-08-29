@@ -1,0 +1,75 @@
+# AWS CDK
+cdk.out/
+node_modules/
+.cdk.staging/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+env/
+.env
+pip-log.txt
+.venv/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# AWS and deployment
+response.json
+*.pem
+*.key
+credentials
+config
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+
+# Lambda deployment packages
+*.zip
+
+# Lambda dependencies (should never be committed)
+# These are installed during deployment only
+lambda_functions/*/boto*
+lambda_functions/*/jmespath*
+lambda_functions/*/dateutil*
+lambda_functions/*/python_dateutil*
+lambda_functions/*/s3transfer*
+lambda_functions/*/urllib3*
+lambda_functions/*/six*
+lambda_functions/*/bin/
+lambda_functions/*/*.dist-info/
+
+# Shared utilities (copied during deployment)
+lambda_functions/*/shared_utils/
+
+# Secrets (extra safety)
+*secret*
+*credential*
+api_key*
+access_token*
+
+# Local test files
+test_*.json
+local_test.*
