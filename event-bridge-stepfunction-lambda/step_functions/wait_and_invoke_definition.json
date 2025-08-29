@@ -1,0 +1,46 @@
+{
+  "Comment": "Step Function that waits until scheduled time and then invokes Lambda Function 2",
+  "StartAt": "ParseScheduledTime",
+  "States": {
+    "ParseScheduledTime": {
+      "Type": "Pass",
+      "Comment": "Extract the scheduled time from the event",
+      "Parameters": {
+        "scheduledTimeISO.$": "$.detail.scheduledTimeISO",
+        "eventId.$": "$.detail.eventId",
+        "message.$": "$.detail.message",
+        "originalEvent.$": "$"
+      },
+      "Next": "WaitUntilScheduledTime"
+    },
+    "WaitUntilScheduledTime": {
+      "Type": "Wait",
+      "Comment": "Wait until the scheduled time specified in the event",
+      "TimestampPath": "$.scheduledTimeISO",
+      "Next": "InvokeLambdaFunction2"
+    },
+    "InvokeLambdaFunction2": {
+      "Type": "Task",
+      "Comment": "Invoke Lambda Function 2 to print current time",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${TimePrinterLambdaArn}",
+        "Payload": {
+          "scheduledTimeISO.$": "$.scheduledTimeISO",
+          "eventId.$": "$.eventId",
+          "message.$": "$.message",
+          "stepFunctionInput.$": "$"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 6,
+          "BackoffRate": 2
+        }
+      ],
+      "End": true
+    }
+  }
+}

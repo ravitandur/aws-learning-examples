@@ -1,0 +1,63 @@
+# AWS CDK
+**/cdk.out/
+**/node_modules/
+**/.cdk.staging/
+
+# Python
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/venv/
+**/env/
+**/.env
+**/pip-log.txt
+**/.venv/
+
+# IDE and Editor files
+**/.idea/
+**/.vscode/
+**/*.iml
+**/*.swp
+**/*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# AWS and deployment
+**/response.json
+**/*.pem
+**/*.key
+**/credentials
+**/config
+
+# Logs
+**/*.log
+**/logs/
+
+# Temporary files
+**/tmp/
+**/temp/
+
+# CDK specific
+**/asset.*/
+
+# Lambda deployment packages
+**/*.zip
+
+# CloudFormation templates (generated)
+**/template.json
+**/template.yaml
+
+# Local environment files
+**/.env.local
+**/.env.development.local
+**/.env.test.local
+**/.env.production.local
