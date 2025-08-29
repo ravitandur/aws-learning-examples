@@ -226,8 +226,9 @@ def handle_create_broker_account(event, user_id, table, secretsmanager):
                     'Access-Control-Allow-Origin': '*'
                 },
                 'body': json.dumps({
-                    'message': 'Broker account created successfully',
-                    'broker_account': response_item
+                    'success': True,
+                    'data': response_item,
+                    'message': 'Broker account created successfully'
                 })
             }
             
@@ -293,8 +294,9 @@ def handle_get_broker_accounts(event, user_id, table):
                 'Access-Control-Allow-Origin': '*'
             },
             'body': json.dumps({
-                'broker_accounts': broker_accounts,
-                'count': len(broker_accounts)
+                'success': True,
+                'data': broker_accounts,
+                'message': f'Retrieved {len(broker_accounts)} broker accounts'
             })
         }
         

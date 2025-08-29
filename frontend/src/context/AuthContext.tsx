@@ -1,0 +1,224 @@
+import React, { createContext, useContext, useEffect, useReducer, ReactNode } from 'react';
+import { User, AuthTokens, UserLogin, UserRegistration, AuthContextType } from '../types';
+import authService from '../services/authService';
+
+// Auth State Type
+interface AuthState {
+  user: User | null;
+  tokens: AuthTokens | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
+}
+
+// Auth Actions
+type AuthAction =
+  | { type: 'AUTH_START' }
+  | { type: 'AUTH_SUCCESS'; payload: { user: User; tokens: AuthTokens } }
+  | { type: 'AUTH_FAILURE'; payload: string }
+  | { type: 'AUTH_LOGOUT' }
+  | { type: 'SET_USER'; payload: User }
+  | { type: 'CLEAR_ERROR' };
+
+// Initial State
+const initialState: AuthState = {
+  user: null,
+  tokens: null,
+  isAuthenticated: false,
+  isLoading: true,
+  error: null,
+};
+
+// Auth Reducer
+const authReducer = (state: AuthState, action: AuthAction): AuthState => {
+  switch (action.type) {
+    case 'AUTH_START':
+      return {
+        ...state,
+        isLoading: true,
+        error: null,
+      };
+
+    case 'AUTH_SUCCESS':
+      return {
+        ...state,
+        user: action.payload.user,
+        tokens: action.payload.tokens,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      };
+
+    case 'AUTH_FAILURE':
+      return {
+        ...state,
+        user: null,
+        tokens: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: action.payload,
+      };
+
+    case 'AUTH_LOGOUT':
+      return {
+        ...state,
+        user: null,
+        tokens: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null,
+      };
+
+    case 'SET_USER':
+      return {
+        ...state,
+        user: action.payload,
+        isLoading: false,
+      };
+
+    case 'CLEAR_ERROR':
+      return {
+        ...state,
+        error: null,
+      };
+
+    default:
+      return state;
+  }
+};
+
+// Create Context
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Auth Provider Props
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+// Auth Provider Component
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [state, dispatch] = useReducer(authReducer, initialState);
+
+  // Initialize auth state on app load
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        const tokens = authService.getTokens();
+        
+        if (tokens && authService.isAuthenticated()) {
+          // Try to get user profile
+          const user = await authService.getUserProfile();
+          dispatch({ type: 'AUTH_SUCCESS', payload: { user, tokens } });
+        } else {
+          dispatch({ type: 'AUTH_LOGOUT' });
+        }
+      } catch (error) {
+        console.error('Auth initialization failed:', error);
+        authService.logout();
+        dispatch({ type: 'AUTH_LOGOUT' });
+      }
+    };
+
+    initializeAuth();
+  }, []);
+
+  // Listen for unauthorized events from API client
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      dispatch({ type: 'AUTH_LOGOUT' });
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+  }, []);
+
+  // Login function
+  const login = async (credentials: UserLogin): Promise<void> => {
+    try {
+      dispatch({ type: 'AUTH_START' });
+      
+      const { tokens, user } = await authService.login(credentials);
+      
+      dispatch({ type: 'AUTH_SUCCESS', payload: { user, tokens } });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
+      throw error;
+    }
+  };
+
+  // Register function
+  const register = async (userData: UserRegistration): Promise<void> => {
+    try {
+      dispatch({ type: 'AUTH_START' });
+      
+      const response = await authService.register(userData);
+      
+      if (response.success) {
+        // After successful registration, user needs to verify and then login
+        dispatch({ type: 'AUTH_LOGOUT' });
+      } else {
+        throw new Error(response.message || 'Registration failed');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
+      throw error;
+    }
+  };
+
+  // Logout function
+  const logout = (): void => {
+    authService.logout();
+    dispatch({ type: 'AUTH_LOGOUT' });
+  };
+
+  // Update user profile
+  const updateProfile = async (updates: Partial<Pick<User, 'fullName' | 'state'>>): Promise<void> => {
+    try {
+      const updatedUser = await authService.updateProfile(updates);
+      dispatch({ type: 'SET_USER', payload: updatedUser });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Profile update failed';
+      dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
+      throw error;
+    }
+  };
+
+  // Clear error
+  const clearError = (): void => {
+    dispatch({ type: 'CLEAR_ERROR' });
+  };
+
+  const value: AuthContextType & {
+    error: string | null;
+    updateProfile: (updates: Partial<Pick<User, 'fullName' | 'state'>>) => Promise<void>;
+    clearError: () => void;
+  } = {
+    user: state.user,
+    tokens: state.tokens,
+    isAuthenticated: state.isAuthenticated,
+    isLoading: state.isLoading,
+    error: state.error,
+    login,
+    register,
+    logout,
+    updateProfile,
+    clearError,
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+// Custom hook to use auth context
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
