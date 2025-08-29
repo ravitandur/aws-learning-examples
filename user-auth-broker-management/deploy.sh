@@ -4,19 +4,34 @@
 
 # Parse command line arguments
 AWS_PROFILE=""
+ENVIRONMENT=""
+
 while [[ $# -gt 0 ]]; do
   case $1 in
+    -e|--environment)
+      ENVIRONMENT="$2"
+      shift 2
+      ;;
     -p|--profile)
       AWS_PROFILE="$2"
       shift 2
       ;;
     *)
       echo "Unknown option: $1"
-      echo "Usage: $0 [-p|--profile AWS_PROFILE_NAME]"
+      echo "Usage: $0 -e|--environment {dev|staging|production} -p|--profile AWS_PROFILE_NAME"
       exit 1
       ;;
   esac
 done
+
+# Validate environment
+if [[ ! "$ENVIRONMENT" =~ ^(dev|staging|production)$ ]]; then
+    echo "Error: Environment must be one of: dev, staging, production"
+    echo ""
+    echo "Usage: $0 -e|--environment {dev|staging|production} -p|--profile AWS_PROFILE_NAME"
+    echo "Example: $0 -e dev -p account2"
+    exit 1
+fi
 
 # Require profile - exit if not provided
 if [ -z "$AWS_PROFILE" ]; then
@@ -24,13 +39,15 @@ if [ -z "$AWS_PROFILE" ]; then
     echo "Available profiles:"
     aws configure list-profiles 2>/dev/null || echo "No profiles found."
     echo ""
-    echo "Usage: $0 -p|--profile AWS_PROFILE_NAME"
-    echo "Example: $0 -p account2"
+    echo "Usage: $0 -e|--environment {dev|staging|production} -p|--profile AWS_PROFILE_NAME"
+    echo "Example: $0 -e dev -p account2"
     exit 1
 fi
 
-echo "Starting deployment of User Authentication & Broker Management stack..."
-echo "Target: AWS Algorithmic Trading Platform - Module 2"
+echo "Starting deployment of Quantleap Analytics Algorithmic Trading Platform"
+echo "Environment: $ENVIRONMENT"
+echo "AWS Profile: $AWS_PROFILE"
+echo "Target: Module 2 - User Authentication & Broker Management"
 echo ""
 
 # Validate AWS profile exists
@@ -49,10 +66,12 @@ if ! aws sts get-caller-identity --profile "$AWS_PROFILE" >/dev/null 2>&1; then
     exit 1
 fi
 
-# Set profile for subsequent commands
+# Set environment variables for CDK
 export AWS_PROFILE="$AWS_PROFILE"
+export QL_ENVIRONMENT="$ENVIRONMENT"
 PROFILE_FLAG="--profile $AWS_PROFILE"
 echo "Using AWS profile: $AWS_PROFILE"
+echo "Deploying to environment: $ENVIRONMENT"
 
 # Display account and region info
 echo "Account ID: $(aws sts get-caller-identity --query Account --output text $PROFILE_FLAG)"
@@ -97,31 +116,35 @@ echo "Bootstrapping CDK (if needed)..."
 cdk bootstrap $PROFILE_FLAG
 
 echo ""
-echo "Synthesizing CDK stack..."
-cdk synth $PROFILE_FLAG
+echo "Synthesizing CDK stack for $ENVIRONMENT environment..."
+cdk synth --context environment=$ENVIRONMENT $PROFILE_FLAG
 
 echo ""
-echo "Deploying CDK stack..."
-cdk deploy --require-approval never $PROFILE_FLAG
+echo "Deploying CDK stack to $ENVIRONMENT environment..."
+cdk deploy "ql-algo-trading-${ENVIRONMENT}-stack" \
+  --context environment=$ENVIRONMENT \
+  --require-approval never \
+  $PROFILE_FLAG
 
 if [ $? -eq 0 ]; then
     echo ""
     echo "✅ Deployment completed successfully!"
     echo ""
-    echo "🎯 User Authentication & Broker Management Module Deployed"
+    echo "🎯 Quantleap Analytics Algo Trading Platform - $ENVIRONMENT Environment"
+    echo "📦 Stack: ql-algo-trading-${ENVIRONMENT}-stack"
     echo ""
     echo "📋 What was deployed:"
-    echo "   • AWS Cognito User Pool with Indian phone/state validation"
-    echo "   • DynamoDB tables for user profiles and broker accounts"  
-    echo "   • Lambda functions for authentication and broker management"
-    echo "   • API Gateway with Cognito authorizer"
-    echo "   • Secrets Manager integration for secure credential storage"
-    echo "   • CloudWatch Dashboard for monitoring"
+    echo "   • Cognito User Pool: ql-algo-trading-${ENVIRONMENT}-users"
+    echo "   • DynamoDB Tables: ql-algo-trading-${ENVIRONMENT}-user-profiles, ql-algo-trading-${ENVIRONMENT}-broker-accounts"
+    echo "   • Lambda Functions: ql-algo-trading-${ENVIRONMENT}-user-registration, ql-algo-trading-${ENVIRONMENT}-user-auth, ql-algo-trading-${ENVIRONMENT}-broker-accounts"
+    echo "   • API Gateway: ql-algo-trading-${ENVIRONMENT}-api"
+    echo "   • Secrets Manager: ql-zerodha-credentials-${ENVIRONMENT}-* pattern"
+    echo "   • CloudWatch Dashboard with environment-specific metrics"
     echo ""
     echo "🧪 To test the system:"
     echo ""
     echo "1. Register a new user:"
-    echo "   curl -X POST https://\$(aws cloudformation describe-stacks --stack-name UserAuthBrokerStack --query 'Stacks[0].Outputs[?OutputKey==\`ApiGatewayUrl\`].OutputValue' --output text $PROFILE_FLAG)auth/register \\"
+    echo "   curl -X POST https://\$(aws cloudformation describe-stacks --stack-name ql-algo-trading-${ENVIRONMENT}-stack --query 'Stacks[0].Outputs[?OutputKey==\`ApiGatewayUrl\`].OutputValue' --output text $PROFILE_FLAG)auth/register \\"
     echo "     -H \"Content-Type: application/json\" \\"
     echo "     -d '{"
     echo "       \"phone_number\": \"+919876543210\","
@@ -132,7 +155,7 @@ if [ $? -eq 0 ]; then
     echo "     }'"
     echo ""
     echo "2. Login to get JWT token:"
-    echo "   curl -X POST https://\$(aws cloudformation describe-stacks --stack-name UserAuthBrokerStack --query 'Stacks[0].Outputs[?OutputKey==\`ApiGatewayUrl\`].OutputValue' --output text $PROFILE_FLAG)auth/login \\"
+    echo "   curl -X POST https://\$(aws cloudformation describe-stacks --stack-name ql-algo-trading-${ENVIRONMENT}-stack --query 'Stacks[0].Outputs[?OutputKey==\`ApiGatewayUrl\`].OutputValue' --output text $PROFILE_FLAG)auth/login \\"
     echo "     -H \"Content-Type: application/json\" \\"
     echo "     -d '{"
     echo "       \"username\": \"+919876543210\","
@@ -140,7 +163,7 @@ if [ $? -eq 0 ]; then
     echo "     }'"
     echo ""
     echo "3. Add your Zerodha account (use JWT token from login):"
-    echo "   curl -X POST https://\$(aws cloudformation describe-stacks --stack-name UserAuthBrokerStack --query 'Stacks[0].Outputs[?OutputKey==\`ApiGatewayUrl\`].OutputValue' --output text $PROFILE_FLAG)broker-accounts \\"
+    echo "   curl -X POST https://\$(aws cloudformation describe-stacks --stack-name ql-algo-trading-${ENVIRONMENT}-stack --query 'Stacks[0].Outputs[?OutputKey==\`ApiGatewayUrl\`].OutputValue' --output text $PROFILE_FLAG)broker-accounts \\"
     echo "     -H \"Authorization: Bearer YOUR_JWT_TOKEN\" \\"
     echo "     -H \"Content-Type: application/json\" \\"
     echo "     -d '{"
@@ -150,7 +173,7 @@ if [ $? -eq 0 ]; then
     echo "     }'"
     echo ""
     echo "📊 Monitor your deployment:"
-    echo "   AWS Console → CloudWatch → Dashboards → AlgoTrading-UserAuth-Dashboard"
+    echo "   AWS Console → CloudWatch → Dashboards → $(echo $ENVIRONMENT | sed 's/dev/Dev/;s/staging/Staging/;s/production/Prod/')-ql-algo-trading-${ENVIRONMENT}-dashboard"
     echo ""
     echo "🎉 Ready for Module 3: Market Data Integration!"
     echo ""

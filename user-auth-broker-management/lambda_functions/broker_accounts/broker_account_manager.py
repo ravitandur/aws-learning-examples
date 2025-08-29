@@ -158,8 +158,10 @@ def handle_create_broker_account(event, user_id, table, secretsmanager):
         broker_account_id = str(uuid.uuid4())
         current_time = datetime.now(timezone.utc).isoformat()
         
-        # Store API credentials in Secrets Manager
-        secret_name = f"zerodha-credentials-{user_id}-{broker_account_id}"
+        # Store API credentials in Secrets Manager with environment-specific naming
+        company_prefix = os.environ.get('COMPANY_PREFIX', 'ql')
+        environment = os.environ.get('ENVIRONMENT', 'dev')
+        secret_name = f"{company_prefix}-zerodha-credentials-{environment}-{user_id}-{broker_account_id}"
         
         try:
             secret_response = secretsmanager.create_secret(

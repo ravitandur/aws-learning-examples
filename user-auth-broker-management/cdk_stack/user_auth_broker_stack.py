@@ -14,16 +14,38 @@ from aws_cdk import (
 )
 from constructs import Construct
 import json
+from typing import Dict, Any
 
 class UserAuthBrokerStack(Stack):
 
-    def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
+    def __init__(self, scope: Construct, construct_id: str, 
+                 deploy_env: str, config: Dict[str, Any], **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+        
+        self.deploy_env = deploy_env
+        self.config = config
+        self.company_prefix = config['company']['short_name']
+        self.project_name = config['project']
+        self.env_config = config['environments'][deploy_env]
+        
+        # Create all resources
+        self.create_resources()
+        
+    def get_resource_name(self, resource_type: str) -> str:
+        """Generate environment-specific resource names with company prefix"""
+        return f"{self.company_prefix}-{self.project_name}-{self.deploy_env}-{resource_type}"
+        
+    def get_removal_policy(self) -> RemovalPolicy:
+        """Get environment-specific removal policy"""
+        policy = self.env_config['removal_policy']
+        return RemovalPolicy.DESTROY if policy == "DESTROY" else RemovalPolicy.RETAIN
 
+    def create_resources(self):
+        """Create all AWS resources for the stack"""
         # Cognito User Pool for authentication
         user_pool = cognito.UserPool(
             self, "AlgoTradingUserPool",
-            user_pool_name="algo-trading-users",
+            user_pool_name=self.get_resource_name("users"),
             sign_in_aliases=cognito.SignInAliases(
                 email=True,
                 phone=True
@@ -61,14 +83,14 @@ class UserAuthBrokerStack(Stack):
                 require_symbols=True
             ),
             account_recovery=cognito.AccountRecovery.EMAIL_AND_PHONE_WITHOUT_MFA,
-            removal_policy=RemovalPolicy.DESTROY  # For learning environment
+            removal_policy=self.get_removal_policy()
         )
 
         # User Pool Client for API access
         user_pool_client = cognito.UserPoolClient(
             self, "AlgoTradingUserPoolClient",
             user_pool=user_pool,
-            user_pool_client_name="algo-trading-client",
+            user_pool_client_name=self.get_resource_name("client"),
             generate_secret=False,  # For frontend applications
             auth_flows=cognito.AuthFlow(
                 admin_user_password=True,
@@ -82,32 +104,32 @@ class UserAuthBrokerStack(Stack):
                     implicit_code_grant=True
                 ),
                 scopes=[cognito.OAuthScope.EMAIL, cognito.OAuthScope.OPENID, cognito.OAuthScope.PROFILE],
-                callback_urls=["http://localhost:3000/callback"],  # For testing
-                logout_urls=["http://localhost:3000/logout"]
+                callback_urls=self.env_config['cors_origins'] + [url + "/callback" for url in self.env_config['cors_origins'] if not url.startswith('http://localhost')],
+                logout_urls=self.env_config['cors_origins'] + [url + "/logout" for url in self.env_config['cors_origins'] if not url.startswith('http://localhost')]
             ),
-            access_token_validity=Duration.hours(1),
-            id_token_validity=Duration.hours(1),
+            access_token_validity=Duration.hours(self.env_config['token_validity_hours']),
+            id_token_validity=Duration.hours(self.env_config['token_validity_hours']),
             refresh_token_validity=Duration.days(30)
         )
 
         # DynamoDB table for user profiles
         user_profiles_table = dynamodb.Table(
             self, "UserProfiles",
-            table_name="user-profiles",
+            table_name=self.get_resource_name("user-profiles"),
             partition_key=dynamodb.Attribute(
                 name="user_id",
                 type=dynamodb.AttributeType.STRING
             ),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             encryption=dynamodb.TableEncryption.AWS_MANAGED,
-            removal_policy=RemovalPolicy.DESTROY,  # For learning environment
-            point_in_time_recovery=True
+            removal_policy=self.get_removal_policy(),
+            point_in_time_recovery=self.env_config['enable_point_in_time_recovery']
         )
 
         # DynamoDB table for broker accounts
         broker_accounts_table = dynamodb.Table(
             self, "BrokerAccounts", 
-            table_name="broker-accounts",
+            table_name=self.get_resource_name("broker-accounts"),
             partition_key=dynamodb.Attribute(
                 name="user_id",
                 type=dynamodb.AttributeType.STRING
@@ -118,13 +140,13 @@ class UserAuthBrokerStack(Stack):
             ),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
             encryption=dynamodb.TableEncryption.AWS_MANAGED,
-            removal_policy=RemovalPolicy.DESTROY,  # For learning environment
-            point_in_time_recovery=True
+            removal_policy=self.get_removal_policy(),
+            point_in_time_recovery=self.env_config['enable_point_in_time_recovery']
         )
 
         # GSI for querying broker accounts by user
         broker_accounts_table.add_global_secondary_index(
-            index_name="UserBrokerAccountsIndex",
+            index_name=f"{self.get_resource_name('broker-accounts')}-user-index",
             partition_key=dynamodb.Attribute(
                 name="user_id",
                 type=dynamodb.AttributeType.STRING
@@ -138,11 +160,15 @@ class UserAuthBrokerStack(Stack):
         # Lambda function for user registration
         user_registration_lambda = _lambda.Function(
             self, "UserRegistrationFunction",
+            function_name=self.get_resource_name("user-registration"),
             runtime=_lambda.Runtime.PYTHON_3_9,
             code=_lambda.Code.from_asset("lambda_functions/auth"),
             handler="user_registration.lambda_handler",
             timeout=Duration.seconds(30),
             environment={
+                "ENVIRONMENT": self.deploy_env,
+                "COMPANY_PREFIX": self.company_prefix,
+                "PROJECT_NAME": self.project_name,
                 "USER_POOL_ID": user_pool.user_pool_id,
                 "USER_PROFILES_TABLE": user_profiles_table.table_name,
                 "REGION": self.region
@@ -152,11 +178,15 @@ class UserAuthBrokerStack(Stack):
         # Lambda function for user authentication
         user_auth_lambda = _lambda.Function(
             self, "UserAuthFunction",
+            function_name=self.get_resource_name("user-auth"),
             runtime=_lambda.Runtime.PYTHON_3_9,
             code=_lambda.Code.from_asset("lambda_functions/auth"),
             handler="user_auth.lambda_handler",
             timeout=Duration.seconds(30),
             environment={
+                "ENVIRONMENT": self.deploy_env,
+                "COMPANY_PREFIX": self.company_prefix,
+                "PROJECT_NAME": self.project_name,
                 "USER_POOL_ID": user_pool.user_pool_id,
                 "USER_POOL_CLIENT_ID": user_pool_client.user_pool_client_id,
                 "REGION": self.region
@@ -166,11 +196,15 @@ class UserAuthBrokerStack(Stack):
         # Lambda function for broker account management
         broker_account_lambda = _lambda.Function(
             self, "BrokerAccountFunction",
+            function_name=self.get_resource_name("broker-accounts"),
             runtime=_lambda.Runtime.PYTHON_3_9,
             code=_lambda.Code.from_asset("lambda_functions/broker_accounts"),
             handler="broker_account_manager.lambda_handler",
             timeout=Duration.seconds(30),
             environment={
+                "ENVIRONMENT": self.deploy_env,
+                "COMPANY_PREFIX": self.company_prefix,
+                "PROJECT_NAME": self.project_name,
                 "BROKER_ACCOUNTS_TABLE": broker_accounts_table.table_name,
                 "REGION": self.region
             }
@@ -218,19 +252,23 @@ class UserAuthBrokerStack(Stack):
                     "secretsmanager:DeleteSecret",
                     "secretsmanager:DescribeSecret"
                 ],
-                resources=[f"arn:aws:secretsmanager:{self.region}:{self.account}:secret:zerodha-credentials-*"]
+                resources=[f"arn:aws:secretsmanager:{self.region}:{self.account}:secret:{self.company_prefix}-zerodha-credentials-{self.deploy_env}-*"]
             )
         )
 
         # API Gateway with Cognito authorizer
         api = apigateway.RestApi(
             self, "AlgoTradingAPI",
-            rest_api_name="algo-trading-api",
-            description="API for algorithmic trading platform user management",
+            rest_api_name=self.get_resource_name("api"),
+            description=f"API for {self.config['company']['name']} algorithmic trading platform - {self.deploy_env} environment",
             default_cors_preflight_options=apigateway.CorsOptions(
-                allow_origins=["http://localhost:3000"],  # For testing
-                allow_methods=["GET", "POST", "PUT", "DELETE"],
-                allow_headers=["Content-Type", "Authorization"]
+                allow_origins=self.env_config['cors_origins'],
+                allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+                allow_headers=["Content-Type", "Authorization", "X-Requested-With"]
+            ),
+            deploy_options=apigateway.StageOptions(
+                stage_name=self.deploy_env,
+                description=f"API Gateway stage for {self.deploy_env} environment"
             )
         )
 
@@ -290,12 +328,12 @@ class UserAuthBrokerStack(Stack):
         # CloudWatch Dashboard for monitoring
         dashboard = cloudwatch.Dashboard(
             self, "AlgoTradingDashboard",
-            dashboard_name="AlgoTrading-UserAuth-Dashboard",
+            dashboard_name=f"{self.env_config['dashboard_prefix']}-{self.get_resource_name('dashboard')}",
             widgets=[
                 [
                     # API Gateway metrics
                     cloudwatch.GraphWidget(
-                        title="API Gateway Requests",
+                        title=f"API Gateway Requests - {self.deploy_env.title()}",
                         left=[
                             cloudwatch.Metric(
                                 namespace="AWS/ApiGateway",
@@ -321,7 +359,7 @@ class UserAuthBrokerStack(Stack):
                     ),
                     # Lambda metrics
                     cloudwatch.GraphWidget(
-                        title="Lambda Function Invocations",
+                        title=f"Lambda Invocations - {self.deploy_env.title()}",
                         left=[
                             cloudwatch.Metric(
                                 namespace="AWS/Lambda",
@@ -347,6 +385,19 @@ class UserAuthBrokerStack(Stack):
                     )
                 ]
             ]
+        )
+
+        # Environment-specific outputs
+        CfnOutput(
+            self, "Environment",
+            value=self.deploy_env,
+            description="Deployment Environment"
+        )
+
+        CfnOutput(
+            self, "CompanyPrefix", 
+            value=self.company_prefix,
+            description="Company Resource Prefix"
         )
 
         # Outputs

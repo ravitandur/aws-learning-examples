@@ -84,6 +84,25 @@ This module implements the user management foundation for an algorithmic trading
 - AWS CDK installed globally
 - Zerodha API access (api_key and api_secret)
 
+## Multi-Environment Support
+
+This module supports deployment to multiple environments with **Quantleap Analytics (ql)** resource naming:
+
+### **Supported Environments**
+- **dev** - Development environment for active development
+- **staging** - Pre-production testing and validation  
+- **production** - Live production environment
+
+### **Resource Naming Convention**
+All AWS resources follow the pattern: `ql-algo-trading-{environment}-{resource}`
+
+**Examples:**
+- Stack: `ql-algo-trading-dev-stack`
+- User Pool: `ql-algo-trading-dev-users`
+- DynamoDB: `ql-algo-trading-dev-user-profiles`
+- Lambda: `ql-algo-trading-dev-user-registration`
+- Secrets: `ql-zerodha-credentials-dev-{user-id}`
+
 ## Quick Start
 
 1. **Navigate to module**:
@@ -91,12 +110,24 @@ This module implements the user management foundation for an algorithmic trading
    cd user-auth-broker-management
    ```
 
-2. **Deploy the stack**:
+2. **Deploy to development environment**:
    ```bash
-   ./deploy.sh -p account2
+   ./deploy.sh -e dev -p account2
    ```
 
-3. **Test user registration**:
+3. **Deploy to staging environment**:
+   ```bash
+   ./deploy.sh -e staging -p account2
+   ```
+
+4. **Deploy to production environment**:
+   ```bash
+   ./deploy.sh -e production -p account2
+   ```
+
+## Testing Your Deployment
+
+1. **Test user registration**:
    ```bash
    # Register new user
    curl -X POST https://your-api-gateway/auth/register \
@@ -110,7 +141,7 @@ This module implements the user management foundation for an algorithmic trading
      }'
    ```
 
-4. **Add broker account**:
+2. **Add broker account**:
    ```bash
    # Add Zerodha account (after login)
    curl -X POST https://your-api-gateway/broker-accounts \

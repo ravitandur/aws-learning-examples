@@ -38,12 +38,30 @@ Frontend → API Gateway + Cognito Authorizer → Lambda Functions → DynamoDB 
 - Lambda triggers for Cognito
 - Security enhancements and rate limiting
 
+## Multi-Environment Architecture
+
+### **Quantleap Analytics (ql) Resource Naming**
+All resources follow pattern: `ql-algo-trading-{environment}-{resource}`
+
+**Environments:**
+- **dev** - Development with DESTROY policy, 24h tokens, 7-day log retention
+- **staging** - Pre-production with RETAIN policy, 8h tokens, 30-day logs
+- **production** - Live environment with RETAIN policy, 1h tokens, 90-day logs
+
+**Environment Configuration:** `config/environments.json`
+- Company: Quantleap Analytics LLP (ql)
+- Project: algo-trading
+- Environment-specific: removal policies, CORS origins, token validity, log retention
+
 ## Key Commands
 
 ### Deployment
-- `./deploy.sh -p account2` - Deploy with AWS profile validation
-- `source venv/bin/activate && cdk synth` - Synthesize CloudFormation
-- `source venv/bin/activate && cdk destroy --profile account2` - Clean up
+- `./deploy.sh -e dev -p account2` - Deploy to development
+- `./deploy.sh -e staging -p account2` - Deploy to staging  
+- `./deploy.sh -e production -p account2` - Deploy to production
+- `cdk destroy ql-algo-trading-dev-auth-broker-stack --profile account2` - Clean up environment
+- `source venv/bin/activate && cdk synth --context environment=dev` - Synthesize for environment
+- `source venv/bin/activate && cdk deploy ql-algo-trading-dev-auth-broker-stack --profile account2 --require-approval never` - Manual deployment
 
 ### Testing APIs
 ```bash
@@ -199,6 +217,32 @@ fields @timestamp, status_code, message
 - **Git Hygiene**: No unnecessary files in Lambda directories
 - **Virtual Environment**: Proper isolation of development dependencies
 
+## Recent Improvements (August 2025)
+
+### ✅ Module-Specific Stack Naming
+- **Problem**: Generic stack name `ql-algo-trading-dev-stack` didn't indicate module purpose
+- **Solution**: Updated to `ql-algo-trading-dev-auth-broker-stack` for clear module identification
+- **Impact**: Supports modular architecture with multiple stacks per environment
+- **Future Stacks**: `ql-algo-trading-dev-market-data-stack`, `ql-algo-trading-dev-trading-engine-stack`
+
+### ✅ Environment-Specific API Gateway Stages
+- **Problem**: API Gateway always used `/prod/` stage regardless of environment
+- **Before**: `https://api-id.execute-api.region.amazonaws.com/prod/auth/register`
+- **After**: `https://api-id.execute-api.region.amazonaws.com/dev/auth/register`
+- **Implementation**: Added `deploy_options=apigateway.StageOptions(stage_name=self.deploy_env)`
+- **Benefit**: Clear environment distinction in URLs prevents accidental production calls
+
+### ✅ Enhanced CDK Deployment Process
+- **Permission Issues**: Resolved CDK execution role conflicts with explicit admin policies
+- **Deployment Command**: `cdk deploy ql-algo-trading-dev-auth-broker-stack --require-approval never --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess`
+- **Bootstrap Command**: `cdk bootstrap --cloudformation-execution-policies arn:aws:iam::aws:policy/AdministratorAccess`
+
+### ✅ Complete End-to-End Validation
+- **Multi-Environment Testing**: Validated dev/staging/production naming patterns
+- **API Endpoint Testing**: All endpoints work with environment-specific URLs
+- **User Flows**: Registration → Authentication → Broker Management fully functional
+- **Test Users**: Successfully created test users in multiple states (Karnataka, Maharashtra, Gujarat, Telangana)
+
 ## Success Criteria - All Completed
 - ✅ User registration with Indian phone/state validation
 - ✅ Secure Zerodha credential storage and retrieval
@@ -207,6 +251,9 @@ fields @timestamp, status_code, message
 - ✅ Enterprise-grade structured logging implementation
 - ✅ Critical security vulnerabilities fixed
 - ✅ Comprehensive testing validation
+- ✅ **Module-specific stack naming for scalable architecture**
+- ✅ **Environment-specific API Gateway stages**
+- ✅ **Robust multi-environment deployment process**
 - ✅ Foundation ready for market data integration (Module 3)
 
 ## Next Module Integration
