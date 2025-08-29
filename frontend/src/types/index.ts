@@ -75,6 +75,8 @@ export interface AuthContextType {
   login: (credentials: UserLogin) => Promise<void>;
   register: (userData: UserRegistration) => Promise<void>;
   logout: () => void;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
 }
 
 // Indian States

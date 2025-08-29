@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import LoginForm from '../components/auth/LoginForm';
 import RegisterForm from '../components/auth/RegisterForm';
+import ForgotPasswordForm from '../components/auth/ForgotPasswordForm';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const AuthPage: React.FC = () => {
-  const { login, register, isLoading, error, clearError } = useAuth() as any;
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
+  const { login, register, forgotPassword, isLoading, error, clearError } = useAuth() as any;
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot-password'>('login');
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
 
   const handleLogin = async (credentials: any) => {
     try {
@@ -36,7 +38,24 @@ const AuthPage: React.FC = () => {
   const switchToLogin = () => {
     clearError();
     setRegistrationSuccess(false);
+    setForgotPasswordSuccess(false);
     setAuthMode('login');
+  };
+
+  const switchToForgotPassword = () => {
+    clearError();
+    setRegistrationSuccess(false);
+    setForgotPasswordSuccess(false);
+    setAuthMode('forgot-password');
+  };
+
+  const handleForgotPasswordSubmit = async (email: string) => {
+    try {
+      await forgotPassword(email);
+      setForgotPasswordSuccess(true);
+    } catch (error) {
+      // Error is handled by AuthContext
+    }
   };
 
   if (isLoading) {
@@ -88,16 +107,26 @@ const AuthPage: React.FC = () => {
           <LoginForm
             onSubmit={handleLogin}
             onRegisterClick={switchToRegister}
+            onForgotPasswordClick={switchToForgotPassword}
             isLoading={isLoading}
             error={error}
             onClearError={clearError}
           />
-        ) : (
+        ) : authMode === 'register' ? (
           <RegisterForm
             onSubmit={handleRegister}
             isLoading={isLoading}
             error={error}
             onClearError={clearError}
+          />
+        ) : (
+          <ForgotPasswordForm
+            onSubmit={handleForgotPasswordSubmit}
+            onBackToLogin={switchToLogin}
+            isLoading={isLoading}
+            error={error}
+            onClearError={clearError}
+            success={forgotPasswordSuccess}
           />
         )}
 

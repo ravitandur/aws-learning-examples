@@ -16,14 +16,17 @@ This is a unified frontend application that serves all modules of the trading pl
 ### Module 2 - Authentication & Broker Management
 - ✅ User registration with Indian phone/state validation
 - ✅ Login with email or phone number
+- ✅ Forgot password with email-based reset flow
 - ✅ Secure JWT token management
 - ✅ Broker account management (Zerodha integration)
-- ✅ Responsive Material-UI design
+- ✅ Professional algorithmic trading platform design with TailwindCSS
 - ✅ Real-time connection testing
 
 ### Technology Stack
 - **React 18** with TypeScript
-- **Material-UI** for components and styling
+- **TailwindCSS** for professional algorithmic trading platform styling
+- **Lucide React** for consistent modern iconography
+- **Inter font** for clean, readable typography
 - **Axios** for API communication
 - **Context API** for state management
 - **Indian market specialization** (phone validation, states, IST timezone)
@@ -121,10 +124,12 @@ frontend/
 
 ### Authentication Endpoints
 ```typescript
-POST /auth/register  - User registration
-POST /auth/login     - User authentication  
-GET /auth/profile    - User profile data
-PUT /auth/profile    - Update profile
+POST /auth/register            - User registration
+POST /auth/login               - User authentication  
+POST /auth/forgot-password     - Request password reset
+POST /auth/confirm-forgot-password - Confirm password reset with code
+GET /auth/profile              - User profile data
+PUT /auth/profile              - Update profile
 ```
 
 ### Broker Management Endpoints  

@@ -140,6 +140,52 @@ class AuthService {
   }
 
   /**
+   * Request password reset
+   */
+  async forgotPassword(email: string): Promise<ApiResponse> {
+    try {
+      const response = await apiClient.post<ApiResponse>('/auth/forgot-password', {
+        email: email.toLowerCase().trim(),
+      });
+      return response;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to send reset instructions');
+    }
+  }
+
+  /**
+   * Reset password with verification code
+   */
+  async resetPassword(email: string, code: string, newPassword: string): Promise<ApiResponse> {
+    try {
+      const response = await apiClient.post<ApiResponse>('/auth/reset-password', {
+        email: email.toLowerCase().trim(),
+        verification_code: code,
+        new_password: newPassword,
+      });
+      return response;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to reset password');
+    }
+  }
+
+  /**
+   * Confirm forgot password (for Cognito flow)
+   */
+  async confirmForgotPassword(email: string, confirmationCode: string, newPassword: string): Promise<ApiResponse> {
+    try {
+      const response = await apiClient.post<ApiResponse>('/auth/confirm-forgot-password', {
+        email: email.toLowerCase().trim(),
+        confirmation_code: confirmationCode,
+        new_password: newPassword,
+      });
+      return response;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to confirm password reset');
+    }
+  }
+
+  /**
    * Logout user
    */
   logout(): void {

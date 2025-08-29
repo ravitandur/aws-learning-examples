@@ -185,6 +185,46 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Forgot password function
+  const forgotPassword = async (email: string): Promise<void> => {
+    try {
+      dispatch({ type: 'AUTH_START' });
+      
+      const response = await authService.forgotPassword(email);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to send reset instructions');
+      }
+      
+      // Clear loading state without changing auth status
+      dispatch({ type: 'CLEAR_ERROR' });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send reset instructions';
+      dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
+      throw error;
+    }
+  };
+
+  // Reset password function
+  const resetPassword = async (email: string, code: string, newPassword: string): Promise<void> => {
+    try {
+      dispatch({ type: 'AUTH_START' });
+      
+      const response = await authService.confirmForgotPassword(email, code, newPassword);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to reset password');
+      }
+      
+      // Clear loading state without changing auth status
+      dispatch({ type: 'CLEAR_ERROR' });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to reset password';
+      dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
+      throw error;
+    }
+  };
+
   // Clear error
   const clearError = (): void => {
     dispatch({ type: 'CLEAR_ERROR' });
@@ -203,6 +243,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     logout,
+    forgotPassword,
+    resetPassword,
     updateProfile,
     clearError,
   };

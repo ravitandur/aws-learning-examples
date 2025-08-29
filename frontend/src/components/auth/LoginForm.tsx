@@ -11,6 +11,7 @@ import ErrorAlert from '../common/ErrorAlert';
 interface LoginFormProps {
   onSubmit: (credentials: UserLogin) => Promise<void>;
   onRegisterClick: () => void;
+  onForgotPasswordClick?: () => void;
   isLoading?: boolean;
   error?: string | null;
   onClearError?: () => void;
@@ -19,6 +20,7 @@ interface LoginFormProps {
 const LoginForm: React.FC<LoginFormProps> = ({
   onSubmit,
   onRegisterClick,
+  onForgotPasswordClick,
   isLoading = false,
   error,
   onClearError,
@@ -208,6 +210,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
         <div className="text-right mb-4">
           <button
             type="button"
+            onClick={onForgotPasswordClick}
             className="text-sm text-blue-600 hover:text-blue-500"
           >
             Forgot password?
