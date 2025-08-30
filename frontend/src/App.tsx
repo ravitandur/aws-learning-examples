@@ -35,11 +35,11 @@ const AppContent: React.FC = () => {
         <Route path="/" element={<Layout />}>
           <Route index element={<Dashboard />} />
           <Route path="brokers" element={<BrokersPage />} />
-          <Route path="strategies" element={<div className="p-4">Strategies Page (Coming Soon)</div>} />
-          <Route path="portfolio" element={<div className="p-4">Portfolio Page (Coming Soon)</div>} />
-          <Route path="analytics" element={<div className="p-4">Analytics Page (Coming Soon)</div>} />
-          <Route path="settings" element={<div className="p-4">Settings Page</div>} />
-          <Route path="account" element={<div className="p-4">Account Page</div>} />
+          <Route path="strategies" element={<div className="space-y-6"><h1 className="text-2xl font-bold">Strategies</h1><p>Coming Soon</p></div>} />
+          <Route path="portfolio" element={<div className="space-y-6"><h1 className="text-2xl font-bold">Portfolio</h1><p>Coming Soon</p></div>} />
+          <Route path="analytics" element={<div className="space-y-6"><h1 className="text-2xl font-bold">Analytics</h1><p>Coming Soon</p></div>} />
+          <Route path="settings" element={<div className="space-y-6"><h1 className="text-2xl font-bold">Settings</h1><p>Settings configuration will be available here.</p></div>} />
+          <Route path="account" element={<div className="space-y-6"><h1 className="text-2xl font-bold">Account</h1><p>Account management features will be available here.</p></div>} />
         </Route>
         
         {/* Fallback route */}

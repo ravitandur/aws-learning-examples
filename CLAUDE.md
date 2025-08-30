@@ -58,3 +58,44 @@ Each project follows this pattern:
 - CloudWatch dashboards for all deployments
 - SNS topics for alerting (subscribe manually for notifications)
 - Pre-built CloudWatch Insights queries for troubleshooting
+
+## Frontend Development Standards
+
+### Layout Patterns
+All React pages MUST follow the algo-platform layout pattern for consistency:
+
+```tsx
+const PageComponent: React.FC = () => {
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">Page Title</h1>
+      
+      {/* Content sections with space-y-6 spacing */}
+      <div className="grid...">...</div>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">...</div>
+    </div>
+  );
+};
+```
+
+**Key Requirements**:
+- Root container: `<div className="space-y-6">` (no width constraints)
+- Page titles: `text-2xl font-bold` (never text-3xl)
+- Section spacing: `space-y-6` between major sections
+- Cards: `bg-white dark:bg-gray-800 rounded-lg shadow`
+- Responsive: Layout component handles padding with `p-4 sm:p-6 lg:p-8`
+
+### Design System Standards
+- **Framework**: React + TypeScript + TailwindCSS
+- **Colors**: Blue primary (`blue-600`) with full dark mode support
+- **Typography**: Inter font, consistent text sizing
+- **Components**: Rounded corners (`rounded-lg`), shadow effects
+- **Icons**: Lucide React icons (Turtle icon for branding)
+- **Form inputs**: `bg-white dark:bg-gray-700` with proper borders
+- **Interactive elements**: Consistent hover states and focus rings
+
+### Authentication Integration
+- JWT tokens with auto-refresh functionality
+- Context-based state management for user auth
+- Indian market specialization (phone validation, states)
+- Secure credential handling for broker APIs
