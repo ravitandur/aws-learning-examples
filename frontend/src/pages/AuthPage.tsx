@@ -3,13 +3,18 @@ import { useAuth } from '../context/AuthContext';
 import LoginForm from '../components/auth/LoginForm';
 import RegisterForm from '../components/auth/RegisterForm';
 import ForgotPasswordForm from '../components/auth/ForgotPasswordForm';
+import ResetPasswordForm from '../components/auth/ResetPasswordForm';
+import EmailVerificationForm from '../components/auth/EmailVerificationForm';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const AuthPage: React.FC = () => {
-  const { login, register, forgotPassword, isLoading, error, clearError } = useAuth() as any;
-  const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot-password'>('login');
+  const { login, register, forgotPassword, resetPassword, isLoading, error, clearError } = useAuth() as any;
+  const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot-password' | 'reset-password' | 'verify-email'>('login');
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
+  const [resetPasswordSuccess, setResetPasswordSuccess] = useState(false);
+  const [pendingVerificationEmail, setPendingVerificationEmail] = useState<string>('');
+  const [pendingResetEmail, setPendingResetEmail] = useState<string>('');
 
   const handleLogin = async (credentials: any) => {
     try {
@@ -21,9 +26,18 @@ const AuthPage: React.FC = () => {
 
   const handleRegister = async (userData: any) => {
     try {
-      await register(userData);
-      setRegistrationSuccess(true);
-      setAuthMode('login');
+      const response = await register(userData);
+      
+      // Check if email verification is required
+      if (response?.email_verification_required) {
+        // After successful registration, redirect to verification
+        setPendingVerificationEmail(userData.email);
+        setAuthMode('verify-email');
+      } else {
+        // If no verification needed, show success and go to login
+        setRegistrationSuccess(true);
+        setAuthMode('login');
+      }
     } catch (error) {
       // Error is handled by AuthContext
     }
@@ -39,6 +53,9 @@ const AuthPage: React.FC = () => {
     clearError();
     setRegistrationSuccess(false);
     setForgotPasswordSuccess(false);
+    setResetPasswordSuccess(false);
+    setPendingVerificationEmail('');
+    setPendingResetEmail('');
     setAuthMode('login');
   };
 
@@ -46,13 +63,36 @@ const AuthPage: React.FC = () => {
     clearError();
     setRegistrationSuccess(false);
     setForgotPasswordSuccess(false);
+    setResetPasswordSuccess(false);
     setAuthMode('forgot-password');
+  };
+
+  const switchToResetPassword = () => {
+    clearError();
+    setAuthMode('reset-password');
+  };
+
+  const handleVerificationSuccess = () => {
+    // After successful email verification, show success message and go to login
+    setRegistrationSuccess(true);
+    setPendingVerificationEmail('');
+    setAuthMode('login');
   };
 
   const handleForgotPasswordSubmit = async (email: string) => {
     try {
       await forgotPassword(email);
+      setPendingResetEmail(email);
       setForgotPasswordSuccess(true);
+    } catch (error) {
+      // Error is handled by AuthContext
+    }
+  };
+
+  const handleResetPasswordSubmit = async (email: string, code: string, newPassword: string) => {
+    try {
+      await resetPassword(email, code, newPassword);
+      setResetPasswordSuccess(true);
     } catch (error) {
       // Error is handled by AuthContext
     }
@@ -94,7 +134,7 @@ const AuthPage: React.FC = () => {
                     <strong>Registration Successful!</strong>
                   </p>
                   <p className="text-sm text-green-700">
-                    Your account has been created successfully. Please sign in to continue to your dashboard.
+                    Your account has been created and email verified successfully. You can now sign in to continue to your dashboard.
                   </p>
                 </div>
               </div>
@@ -119,10 +159,27 @@ const AuthPage: React.FC = () => {
             error={error}
             onClearError={clearError}
           />
+        ) : authMode === 'verify-email' ? (
+          <EmailVerificationForm
+            email={pendingVerificationEmail}
+            onBack={switchToLogin}
+            onVerificationSuccess={handleVerificationSuccess}
+          />
+        ) : authMode === 'reset-password' ? (
+          <ResetPasswordForm
+            email={pendingResetEmail}
+            onSubmit={handleResetPasswordSubmit}
+            onBackToForgotPassword={resetPasswordSuccess ? switchToLogin : switchToForgotPassword}
+            isLoading={isLoading}
+            error={error}
+            onClearError={clearError}
+            success={resetPasswordSuccess}
+          />
         ) : (
           <ForgotPasswordForm
             onSubmit={handleForgotPasswordSubmit}
             onBackToLogin={switchToLogin}
+            onContinueToReset={switchToResetPassword}
             isLoading={isLoading}
             error={error}
             onClearError={clearError}

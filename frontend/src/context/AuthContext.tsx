@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useReducer, ReactNode } from 'react';
-import { User, AuthTokens, UserLogin, UserRegistration, AuthContextType } from '../types';
+import { User, AuthTokens, UserLogin, UserRegistration, AuthContextType, ApiResponse } from '../types';
 import authService from '../services/authService';
 
 // Auth State Type
@@ -18,7 +18,8 @@ type AuthAction =
   | { type: 'AUTH_FAILURE'; payload: string }
   | { type: 'AUTH_LOGOUT' }
   | { type: 'SET_USER'; payload: User }
-  | { type: 'CLEAR_ERROR' };
+  | { type: 'CLEAR_ERROR' }
+  | { type: 'CLEAR_LOADING' };
 
 // Initial State
 const initialState: AuthState = {
@@ -80,6 +81,13 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
       return {
         ...state,
         error: null,
+        isLoading: false,
+      };
+
+    case 'CLEAR_LOADING':
+      return {
+        ...state,
+        isLoading: false,
       };
 
     default:
@@ -87,8 +95,13 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
   }
 };
 
+// Extended AuthContext type
+interface ExtendedAuthContextType extends AuthContextType {
+  updateProfile: (updates: Partial<Pick<User, 'fullName' | 'state'>>) => Promise<void>;
+}
+
 // Create Context
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<ExtendedAuthContextType | undefined>(undefined);
 
 // Auth Provider Props
 interface AuthProviderProps {
@@ -148,15 +161,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Register function
-  const register = async (userData: UserRegistration): Promise<void> => {
+  const register = async (userData: UserRegistration): Promise<ApiResponse<any>> => {
     try {
       dispatch({ type: 'AUTH_START' });
       
       const response = await authService.register(userData);
       
       if (response.success) {
-        // After successful registration, user needs to verify and then login
-        dispatch({ type: 'AUTH_LOGOUT' });
+        // Clear loading state so AuthPage can show verification form
+        dispatch({ type: 'CLEAR_ERROR' });
+        return response;
       } else {
         throw new Error(response.message || 'Registration failed');
       }
@@ -225,16 +239,53 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  // Verify email function
+  const verifyEmail = async (email: string, confirmationCode: string): Promise<void> => {
+    try {
+      dispatch({ type: 'AUTH_START' });
+      
+      const response = await authService.verifyEmail(email, confirmationCode);
+      
+      // Backend returns {verified: true} for success, not {success: true}
+      if (!response.verified && !response.message?.includes('verified successfully')) {
+        throw new Error(response.message || 'Email verification failed');
+      }
+      
+      // Clear loading state after successful email verification
+      dispatch({ type: 'CLEAR_ERROR' });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Email verification failed';
+      dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
+      throw error;
+    }
+  };
+
+  // Resend verification code function
+  const resendVerification = async (email: string, verificationType: 'email' | 'phone'): Promise<void> => {
+    try {
+      dispatch({ type: 'AUTH_START' });
+      
+      const response = await authService.resendVerification(email, verificationType);
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to resend verification code');
+      }
+      
+      // Clear loading state without changing auth status
+      dispatch({ type: 'CLEAR_ERROR' });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to resend verification code';
+      dispatch({ type: 'AUTH_FAILURE', payload: errorMessage });
+      throw error;
+    }
+  };
+
   // Clear error
   const clearError = (): void => {
     dispatch({ type: 'CLEAR_ERROR' });
   };
 
-  const value: AuthContextType & {
-    error: string | null;
-    updateProfile: (updates: Partial<Pick<User, 'fullName' | 'state'>>) => Promise<void>;
-    clearError: () => void;
-  } = {
+  const value: ExtendedAuthContextType = {
     user: state.user,
     tokens: state.tokens,
     isAuthenticated: state.isAuthenticated,
@@ -246,6 +297,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     forgotPassword,
     resetPassword,
     updateProfile,
+    verifyEmail,
+    resendVerification,
     clearError,
   };
 

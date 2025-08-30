@@ -11,18 +11,18 @@ import LoadingSpinner from './components/common/LoadingSpinner';
 const AppContent: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
 
-  // Show loading spinner while checking authentication
+  // Show auth page if not authenticated (regardless of loading state during auth flows)
+  if (!isAuthenticated) {
+    return <AuthPage />;
+  }
+
+  // Show loading spinner only for initial app authentication check
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
         <LoadingSpinner message="Loading application..." />
       </div>
     );
-  }
-
-  // Show auth page if not authenticated
-  if (!isAuthenticated) {
-    return <AuthPage />;
   }
 
   // Render main application with routing

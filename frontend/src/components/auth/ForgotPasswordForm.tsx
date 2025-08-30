@@ -6,6 +6,7 @@ import ErrorAlert from '../common/ErrorAlert';
 interface ForgotPasswordFormProps {
   onSubmit: (email: string) => Promise<void>;
   onBackToLogin: () => void;
+  onContinueToReset?: () => void;
   isLoading?: boolean;
   error?: string | null;
   onClearError?: () => void;
@@ -15,6 +16,7 @@ interface ForgotPasswordFormProps {
 const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
   onSubmit,
   onBackToLogin,
+  onContinueToReset,
   isLoading = false,
   error,
   onClearError,
@@ -86,13 +88,23 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({
           <p className="text-sm text-gray-500 mb-6">
             If you don't see the email in your inbox, please check your spam folder.
           </p>
-          <button
-            onClick={onBackToLogin}
-            className="inline-flex items-center text-blue-600 hover:text-blue-500 font-medium"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Sign In
-          </button>
+          <div className="space-y-3">
+            {onContinueToReset && (
+              <button
+                onClick={onContinueToReset}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+              >
+                Continue to Enter Code
+              </button>
+            )}
+            <button
+              onClick={onBackToLogin}
+              className="inline-flex items-center justify-center w-full text-blue-600 hover:text-blue-500 font-medium"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Sign In
+            </button>
+          </div>
         </div>
       </div>
     );

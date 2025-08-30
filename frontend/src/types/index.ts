@@ -66,17 +66,29 @@ export interface ApiResponse<T = any> {
   errors?: string[];
 }
 
+// Email Verification Response Type
+export interface EmailVerificationResponse {
+  message: string;
+  verified: boolean;
+  account_status: string;
+  email_verified?: boolean;
+}
+
 // Auth Context Types
 export interface AuthContextType {
   user: User | null;
   tokens: AuthTokens | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  error: string | null;
   login: (credentials: UserLogin) => Promise<void>;
-  register: (userData: UserRegistration) => Promise<void>;
+  register: (userData: UserRegistration) => Promise<ApiResponse<any>>;
   logout: () => void;
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
+  verifyEmail: (email: string, confirmationCode: string) => Promise<void>;
+  resendVerification: (email: string, verificationType: 'email' | 'phone') => Promise<void>;
+  clearError: () => void;
 }
 
 // Indian States

@@ -1,5 +1,5 @@
 import apiClient from './apiClient';
-import { UserLogin, UserRegistration, AuthTokens, User, ApiResponse } from '../types';
+import { UserLogin, UserRegistration, AuthTokens, User, ApiResponse, EmailVerificationResponse } from '../types';
 
 class AuthService {
   /**
@@ -111,31 +111,32 @@ class AuthService {
   }
 
   /**
-   * Verify phone number or email
+   * Verify email address with confirmation code
    */
-  async verify(code: string, type: 'phone' | 'email'): Promise<ApiResponse> {
+  async verifyEmail(email: string, confirmationCode: string): Promise<EmailVerificationResponse> {
     try {
-      const response = await apiClient.post<ApiResponse>('/auth/verify', {
-        verification_code: code,
-        verification_type: type,
+      const response = await apiClient.post<EmailVerificationResponse>('/auth/verify-email', {
+        email: email.toLowerCase().trim(),
+        confirmation_code: confirmationCode,
       });
-      return response;
+      return response as EmailVerificationResponse;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Verification failed');
+      throw new Error(error.response?.data?.message || 'Email verification failed');
     }
   }
 
   /**
-   * Resend verification code
+   * Resend verification code for email or phone
    */
-  async resendVerification(type: 'phone' | 'email'): Promise<ApiResponse> {
+  async resendVerification(email: string, verificationType: 'email' | 'phone'): Promise<ApiResponse> {
     try {
       const response = await apiClient.post<ApiResponse>('/auth/resend-verification', {
-        verification_type: type,
+        email: email.toLowerCase().trim(),
+        verification_type: verificationType,
       });
       return response;
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to resend verification');
+      throw new Error(error.response?.data?.message || 'Failed to resend verification code');
     }
   }
 

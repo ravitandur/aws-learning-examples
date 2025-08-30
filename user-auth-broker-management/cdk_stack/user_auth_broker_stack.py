@@ -51,9 +51,10 @@ class UserAuthBrokerStack(Stack):
                 phone=True
             ),
             auto_verify=cognito.AutoVerifiedAttrs(
-                email=True,
-                phone=True
+                email=True
             ),
+            self_sign_up_enabled=True,  # Enable self-signup for standard signup flow
+            email=cognito.UserPoolEmail.with_cognito("quantleapanalytics@gmail.com"),  # Configure email sending
             standard_attributes=cognito.StandardAttributes(
                 email=cognito.StandardAttribute(
                     required=True,
@@ -170,6 +171,7 @@ class UserAuthBrokerStack(Stack):
                 "COMPANY_PREFIX": self.company_prefix,
                 "PROJECT_NAME": self.project_name,
                 "USER_POOL_ID": user_pool.user_pool_id,
+                "USER_POOL_CLIENT_ID": user_pool_client.user_pool_client_id,
                 "USER_PROFILES_TABLE": user_profiles_table.table_name,
                 "REGION": self.region
             }
@@ -182,6 +184,78 @@ class UserAuthBrokerStack(Stack):
             runtime=_lambda.Runtime.PYTHON_3_9,
             code=_lambda.Code.from_asset("lambda_functions/auth"),
             handler="user_auth.lambda_handler",
+            timeout=Duration.seconds(30),
+            environment={
+                "ENVIRONMENT": self.deploy_env,
+                "COMPANY_PREFIX": self.company_prefix,
+                "PROJECT_NAME": self.project_name,
+                "USER_POOL_ID": user_pool.user_pool_id,
+                "USER_POOL_CLIENT_ID": user_pool_client.user_pool_client_id,
+                "REGION": self.region
+            }
+        )
+
+        # Lambda function for forgot password
+        forgot_password_lambda = _lambda.Function(
+            self, "ForgotPasswordFunction",
+            function_name=self.get_resource_name("forgot-password"),
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            code=_lambda.Code.from_asset("lambda_functions/auth"),
+            handler="forgot_password.lambda_handler",
+            timeout=Duration.seconds(30),
+            environment={
+                "ENVIRONMENT": self.deploy_env,
+                "COMPANY_PREFIX": self.company_prefix,
+                "PROJECT_NAME": self.project_name,
+                "USER_POOL_ID": user_pool.user_pool_id,
+                "USER_POOL_CLIENT_ID": user_pool_client.user_pool_client_id,
+                "REGION": self.region
+            }
+        )
+
+        # Lambda function for confirm forgot password
+        confirm_forgot_password_lambda = _lambda.Function(
+            self, "ConfirmForgotPasswordFunction",
+            function_name=self.get_resource_name("confirm-forgot-password"),
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            code=_lambda.Code.from_asset("lambda_functions/auth"),
+            handler="confirm_forgot_password.lambda_handler",
+            timeout=Duration.seconds(30),
+            environment={
+                "ENVIRONMENT": self.deploy_env,
+                "COMPANY_PREFIX": self.company_prefix,
+                "PROJECT_NAME": self.project_name,
+                "USER_POOL_ID": user_pool.user_pool_id,
+                "USER_POOL_CLIENT_ID": user_pool_client.user_pool_client_id,
+                "REGION": self.region
+            }
+        )
+
+        # Lambda function for resend verification code
+        resend_verification_lambda = _lambda.Function(
+            self, "ResendVerificationFunction",
+            function_name=self.get_resource_name("resend-verification"),
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            code=_lambda.Code.from_asset("lambda_functions/auth"),
+            handler="resend_verification_code.lambda_handler",
+            timeout=Duration.seconds(30),
+            environment={
+                "ENVIRONMENT": self.deploy_env,
+                "COMPANY_PREFIX": self.company_prefix,
+                "PROJECT_NAME": self.project_name,
+                "USER_POOL_ID": user_pool.user_pool_id,
+                "USER_POOL_CLIENT_ID": user_pool_client.user_pool_client_id,
+                "REGION": self.region
+            }
+        )
+
+        # Lambda function for verify email
+        verify_email_lambda = _lambda.Function(
+            self, "VerifyEmailFunction",
+            function_name=self.get_resource_name("verify-email"),
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            code=_lambda.Code.from_asset("lambda_functions/auth"),
+            handler="verify_email.lambda_handler",
             timeout=Duration.seconds(30),
             environment={
                 "ENVIRONMENT": self.deploy_env,
@@ -223,7 +297,8 @@ class UserAuthBrokerStack(Stack):
                     "cognito-idp:AdminSetUserPassword",
                     "cognito-idp:AdminUpdateUserAttributes",
                     "cognito-idp:AdminGetUser",
-                    "cognito-idp:AdminDeleteUser"
+                    "cognito-idp:AdminDeleteUser",
+                    "cognito-idp:SignUp"
                 ],
                 resources=[user_pool.user_pool_arn]
             )
@@ -236,6 +311,55 @@ class UserAuthBrokerStack(Stack):
                     "cognito-idp:AdminInitiateAuth",
                     "cognito-idp:AdminRespondToAuthChallenge",
                     "cognito-idp:AdminGetUser"
+                ],
+                resources=[user_pool.user_pool_arn]
+            )
+        )
+
+        # Grant Cognito permissions for forgot password Lambda functions
+        forgot_password_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=[
+                    "cognito-idp:ForgotPassword"
+                ],
+                resources=[user_pool.user_pool_arn]
+            )
+        )
+
+        confirm_forgot_password_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=[
+                    "cognito-idp:ConfirmForgotPassword"
+                ],
+                resources=[user_pool.user_pool_arn]
+            )
+        )
+
+        # Grant Cognito permissions for verification Lambda functions
+        resend_verification_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=[
+                    "cognito-idp:ResendConfirmationCode",
+                    "cognito-idp:ListUsers",
+                    "cognito-idp:AdminUpdateUserAttributes",
+                    "cognito-idp:GetUserAttributeVerificationCode"
+                ],
+                resources=[user_pool.user_pool_arn]
+            )
+        )
+
+        verify_email_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=[
+                    "cognito-idp:ConfirmSignUp",
+                    "cognito-idp:ListUsers",
+                    "cognito-idp:AdminUpdateUserAttributes",
+                    "cognito-idp:AdminConfirmSignUp",
+                    "cognito-idp:VerifyUserAttribute"
                 ],
                 resources=[user_pool.user_pool_arn]
             )
@@ -289,6 +413,28 @@ class UserAuthBrokerStack(Stack):
         auth_resource.add_resource("login").add_method(
             "POST", 
             apigateway.LambdaIntegration(user_auth_lambda)
+        )
+        
+        # Forgot password endpoints (no authorization required)
+        auth_resource.add_resource("forgot-password").add_method(
+            "POST",
+            apigateway.LambdaIntegration(forgot_password_lambda)
+        )
+        
+        auth_resource.add_resource("confirm-forgot-password").add_method(
+            "POST",
+            apigateway.LambdaIntegration(confirm_forgot_password_lambda)
+        )
+
+        # Verification endpoints (no authorization required)
+        auth_resource.add_resource("resend-verification").add_method(
+            "POST",
+            apigateway.LambdaIntegration(resend_verification_lambda)
+        )
+        
+        auth_resource.add_resource("verify-email").add_method(
+            "POST",
+            apigateway.LambdaIntegration(verify_email_lambda)
         )
 
         # Broker account endpoints (authorization required)

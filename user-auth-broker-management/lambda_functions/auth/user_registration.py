@@ -109,11 +109,11 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         
         # Create Cognito user
         try:
-            # Check if user already exists
+            # Check if user already exists (check by email now)
             try:
                 cognito_client.admin_get_user(
                     UserPoolId=os.environ['USER_POOL_ID'],
-                    Username=user_data['phone_number']
+                    Username=user_data['email']
                 )
                 return {
                     'statusCode': 409,
@@ -123,45 +123,33 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                     },
                     'body': json.dumps({
                         'error': 'User already exists',
-                        'message': 'A user with this phone number already exists'
+                        'message': 'A user with this email already exists'
                     })
                 }
             except cognito_client.exceptions.UserNotFoundException:
                 # User doesn't exist, proceed with creation
                 pass
             
-            # Create user in Cognito
-            cognito_response = cognito_client.admin_create_user(
-                UserPoolId=os.environ['USER_POOL_ID'],
-                Username=user_data['phone_number'],
+            # Use standard signup flow to trigger email verification
+            cognito_response = cognito_client.sign_up(
+                ClientId=os.environ['USER_POOL_CLIENT_ID'],
+                Username=user_data['email'],  # Use email as username
+                Password=user_data['password'],
                 UserAttributes=[
                     {'Name': 'email', 'Value': user_data['email']},
                     {'Name': 'phone_number', 'Value': user_data['phone_number']},
                     {'Name': 'name', 'Value': user_data['full_name']},
-                    {'Name': 'custom:state', 'Value': user_data['state']},
-                    {'Name': 'email_verified', 'Value': 'false'},
-                    {'Name': 'phone_number_verified', 'Value': 'false'}
-                ],
-                MessageAction='SUPPRESS',  # Don't send welcome email
-                TemporaryPassword=user_data['password']
+                    {'Name': 'custom:state', 'Value': user_data['state']}
+                ]
             )
             
-            user_sub = None
-            for attr in cognito_response['User']['Attributes']:
-                if attr['Name'] == 'sub':
-                    user_sub = attr['Value']
-                    break
+            user_sub = cognito_response['UserSub']
             
-            if not user_sub:
-                raise Exception("Failed to get user sub from Cognito response")
-            
-            # Set permanent password
-            cognito_client.admin_set_user_password(
-                UserPoolId=os.environ['USER_POOL_ID'],
-                Username=user_data['phone_number'],
-                Password=user_data['password'],
-                Permanent=True
-            )
+            logger.info("User created with standard signup flow", extra={
+                'user_sub': user_sub,
+                'email_verification_required': True,
+                'delivery_details': cognito_response.get('CodeDeliveryDetails')
+            })
             
             log_user_action(logger, user_sub, "cognito_user_created", {"phone_number": user_data['phone_number']})
             
@@ -204,7 +192,7 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             try:
                 cognito_client.admin_delete_user(
                     UserPoolId=os.environ['USER_POOL_ID'],
-                    Username=user_data['phone_number']
+                    Username=user_data['email']
                 )
             except:
                 pass
@@ -235,13 +223,17 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 'Access-Control-Allow-Origin': '*'
             },
             'body': json.dumps({
-                'message': 'User registered successfully',
-                'user_id': user_sub,
-                'phone_number': user_data['phone_number'],
-                'email': user_data['email'],
-                'full_name': user_data['full_name'],
-                'state': user_data['state'],
-                'next_step': 'Please verify your email and phone number'
+                'success': True,
+                'message': 'User registered successfully. Please check your email for verification code.',
+                'data': {
+                    'user_id': user_sub,
+                    'phone_number': user_data['phone_number'],
+                    'email': user_data['email'],
+                    'full_name': user_data['full_name'],
+                    'state': user_data['state']
+                },
+                'email_verification_required': True,
+                'next_step': 'Please verify your email with the code sent to your inbox'
             })
         }
         
