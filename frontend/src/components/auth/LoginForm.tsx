@@ -130,12 +130,12 @@ const LoginForm: React.FC<LoginFormProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md mx-auto">
-      <h1 className="text-3xl font-bold text-center text-gray-900 mb-2">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-8 w-full max-w-md mx-auto">
+      <h1 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-2">
         Sign In
       </h1>
       
-      <p className="text-center text-gray-600 mb-6">
+      <p className="text-center text-gray-600 dark:text-gray-300 mb-6">
         Welcome back to Quantleap Analytics
       </p>
 
@@ -147,7 +147,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
       <form onSubmit={handleSubmit} noValidate>
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
             Email or Phone Number *
           </label>
           <div className="relative">
@@ -158,10 +158,10 @@ const LoginForm: React.FC<LoginFormProps> = ({
               type="text"
               value={formData.username}
               onChange={handleInputChange('username')}
-              className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
                 fieldErrors.username
-                  ? 'border-red-300 text-red-900 placeholder-red-300'
-                  : 'border-gray-300 text-gray-900 placeholder-gray-500'
+                  ? 'border-red-300 dark:border-red-600'
+                  : 'border-gray-300 dark:border-gray-600'
               }`}
               placeholder="user@example.com or +919876543210"
               required
@@ -175,7 +175,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
             Password *
           </label>
           <div className="relative">
@@ -183,10 +183,10 @@ const LoginForm: React.FC<LoginFormProps> = ({
               type={showPassword ? 'text' : 'password'}
               value={formData.password}
               onChange={handleInputChange('password')}
-              className={`block w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              className={`block w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
                 fieldErrors.password
-                  ? 'border-red-300 text-red-900 placeholder-red-300'
-                  : 'border-gray-300 text-gray-900 placeholder-gray-500'
+                  ? 'border-red-300 dark:border-red-600'
+                  : 'border-gray-300 dark:border-gray-600'
               }`}
               required
             />
@@ -196,14 +196,14 @@ const LoginForm: React.FC<LoginFormProps> = ({
               onClick={() => setShowPassword(!showPassword)}
             >
               {showPassword ? (
-                <EyeOff className="h-5 w-5 text-gray-400" />
+                <EyeOff className="h-5 w-5 text-gray-400 dark:text-gray-500" />
               ) : (
-                <Eye className="h-5 w-5 text-gray-400" />
+                <Eye className="h-5 w-5 text-gray-400 dark:text-gray-500" />
               )}
             </button>
           </div>
           {fieldErrors.password && (
-            <p className="mt-1 text-xs text-red-600">{fieldErrors.password}</p>
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.password}</p>
           )}
         </div>
 
@@ -211,7 +211,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
           <button
             type="button"
             onClick={onForgotPasswordClick}
-            className="text-sm text-blue-600 hover:text-blue-500"
+            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300"
           >
             Forgot password?
           </button>
@@ -220,17 +220,17 @@ const LoginForm: React.FC<LoginFormProps> = ({
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium py-2 px-4 rounded-lg transition-colors mb-4"
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800 text-white font-medium py-2 px-4 rounded-lg transition-colors mb-4"
         >
           {isLoading ? 'Signing In...' : 'Sign In'}
         </button>
 
-        <p className="text-center text-sm text-gray-600">
+        <p className="text-center text-sm text-gray-600 dark:text-gray-300">
           Don't have an account?{' '}
           <button
             type="button"
             onClick={onRegisterClick}
-            className="text-blue-600 hover:text-blue-500 font-medium"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 font-medium"
           >
             Create Account
           </button>

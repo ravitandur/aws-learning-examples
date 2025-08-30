@@ -123,12 +123,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-lg mx-auto">
-      <h1 className="text-3xl font-bold text-center text-gray-900 mb-2">
+    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-8 w-full max-w-lg mx-auto">
+      <h1 className="text-3xl font-bold text-center text-gray-900 dark:text-white mb-2">
         Create Account
       </h1>
       
-      <p className="text-center text-gray-600 mb-6">
+      <p className="text-center text-gray-600 dark:text-gray-300 mb-6">
         Join Quantleap Analytics algorithmic trading platform
       </p>
 
@@ -140,7 +140,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
 
       <form onSubmit={handleSubmit} noValidate>
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
             Full Name *
           </label>
           <div className="relative">
@@ -151,21 +151,21 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
               type="text"
               value={formData.full_name}
               onChange={handleInputChange('full_name')}
-              className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
                 fieldErrors.full_name
-                  ? 'border-red-300 text-red-900 placeholder-red-300'
-                  : 'border-gray-300 text-gray-900 placeholder-gray-500'
+                  ? 'border-red-300 dark:border-red-600'
+                  : 'border-gray-300 dark:border-gray-600'
               }`}
               required
             />
           </div>
           {fieldErrors.full_name && (
-            <p className="mt-1 text-xs text-red-600">{fieldErrors.full_name}</p>
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.full_name}</p>
           )}
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
             Phone Number *
           </label>
           <div className="relative">
@@ -176,24 +176,24 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
               type="tel"
               value={formData.phone_number}
               onChange={handleInputChange('phone_number')}
-              className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
                 fieldErrors.phone_number
-                  ? 'border-red-300 text-red-900 placeholder-red-300'
-                  : 'border-gray-300 text-gray-900 placeholder-gray-500'
+                  ? 'border-red-300 dark:border-red-600'
+                  : 'border-gray-300 dark:border-gray-600'
               }`}
               placeholder="+919876543210"
               required
             />
           </div>
           <p className={`mt-1 text-xs ${
-            fieldErrors.phone_number ? 'text-red-600' : 'text-gray-500'
+            fieldErrors.phone_number ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'
           }`}>
             {fieldErrors.phone_number || 'Format: +919876543210'}
           </p>
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
             Email *
           </label>
           <div className="relative">
@@ -204,21 +204,21 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
               type="email"
               value={formData.email}
               onChange={handleInputChange('email')}
-              className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
                 fieldErrors.email
-                  ? 'border-red-300 text-red-900 placeholder-red-300'
-                  : 'border-gray-300 text-gray-900 placeholder-gray-500'
+                  ? 'border-red-300 dark:border-red-600'
+                  : 'border-gray-300 dark:border-gray-600'
               }`}
               required
             />
           </div>
           {fieldErrors.email && (
-            <p className="mt-1 text-xs text-red-600">{fieldErrors.email}</p>
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.email}</p>
           )}
         </div>
 
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
             State *
           </label>
           <div className="relative">
@@ -233,10 +233,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
                   setFieldErrors(prev => ({ ...prev, state: undefined }));
                 }
               }}
-              className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              className={`block w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
                 fieldErrors.state
-                  ? 'border-red-300 text-red-900'
-                  : 'border-gray-300 text-gray-900'
+                  ? 'border-red-300 dark:border-red-600'
+                  : 'border-gray-300 dark:border-gray-600'
               }`}
               required
             >
@@ -249,12 +249,12 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
             </select>
           </div>
           {fieldErrors.state && (
-            <p className="mt-1 text-xs text-red-600">{fieldErrors.state}</p>
+            <p className="mt-1 text-xs text-red-600 dark:text-red-400">{fieldErrors.state}</p>
           )}
         </div>
 
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
             Password *
           </label>
           <div className="relative">
@@ -262,10 +262,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
               type={showPassword ? 'text' : 'password'}
               value={formData.password}
               onChange={handleInputChange('password')}
-              className={`block w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              className={`block w-full pr-10 pl-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
                 fieldErrors.password
-                  ? 'border-red-300 text-red-900 placeholder-red-300'
-                  : 'border-gray-300 text-gray-900 placeholder-gray-500'
+                  ? 'border-red-300 dark:border-red-600'
+                  : 'border-gray-300 dark:border-gray-600'
               }`}
               required
             />
@@ -275,14 +275,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
               onClick={() => setShowPassword(!showPassword)}
             >
               {showPassword ? (
-                <EyeOff className="h-5 w-5 text-gray-400" />
+                <EyeOff className="h-5 w-5 text-gray-400 dark:text-gray-500" />
               ) : (
-                <Eye className="h-5 w-5 text-gray-400" />
+                <Eye className="h-5 w-5 text-gray-400 dark:text-gray-500" />
               )}
             </button>
           </div>
           <p className={`mt-1 text-xs ${
-            fieldErrors.password ? 'text-red-600' : 'text-gray-500'
+            fieldErrors.password ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'
           }`}>
             {fieldErrors.password || 'Must contain uppercase, lowercase, number and special character'}
           </p>
@@ -291,16 +291,16 @@ const RegisterForm: React.FC<RegisterFormProps> = ({
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-medium py-2 px-4 rounded-lg transition-colors mb-4"
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 dark:disabled:bg-blue-800 text-white font-medium py-2 px-4 rounded-lg transition-colors mb-4"
         >
           {isLoading ? 'Creating Account...' : 'Create Account'}
         </button>
 
-        <p className="text-center text-sm text-gray-600">
+        <p className="text-center text-sm text-gray-600 dark:text-gray-300">
           Already have an account?{' '}
           <button
             type="button"
-            className="text-blue-600 hover:text-blue-500 font-medium"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 font-medium"
           >
             Sign In
           </button>

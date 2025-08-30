@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Turtle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import LoginForm from '../components/auth/LoginForm';
 import RegisterForm from '../components/auth/RegisterForm';
@@ -107,14 +108,17 @@ const AuthPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-500 via-purple-600 to-purple-800 flex items-center justify-center py-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center py-4">
       <div className="w-full max-w-md px-4">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            Quantleap Analytics
-          </h1>
-          <p className="text-xl text-white/90">
+          <div className="flex items-center justify-center mb-4">
+            <Turtle className="h-12 w-12 text-blue-600 mr-3" />
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Quantleap Analytics
+            </h1>
+          </div>
+          <p className="text-lg text-gray-600 dark:text-gray-300">
             Algorithmic Trading Platform for Indian Markets
           </p>
         </div>
@@ -122,7 +126,7 @@ const AuthPage: React.FC = () => {
         {/* Registration Success Message */}
         {registrationSuccess && (
           <div className="mb-6">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
               <div className="flex">
                 <div className="flex-shrink-0">
                   <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
@@ -130,10 +134,10 @@ const AuthPage: React.FC = () => {
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-green-800 mb-1">
+                  <p className="text-sm font-medium text-green-800 dark:text-green-200 mb-1">
                     <strong>Registration Successful!</strong>
                   </p>
-                  <p className="text-sm text-green-700">
+                  <p className="text-sm text-green-700 dark:text-green-300">
                     Your account has been created and email verified successfully. You can now sign in to continue to your dashboard.
                   </p>
                 </div>
@@ -190,11 +194,11 @@ const AuthPage: React.FC = () => {
         {/* Additional Info for Register Form */}
         {authMode === 'register' && (
           <div className="mt-6 text-center">
-            <div className="bg-white rounded-lg shadow-md p-4">
-              <p className="text-sm font-medium text-gray-700 mb-2">
+            <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-md p-4">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 <strong>Why Quantleap Analytics?</strong>
               </p>
-              <div className="text-sm text-gray-600 space-y-1">
+              <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
                 <p>• Secure AWS-based infrastructure</p>
                 <p>• Indian market specialized algorithms</p>
                 <p>• Zerodha integration for seamless trading</p>
@@ -207,10 +211,10 @@ const AuthPage: React.FC = () => {
         {/* Switch Auth Mode */}
         {authMode === 'register' && (
           <div className="mt-4 text-center">
-            <p className="text-sm text-white/80">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               Already have an account?{' '}
               <button
-                className="text-white underline font-semibold hover:text-white/90"
+                className="text-blue-600 dark:text-blue-400 underline font-semibold hover:text-blue-700 dark:hover:text-blue-300"
                 onClick={switchToLogin}
               >
                 Sign In Here
@@ -221,7 +225,7 @@ const AuthPage: React.FC = () => {
 
         {/* Footer */}
         <div className="text-center mt-8">
-          <p className="text-sm text-white/70">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Module 2: User Authentication & Broker Management
           </p>
         </div>
