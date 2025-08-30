@@ -136,7 +136,7 @@ class UserAuthBrokerStack(Stack):
                 type=dynamodb.AttributeType.STRING
             ),
             sort_key=dynamodb.Attribute(
-                name="broker_account_id",
+                name="client_id",
                 type=dynamodb.AttributeType.STRING
             ),
             billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
@@ -284,9 +284,27 @@ class UserAuthBrokerStack(Stack):
             }
         )
 
+        # Lambda function for broker OAuth handling
+        broker_oauth_lambda = _lambda.Function(
+            self, "BrokerOAuthFunction",
+            function_name=self.get_resource_name("broker-oauth"),
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            code=_lambda.Code.from_asset("lambda_functions/broker_oauth"),
+            handler="zerodha_oauth_handler.lambda_handler",
+            timeout=Duration.seconds(30),
+            environment={
+                "ENVIRONMENT": self.deploy_env,
+                "COMPANY_PREFIX": self.company_prefix,
+                "PROJECT_NAME": self.project_name,
+                "BROKER_ACCOUNTS_TABLE": broker_accounts_table.table_name,
+                "REGION": self.region
+            }
+        )
+
         # Grant permissions to Lambda functions
         user_profiles_table.grant_read_write_data(user_registration_lambda)
         broker_accounts_table.grant_read_write_data(broker_account_lambda)
+        broker_accounts_table.grant_read_write_data(broker_oauth_lambda)
         
         # Grant Cognito permissions
         user_registration_lambda.add_to_role_policy(
@@ -376,7 +394,20 @@ class UserAuthBrokerStack(Stack):
                     "secretsmanager:DeleteSecret",
                     "secretsmanager:DescribeSecret"
                 ],
-                resources=[f"arn:aws:secretsmanager:{self.region}:{self.account}:secret:{self.company_prefix}-zerodha-credentials-{self.deploy_env}-*"]
+                resources=[f"arn:aws:secretsmanager:{self.region}:{self.account}:secret:{self.company_prefix}-*-credentials-{self.deploy_env}-*", f"arn:aws:secretsmanager:{self.region}:{self.account}:secret:{self.company_prefix}-*-oauth-tokens-{self.deploy_env}-*"]
+            )
+        )
+
+        # Grant Secrets Manager permissions for OAuth Lambda
+        broker_oauth_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=[
+                    "secretsmanager:GetSecretValue",
+                    "secretsmanager:UpdateSecret",
+                    "secretsmanager:DescribeSecret"
+                ],
+                resources=[f"arn:aws:secretsmanager:{self.region}:{self.account}:secret:{self.company_prefix}-*-credentials-{self.deploy_env}-*", f"arn:aws:secretsmanager:{self.region}:{self.account}:secret:{self.company_prefix}-*-oauth-tokens-{self.deploy_env}-*"]
             )
         )
 
@@ -455,7 +486,7 @@ class UserAuthBrokerStack(Stack):
         )
 
         # Individual broker account operations
-        broker_account_resource = broker_resource.add_resource("{broker_account_id}")
+        broker_account_resource = broker_resource.add_resource("{client_id}")
         
         broker_account_resource.add_method(
             "PUT",
@@ -467,6 +498,24 @@ class UserAuthBrokerStack(Stack):
         broker_account_resource.add_method(
             "DELETE",
             apigateway.LambdaIntegration(broker_account_lambda),
+            authorizer=cognito_authorizer,
+            authorization_type=apigateway.AuthorizationType.COGNITO
+        )
+        
+        # OAuth endpoints for broker authentication
+        oauth_resource = broker_account_resource.add_resource("oauth")
+        oauth_action_resource = oauth_resource.add_resource("{oauth_action}")
+        
+        oauth_action_resource.add_method(
+            "POST",
+            apigateway.LambdaIntegration(broker_oauth_lambda),
+            authorizer=cognito_authorizer,
+            authorization_type=apigateway.AuthorizationType.COGNITO
+        )
+        
+        oauth_action_resource.add_method(
+            "GET",
+            apigateway.LambdaIntegration(broker_oauth_lambda),
             authorizer=cognito_authorizer,
             authorization_type=apigateway.AuthorizationType.COGNITO
         )

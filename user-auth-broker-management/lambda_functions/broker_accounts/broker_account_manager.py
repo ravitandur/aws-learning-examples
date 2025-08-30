@@ -1,10 +1,17 @@
 import json
 import boto3
-import uuid
 from datetime import datetime, timezone
 from typing import Dict, Any
 import os
 import sys
+from decimal import Decimal
+
+# Custom JSON encoder to handle Decimal types
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super(DecimalEncoder, self).default(obj)
 
 # Add paths for imports
 sys.path.append('/opt/python')
@@ -67,7 +74,7 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         
         logger.info("Processing broker account request", extra={"user_id": user_id, "http_method": http_method})
         path_parameters = event.get('pathParameters') or {}
-        broker_account_id = path_parameters.get('broker_account_id')
+        client_id = path_parameters.get('client_id')
         
         # Initialize AWS clients
         dynamodb = boto3.resource('dynamodb', region_name=os.environ['REGION'])
@@ -79,10 +86,10 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             return handle_create_broker_account(event, user_id, broker_accounts_table, secretsmanager)
         elif http_method == 'GET':
             return handle_get_broker_accounts(event, user_id, broker_accounts_table)
-        elif http_method == 'PUT' and broker_account_id:
-            return handle_update_broker_account(event, user_id, broker_account_id, broker_accounts_table, secretsmanager)
-        elif http_method == 'DELETE' and broker_account_id:
-            return handle_delete_broker_account(event, user_id, broker_account_id, broker_accounts_table, secretsmanager)
+        elif http_method == 'PUT' and client_id:
+            return handle_update_broker_account(event, user_id, client_id, broker_accounts_table, secretsmanager)
+        elif http_method == 'DELETE' and client_id:
+            return handle_delete_broker_account(event, user_id, client_id, broker_accounts_table, secretsmanager)
         else:
             return {
                 'statusCode': 405,
@@ -121,12 +128,15 @@ def handle_create_broker_account(event, user_id, table, secretsmanager):
         
         # Extract broker account data
         broker_name = body.get('broker_name', '').strip().lower()
+        client_id = body.get('client_id', '').strip()
         api_key = body.get('api_key', '').strip()
         api_secret = body.get('api_secret', '').strip()
-        account_type = body.get('account_type', 'trading').strip().lower()
+        capital = Decimal(str(body.get('capital', 0)))
+        description = body.get('description', '').strip()
+        group = 'BFW'  # Default group, admin can change later
         
         # Validate required fields
-        if not broker_name or not api_key or not api_secret:
+        if not broker_name or not client_id or not api_key or not api_secret or capital <= 0:
             return {
                 'statusCode': 400,
                 'headers': {
@@ -135,12 +145,12 @@ def handle_create_broker_account(event, user_id, table, secretsmanager):
                 },
                 'body': json.dumps({
                     'error': 'Missing required fields',
-                    'message': 'broker_name, api_key, and api_secret are required'
+                    'message': 'broker_name, client_id, api_key, api_secret, and capital are required'
                 })
             }
         
-        # Validate broker name (currently supporting Zerodha)
-        supported_brokers = ['zerodha']
+        # Validate broker name
+        supported_brokers = ['zerodha', 'angel', 'finvasia', 'zebu']
         if broker_name not in supported_brokers:
             return {
                 'statusCode': 400,
@@ -154,30 +164,70 @@ def handle_create_broker_account(event, user_id, table, secretsmanager):
                 })
             }
         
-        # Generate unique broker account ID
-        broker_account_id = str(uuid.uuid4())
         current_time = datetime.now(timezone.utc).isoformat()
+        
+        # Check if client_id already exists for this user
+        try:
+            existing_response = table.get_item(
+                Key={
+                    'user_id': user_id,
+                    'client_id': client_id
+                }
+            )
+            if 'Item' in existing_response:
+                return {
+                    'statusCode': 409,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'error': 'Client ID already exists',
+                        'message': f'You already have an account with client_id: {client_id}'
+                    })
+                }
+        except Exception as e:
+            logger.error("Error checking existing client_id", extra={"error": str(e), "user_id": user_id})
         
         # Store API credentials in Secrets Manager with environment-specific naming
         company_prefix = os.environ.get('COMPANY_PREFIX', 'ql')
         environment = os.environ.get('ENVIRONMENT', 'dev')
-        secret_name = f"{company_prefix}-zerodha-credentials-{environment}-{user_id}-{broker_account_id}"
+        api_secret_name = f"{company_prefix}-{broker_name}-api-credentials-{environment}-{user_id}-{client_id}"
+        oauth_secret_name = f"{company_prefix}-{broker_name}-oauth-tokens-{environment}-{user_id}-{client_id}"
         
         try:
-            secret_response = secretsmanager.create_secret(
-                Name=secret_name,
-                Description=f"Zerodha API credentials for user {user_id}",
+            # Store API credentials
+            api_secret_response = secretsmanager.create_secret(
+                Name=api_secret_name,
+                Description=f"{broker_name.title()} API credentials for user {user_id} - client {client_id}",
                 SecretString=json.dumps({
                     'api_key': api_key,
                     'api_secret': api_secret,
+                    'broker_name': broker_name,
+                    'client_id': client_id,
+                    'user_id': user_id,
+                    'created_at': current_time
+                })
+            )
+            
+            # Create placeholder for OAuth tokens (to be populated later)
+            oauth_secret_response = secretsmanager.create_secret(
+                Name=oauth_secret_name,
+                Description=f"{broker_name.title()} OAuth tokens for user {user_id} - client {client_id}",
+                SecretString=json.dumps({
+                    'access_token': None,
+                    'token_expires_at': None,
+                    'last_oauth_login': None,
+                    'client_id': client_id,
                     'broker_name': broker_name,
                     'user_id': user_id,
                     'created_at': current_time
                 })
             )
             
-            secret_arn = secret_response['ARN']
-            log_user_action(logger, user_id, "broker_credentials_stored", {"broker_name": broker_name})
+            api_secret_arn = api_secret_response['ARN']
+            oauth_secret_arn = oauth_secret_response['ARN']
+            log_user_action(logger, user_id, "broker_credentials_stored", {"broker_name": broker_name, "client_id": client_id})
             
         except Exception as e:
             logger.error("Failed to store credentials in Secrets Manager", extra={"error": str(e), "user_id": user_id})
@@ -197,27 +247,33 @@ def handle_create_broker_account(event, user_id, table, secretsmanager):
         try:
             broker_account_item = {
                 'user_id': user_id,
-                'broker_account_id': broker_account_id,
+                'client_id': client_id,
                 'broker_name': broker_name,
-                'account_type': account_type,
-                'api_key_secret_arn': secret_arn,
-                'account_status': 'active',
+                'group': group,
+                'capital': capital,
+                'account_status': 'enabled',
+                'description': description,
+                'api_key_secret_arn': api_secret_arn,
+                'oauth_token_secret_arn': oauth_secret_arn,
+                'token_expires_at': None,
+                'last_oauth_login': None,
                 'created_at': current_time,
                 'updated_at': current_time,
                 'metadata': {
-                    'exchanges_enabled': ['NSE', 'BSE'],  # Default for Zerodha
-                    'products_enabled': ['MIS', 'CNC', 'NRML']
+                    'exchanges_enabled': ['NSE', 'BSE'] if broker_name == 'zerodha' else [],
+                    'products_enabled': ['MIS', 'CNC', 'NRML'] if broker_name == 'zerodha' else []
                 }
             }
             
             table.put_item(Item=broker_account_item)
             
-            log_user_action(logger, user_id, "broker_account_created", {"broker_name": broker_name, "account_type": account_type})
+            log_user_action(logger, user_id, "broker_account_created", {"broker_name": broker_name, "client_id": client_id, "capital": capital})
             
             # Return response without sensitive data
             response_item = {k: v for k, v in broker_account_item.items() 
-                           if k not in ['api_key_secret_arn']}
+                           if k not in ['api_key_secret_arn', 'oauth_token_secret_arn']}
             response_item['has_credentials'] = True
+            response_item['has_oauth_token'] = False  # Initially no OAuth token
             
             return {
                 'statusCode': 201,
@@ -229,14 +285,18 @@ def handle_create_broker_account(event, user_id, table, secretsmanager):
                     'success': True,
                     'data': response_item,
                     'message': 'Broker account created successfully'
-                })
+                }, cls=DecimalEncoder)
             }
             
         except Exception as e:
-            # Cleanup: delete the secret if DynamoDB fails
+            # Cleanup: delete the secrets if DynamoDB fails
             try:
                 secretsmanager.delete_secret(
-                    SecretId=secret_name,
+                    SecretId=api_secret_name,
+                    ForceDeleteWithoutRecovery=True
+                )
+                secretsmanager.delete_secret(
+                    SecretId=oauth_secret_name,
                     ForceDeleteWithoutRecovery=True
                 )
             except:
@@ -283,8 +343,9 @@ def handle_get_broker_accounts(event, user_id, table):
         broker_accounts = []
         for item in response['Items']:
             account = {k: v for k, v in item.items() 
-                      if k not in ['api_key_secret_arn']}
+                      if k not in ['api_key_secret_arn', 'oauth_token_secret_arn']}
             account['has_credentials'] = 'api_key_secret_arn' in item
+            account['has_oauth_token'] = item.get('last_oauth_login') is not None
             broker_accounts.append(account)
         
         return {
@@ -297,7 +358,7 @@ def handle_get_broker_accounts(event, user_id, table):
                 'success': True,
                 'data': broker_accounts,
                 'message': f'Retrieved {len(broker_accounts)} broker accounts'
-            })
+            }, cls=DecimalEncoder)
         }
         
     except Exception as e:
@@ -314,8 +375,8 @@ def handle_get_broker_accounts(event, user_id, table):
             })
         }
 
-def handle_update_broker_account(event, user_id, broker_account_id, table, secretsmanager):
-    """Update an existing broker account"""
+def handle_update_broker_account(event, user_id, client_id, table, secretsmanager):
+    """Update an existing broker account - only editable fields allowed"""
     
     try:
         # Parse request body
@@ -328,7 +389,7 @@ def handle_update_broker_account(event, user_id, broker_account_id, table, secre
         response = table.get_item(
             Key={
                 'user_id': user_id,
-                'broker_account_id': broker_account_id
+                'client_id': client_id
             }
         )
         
@@ -347,22 +408,27 @@ def handle_update_broker_account(event, user_id, broker_account_id, table, secre
         existing_account = response['Item']
         current_time = datetime.now(timezone.utc).isoformat()
         
-        # Update fields that are provided
+        # Update fields that are provided (only editable fields)
         update_expression_parts = []
         expression_attribute_values = {}
         
-        if 'account_status' in body:
-            update_expression_parts.append('account_status = :status')
-            expression_attribute_values[':status'] = body['account_status']
+        # Only allow updates to specific fields
+        if 'capital' in body:
+            update_expression_parts.append('capital = :capital')
+            expression_attribute_values[':capital'] = Decimal(str(body['capital']))
+            
+        if 'description' in body:
+            update_expression_parts.append('description = :description')
+            expression_attribute_values[':description'] = body['description']
         
         # Update credentials if provided
         if 'api_key' in body or 'api_secret' in body:
             # Get existing credentials
-            secret_arn = existing_account.get('api_key_secret_arn')
-            if secret_arn:
+            api_secret_arn = existing_account.get('api_key_secret_arn')
+            if api_secret_arn:
                 try:
-                    secret_name = secret_arn.split(':')[-1]
-                    existing_secret = secretsmanager.get_secret_value(SecretId=secret_name)
+                    api_secret_name = api_secret_arn.split(':')[-1]
+                    existing_secret = secretsmanager.get_secret_value(SecretId=api_secret_name)
                     existing_creds = json.loads(existing_secret['SecretString'])
                     
                     # Update credentials
@@ -375,7 +441,7 @@ def handle_update_broker_account(event, user_id, broker_account_id, table, secre
                     
                     # Update secret
                     secretsmanager.update_secret(
-                        SecretId=secret_name,
+                        SecretId=api_secret_name,
                         SecretString=json.dumps(new_creds)
                     )
                     
@@ -402,7 +468,7 @@ def handle_update_broker_account(event, user_id, broker_account_id, table, secre
             table.update_item(
                 Key={
                     'user_id': user_id,
-                    'broker_account_id': broker_account_id
+                    'client_id': client_id
                 },
                 UpdateExpression='SET ' + ', '.join(update_expression_parts),
                 ExpressionAttributeValues=expression_attribute_values
@@ -415,8 +481,9 @@ def handle_update_broker_account(event, user_id, broker_account_id, table, secre
                 'Access-Control-Allow-Origin': '*'
             },
             'body': json.dumps({
+                'success': True,
                 'message': 'Broker account updated successfully',
-                'broker_account_id': broker_account_id
+                'client_id': client_id
             })
         }
         
@@ -445,7 +512,7 @@ def handle_update_broker_account(event, user_id, broker_account_id, table, secre
             })
         }
 
-def handle_delete_broker_account(event, user_id, broker_account_id, table, secretsmanager):
+def handle_delete_broker_account(event, user_id, client_id, table, secretsmanager):
     """Delete a broker account and its credentials"""
     
     try:
@@ -453,7 +520,7 @@ def handle_delete_broker_account(event, user_id, broker_account_id, table, secre
         response = table.get_item(
             Key={
                 'user_id': user_id,
-                'broker_account_id': broker_account_id
+                'client_id': client_id
             }
         )
         
@@ -471,25 +538,37 @@ def handle_delete_broker_account(event, user_id, broker_account_id, table, secre
         
         existing_account = response['Item']
         
-        # Delete credentials from Secrets Manager
-        secret_arn = existing_account.get('api_key_secret_arn')
-        if secret_arn:
+        # Delete API credentials from Secrets Manager
+        api_secret_arn = existing_account.get('api_key_secret_arn')
+        if api_secret_arn:
             try:
-                secret_name = secret_arn.split(':')[-1]
+                api_secret_name = api_secret_arn.split(':')[-1]
                 secretsmanager.delete_secret(
-                    SecretId=secret_name,
+                    SecretId=api_secret_name,
                     ForceDeleteWithoutRecovery=True
                 )
-                log_user_action(logger, user_id, "broker_credentials_deleted", {"secret_name": secret_name})
+                log_user_action(logger, user_id, "api_credentials_deleted", {"secret_name": api_secret_name, "client_id": client_id})
             except Exception as e:
-                logger.error("Failed to delete secret", extra={"error": str(e), "user_id": user_id})
-                # Continue with DynamoDB deletion even if secret deletion fails
+                logger.error("Failed to delete API secret", extra={"error": str(e), "user_id": user_id})
+                
+        # Delete OAuth tokens from Secrets Manager
+        oauth_secret_arn = existing_account.get('oauth_token_secret_arn')
+        if oauth_secret_arn:
+            try:
+                oauth_secret_name = oauth_secret_arn.split(':')[-1]
+                secretsmanager.delete_secret(
+                    SecretId=oauth_secret_name,
+                    ForceDeleteWithoutRecovery=True
+                )
+                log_user_action(logger, user_id, "oauth_tokens_deleted", {"secret_name": oauth_secret_name, "client_id": client_id})
+            except Exception as e:
+                logger.error("Failed to delete OAuth secret", extra={"error": str(e), "user_id": user_id})
         
         # Delete from DynamoDB
         table.delete_item(
             Key={
                 'user_id': user_id,
-                'broker_account_id': broker_account_id
+                'client_id': client_id
             }
         )
         
@@ -500,8 +579,9 @@ def handle_delete_broker_account(event, user_id, broker_account_id, table, secre
                 'Access-Control-Allow-Origin': '*'
             },
             'body': json.dumps({
+                'success': True,
                 'message': 'Broker account deleted successfully',
-                'broker_account_id': broker_account_id
+                'client_id': client_id
             })
         }
         

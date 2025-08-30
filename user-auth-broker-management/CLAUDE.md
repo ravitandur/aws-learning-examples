@@ -403,6 +403,87 @@ fields @timestamp, status_code, message
 - **Performance**: Optimized API calls and component rendering
 - **Design Consistency**: Professional algorithmic trading platform aesthetic throughout
 
+## Latest Enhancement: Enhanced Broker Account Management (August 2025)
+
+### ✅ Complete Data Structure Overhaul
+**Problem**: Original UUID-based broker_account_id was redundant since client_id is unique per user
+**Solution**: Redesigned to use client_id as natural sort key with enhanced data model
+
+#### **New Broker Account Structure**
+```python
+# DynamoDB Schema (Updated)
+{
+  "user_id": "cognito-user-sub",           # Partition Key
+  "client_id": "user-defined-unique-id",   # Sort Key (replaces broker_account_id UUID)
+  "broker_name": "zerodha|angel|finvasia|zebu",
+  "group": "BFW|KOU|PMS",                  # Account classification
+  "capital": Decimal("100000.00"),         # Trading capital (Decimal for DynamoDB)
+  "description": "My primary trading account",
+  "account_status": "enabled|disabled",
+  "api_key_secret_arn": "arn:aws:secretsmanager:...",     # API credentials
+  "oauth_token_secret_arn": "arn:aws:secretsmanager:...", # OAuth tokens (separate)
+  "token_expires_at": "2025-08-30T18:00:00Z",
+  "last_oauth_login": "2025-08-30T09:00:00Z",
+  "created_at": "2025-08-30T10:00:00Z",
+  "updated_at": "2025-08-30T15:30:00Z"
+}
+```
+
+#### **Dual Secrets Manager Storage Pattern**
+- **API Credentials**: `ql-{broker}-api-credentials-{env}-{user_id}-{client_id}`
+- **OAuth Tokens**: `ql-{broker}-oauth-tokens-{env}-{user_id}-{client_id}`
+- **Benefit**: Separate lifecycle management for permanent vs temporary credentials
+
+#### **OAuth Integration for Daily Sessions**
+**New Endpoints**:
+- `POST /broker-accounts/{client_id}/oauth/login` - Initiate OAuth flow
+- `POST /broker-accounts/{client_id}/oauth/callback` - Handle OAuth callback  
+- `GET /broker-accounts/{client_id}/oauth/status` - Check token validity
+
+**Zerodha OAuth Flow**: 
+1. Generate secure state parameter → Zerodha login URL
+2. User authorizes → callback with request_token
+3. Exchange request_token for access_token → store in OAuth secret
+4. Daily session management with automatic expiry handling
+
+#### **Field Edit Restrictions**
+**Immutable After Creation**: `broker_name`, `client_id`, `group`, `user_id`
+**Editable Fields**: `api_key`, `api_secret`, `capital`, `description`
+**Implementation**: Backend validation + frontend form restrictions
+
+#### **Multi-Broker Support**
+- **Zerodha**: Full OAuth integration with API validation patterns
+- **Angel One**: API credential management (OAuth future enhancement)  
+- **Finvasia**: API credential management
+- **Zebu**: API credential management
+
+### ✅ Technical Implementation Details
+
+#### **Backend Lambda Updates**
+- **DynamoDB Schema**: Migrated from UUID to client_id as natural sort key
+- **DecimalEncoder**: Added custom JSON encoder for DynamoDB Decimal type serialization
+- **Dual Storage**: Separate Secrets Manager entries for API credentials vs OAuth tokens
+- **Field Validation**: Comprehensive broker-specific validation patterns
+
+#### **Frontend React Integration**  
+- **TypeScript Interfaces**: Complete migration from broker_account_id to client_id
+- **Form Components**: Updated to capture new fields (client_id, capital, description)
+- **Edit Restrictions**: Form validation preventing immutable field changes
+- **OAuth UI**: Ready for OAuth flow integration (status indicators, login buttons)
+
+#### **Critical Fixes Applied**
+1. **DynamoDB Decimal Support**: Added DecimalEncoder for capital field JSON serialization
+2. **API Gateway Conflicts**: Resolved path parameter conflicts during deployment
+3. **TypeScript Compilation**: Fixed all frontend references to new field structure
+4. **Environment Configuration**: Updated frontend .env with new API Gateway endpoint
+
+### ✅ Deployment & Testing Status
+- **API Gateway**: `https://cgsdoaq0i1.execute-api.ap-south-1.amazonaws.com/dev/`
+- **DynamoDB Table**: `ql-algo-trading-dev-broker-accounts` with new schema
+- **Frontend Configuration**: Updated with correct API endpoint and environment variables
+- **TypeScript Compilation**: Clean build with no errors
+- **Infrastructure**: Successfully deployed with all new OAuth endpoints
+
 ## Success Criteria - All Completed
 - ✅ User registration with Indian phone/state validation
 - ✅ Secure Zerodha credential storage and retrieval
@@ -420,6 +501,12 @@ fields @timestamp, status_code, message
 - ✅ **Indian market specialized UI/UX features**
 - ✅ **TypeScript integration with comprehensive error handling**
 - ✅ **Complete forgot password functionality with email-based reset flow**
+- ✅ **Enhanced broker account management with client_id natural keys**
+- ✅ **OAuth integration architecture for daily trading sessions**
+- ✅ **Dual Secrets Manager storage for credential lifecycle management**
+- ✅ **Multi-broker support (Zerodha, Angel One, Finvasia, Zebu)**
+- ✅ **Field edit restrictions for data integrity**
+- ✅ **DynamoDB Decimal type handling for financial data**
 - ✅ Foundation ready for market data integration (Module 3)
 
 ## Next Module Integration
