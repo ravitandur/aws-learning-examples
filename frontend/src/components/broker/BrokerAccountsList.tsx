@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
-import { BrokerAccount, CreateBrokerAccount } from '../../types';
+import { BrokerAccount, CreateBrokerAccount, UpdateBrokerAccount } from '../../types';
 import brokerService from '../../services/brokerService';
 import BrokerAccountCard from './BrokerAccountCard';
 import AddBrokerAccountForm from './AddBrokerAccountForm';
+import EditBrokerAccountForm from './EditBrokerAccountForm';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ErrorAlert from '../common/ErrorAlert';
 
@@ -14,7 +15,11 @@ const BrokerAccountsList: React.FC = () => {
   const [addFormOpen, setAddFormOpen] = useState(false);
   const [isAddingAccount, setIsAddingAccount] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
-  const [testingAccountId, setTestingAccountId] = useState<string | null>(null);
+  const [editFormOpen, setEditFormOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<BrokerAccount | null>(null);
+  const [isEditingAccount, setIsEditingAccount] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [testingClientId, setTestingClientId] = useState<string | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -64,19 +69,44 @@ const BrokerAccountsList: React.FC = () => {
   };
 
   const handleEditAccount = (account: BrokerAccount) => {
-    // TODO: Implement edit functionality
-    console.log('Edit account:', account);
-    setSnackbar({
-      open: true,
-      message: 'Edit functionality coming soon!',
-      severity: 'error',
-    });
+    setEditingAccount(account);
+    setEditFormOpen(true);
+    setEditError(null);
+  };
+  
+  const handleUpdateAccount = async (clientId: string, updateData: UpdateBrokerAccount) => {
+    try {
+      setIsEditingAccount(true);
+      setEditError(null);
+      
+      await brokerService.updateBrokerAccount(clientId, updateData);
+      
+      setAccounts(prev => prev.map(acc => 
+        acc.client_id === clientId 
+          ? { ...acc, ...updateData, updated_at: new Date().toISOString() }
+          : acc
+      ));
+      
+      setSnackbar({
+        open: true,
+        message: 'Broker account updated successfully!',
+        severity: 'success',
+      });
+      
+      setEditFormOpen(false);
+    } catch (error) {
+      console.error('Failed to update broker account:', error);
+      setEditError(error instanceof Error ? error.message : 'Failed to update broker account');
+      throw error;
+    } finally {
+      setIsEditingAccount(false);
+    }
   };
 
-  const handleDeleteAccount = async (accountId: string) => {
+  const handleDeleteAccount = async (clientId: string) => {
     try {
-      await brokerService.deleteBrokerAccount(accountId);
-      setAccounts(prev => prev.filter(acc => acc.broker_account_id !== accountId));
+      await brokerService.deleteBrokerAccount(clientId);
+      setAccounts(prev => prev.filter(acc => acc.client_id !== clientId));
       
       setSnackbar({
         open: true,
@@ -93,10 +123,10 @@ const BrokerAccountsList: React.FC = () => {
     }
   };
 
-  const handleTestConnection = async (accountId: string) => {
+  const handleTestConnection = async (clientId: string) => {
     try {
-      setTestingAccountId(accountId);
-      const result = await brokerService.testBrokerConnection(accountId);
+      setTestingClientId(clientId);
+      const result = await brokerService.testBrokerConnection(clientId);
       
       if (result.success && result.data?.status === 'connected') {
         setSnackbar({
@@ -119,7 +149,7 @@ const BrokerAccountsList: React.FC = () => {
         severity: 'error',
       });
     } finally {
-      setTestingAccountId(null);
+      setTestingClientId(null);
     }
   };
 
@@ -183,12 +213,12 @@ const BrokerAccountsList: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {accounts.map((account) => (
             <BrokerAccountCard
-              key={account.broker_account_id}
+              key={account.client_id}
               account={account}
               onEdit={handleEditAccount}
               onDelete={handleDeleteAccount}
               onTest={handleTestConnection}
-              isTestingConnection={testingAccountId === account.broker_account_id}
+              isTestingConnection={testingClientId === account.client_id}
             />
           ))}
         </div>
@@ -201,6 +231,19 @@ const BrokerAccountsList: React.FC = () => {
         isLoading={isAddingAccount}
         error={addError}
         onClearError={() => setAddError(null)}
+      />
+      
+      <EditBrokerAccountForm
+        open={editFormOpen}
+        account={editingAccount}
+        onClose={() => {
+          setEditFormOpen(false);
+          setEditingAccount(null);
+        }}
+        onSubmit={handleUpdateAccount}
+        isLoading={isEditingAccount}
+        error={editError}
+        onClearError={() => setEditError(null)}
       />
 
       {/* Toast notification */}

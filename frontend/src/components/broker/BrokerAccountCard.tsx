@@ -5,8 +5,8 @@ import { BrokerAccount } from '../../types';
 interface BrokerAccountCardProps {
   account: BrokerAccount;
   onEdit: (account: BrokerAccount) => void;
-  onDelete: (accountId: string) => void;
-  onTest: (accountId: string) => void;
+  onDelete: (clientId: string) => void;
+  onTest: (clientId: string) => void;
   isTestingConnection?: boolean;
 }
 
@@ -22,14 +22,14 @@ const BrokerAccountCard: React.FC<BrokerAccountCardProps> = ({
 
   const getStatusColor = () => {
     switch (account.account_status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'inactive':
-        return 'bg-gray-100 text-gray-800';
+      case 'enabled':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case 'disabled':
+        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
   };
 
@@ -38,12 +38,17 @@ const BrokerAccountCard: React.FC<BrokerAccountCardProps> = ({
       {/* Header */}
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white capitalize">
             {account.broker_name}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {account.account_name}
+            Client ID: {account.client_id}
           </p>
+          {account.description && (
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              {account.description}
+            </p>
+          )}
         </div>
         
         <div className="relative">
@@ -84,15 +89,29 @@ const BrokerAccountCard: React.FC<BrokerAccountCardProps> = ({
       {/* Status */}
       <div className="mb-4">
         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor()}`}>
-          {account.account_status === 'active' ? <Wifi className="w-3 h-3 mr-1" /> : <WifiOff className="w-3 h-3 mr-1" />}
+          {account.account_status === 'enabled' ? <Wifi className="w-3 h-3 mr-1" /> : <WifiOff className="w-3 h-3 mr-1" />}
           {account.account_status}
         </span>
+        
+        {/* Account details */}
+        <div className="mt-3 space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-500 dark:text-gray-400">Capital:</span>
+            <span className="text-gray-900 dark:text-white font-medium">₹{account.capital?.toLocaleString()}</span>
+          </div>
+          {account.has_oauth_token && (
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500 dark:text-gray-400">OAuth:</span>
+              <span className="text-green-600 dark:text-green-400 text-xs">Connected</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Actions */}
       <div className="flex gap-2">
         <button
-          onClick={() => onTest(account.broker_account_id)}
+          onClick={() => onTest(account.client_id)}
           disabled={isTestingConnection}
           className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-sm font-medium rounded-lg transition-colors"
         >
@@ -108,7 +127,7 @@ const BrokerAccountCard: React.FC<BrokerAccountCardProps> = ({
               Delete Broker Account
             </h3>
             <p className="text-gray-600 dark:text-gray-300 mb-6">
-              Are you sure you want to delete "{account.account_name}"? This action cannot be undone.
+              Are you sure you want to delete broker account "{account.client_id}"? This action cannot be undone.
             </p>
             <div className="flex gap-3 justify-end">
               <button
@@ -119,7 +138,7 @@ const BrokerAccountCard: React.FC<BrokerAccountCardProps> = ({
               </button>
               <button
                 onClick={() => {
-                  onDelete(account.broker_account_id);
+                  onDelete(account.client_id);
                   setShowDeleteDialog(false);
                 }}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"

@@ -99,3 +99,31 @@ const PageComponent: React.FC = () => {
 - Context-based state management for user auth
 - Indian market specialization (phone validation, states)
 - Secure credential handling for broker APIs
+- Enhanced broker account management with OAuth integration
+- frontend-amplify module/folder in current root project is only experimental, so going forward don't search or do any analysis in this folder. Don't use this folder for any of the context required.
+
+## Latest Project Updates (August 30, 2025)
+
+### ✅ Enhanced Broker Account Management System
+**Major Enhancement**: Complete redesign of broker account data structure with OAuth integration
+
+#### **Key Improvements**:
+- **Natural Key Design**: Replaced UUID broker_account_id with client_id as sort key
+- **Enhanced Data Model**: Added group classification (BFW/KOU/PMS), capital tracking, descriptions
+- **OAuth Architecture**: Implemented daily trading session management for Zerodha
+- **Dual Storage Pattern**: Separate Secrets Manager storage for API credentials vs OAuth tokens
+- **Multi-Broker Support**: Zerodha, Angel One, Finvasia, Zebu with broker-specific validations
+- **Field Restrictions**: Immutable fields (broker_name, client_id) vs editable fields (capital, credentials)
+
+#### **Technical Achievements**:
+- **DynamoDB Decimal Handling**: Custom JSON encoder for financial data types
+- **API Gateway Restructure**: Updated to use {client_id} path parameters
+- **Frontend Migration**: Complete TypeScript interface updates and component migration
+- **Environment Configuration**: Proper .env setup with new API Gateway endpoints
+- **OAuth Infrastructure**: Lambda functions and API endpoints ready for trading session management
+
+#### **Current Deployment Status**:
+- **API Gateway**: `https://cgsdoaq0i1.execute-api.ap-south-1.amazonaws.com/dev/`
+- **Frontend**: Running at `http://localhost:3000` with updated configuration
+- **Backend**: All Lambda functions deployed with enhanced data model
+- **Testing**: Ready for complete broker account workflow validation

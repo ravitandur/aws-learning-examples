@@ -43,12 +43,12 @@ class BrokerService {
    * Update a specific broker account
    */
   async updateBrokerAccount(
-    brokerAccountId: string, 
+    clientId: string, 
     updates: UpdateBrokerAccount
   ): Promise<BrokerAccount> {
     try {
       const response = await apiClient.put<ApiResponse<BrokerAccount>>(
-        `/broker-accounts/${brokerAccountId}`,
+        `/broker-accounts/${clientId}`,
         updates
       );
 
@@ -65,10 +65,10 @@ class BrokerService {
   /**
    * Delete a broker account
    */
-  async deleteBrokerAccount(brokerAccountId: string): Promise<void> {
+  async deleteBrokerAccount(clientId: string): Promise<void> {
     try {
       const response = await apiClient.delete<ApiResponse>(
-        `/broker-accounts/${brokerAccountId}`
+        `/broker-accounts/${clientId}`
       );
 
       if (!response.success) {
@@ -82,7 +82,7 @@ class BrokerService {
   /**
    * Test broker account connection
    */
-  async testBrokerConnection(brokerAccountId: string): Promise<ApiResponse<{
+  async testBrokerConnection(clientId: string): Promise<ApiResponse<{
     status: 'connected' | 'failed';
     details?: string;
   }>> {
@@ -90,7 +90,7 @@ class BrokerService {
       const response = await apiClient.post<ApiResponse<{
         status: 'connected' | 'failed';
         details?: string;
-      }>>(`/broker-accounts/${brokerAccountId}/verify`);
+      }>>(`/broker-accounts/${clientId}/verify`);
 
       return response;
     } catch (error: any) {
@@ -113,9 +113,90 @@ class BrokerService {
         name: 'Zerodha',
         description: 'India\'s largest stock broker by volume',
         website: 'https://zerodha.com'
+      },
+      {
+        id: 'angel',
+        name: 'Angel One',
+        description: 'Leading financial services company',
+        website: 'https://angelone.in'
+      },
+      {
+        id: 'finvasia',
+        name: 'Finvasia',
+        description: 'Zero brokerage trading platform',
+        website: 'https://finvasia.com'
+      },
+      {
+        id: 'zebu',
+        name: 'Zebu',
+        description: 'Technology-driven stockbroking',
+        website: 'https://zebu.in'
       }
-      // Future: Add more brokers like Upstox, Angel One, etc.
     ];
+  }
+
+  /**
+   * OAuth operations for broker authentication
+   */
+  async initiateOAuthLogin(clientId: string): Promise<ApiResponse<{
+    oauth_url: string;
+    state: string;
+    expires_in: number;
+  }>> {
+    try {
+      const response = await apiClient.post<ApiResponse<{
+        oauth_url: string;
+        state: string;
+        expires_in: number;
+      }>>(`/broker-accounts/${clientId}/oauth/login`);
+
+      return response;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to initiate OAuth login');
+    }
+  }
+
+  async handleOAuthCallback(clientId: string, requestToken: string, state: string): Promise<ApiResponse<{
+    token_expires_at: string;
+    login_time: string;
+    valid_until: string;
+  }>> {
+    try {
+      const response = await apiClient.post<ApiResponse<{
+        token_expires_at: string;
+        login_time: string;
+        valid_until: string;
+      }>>(`/broker-accounts/${clientId}/oauth/callback`, {
+        request_token: requestToken,
+        state: state
+      });
+
+      return response;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to handle OAuth callback');
+    }
+  }
+
+  async getOAuthStatus(clientId: string): Promise<ApiResponse<{
+    has_token: boolean;
+    is_valid: boolean;
+    expires_at?: string;
+    last_login?: string;
+    requires_login: boolean;
+  }>> {
+    try {
+      const response = await apiClient.get<ApiResponse<{
+        has_token: boolean;
+        is_valid: boolean;
+        expires_at?: string;
+        last_login?: string;
+        requires_login: boolean;
+      }>>(`/broker-accounts/${clientId}/oauth/status`);
+
+      return response;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to get OAuth status');
+    }
   }
 
   /**

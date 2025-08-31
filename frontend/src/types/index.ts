@@ -30,15 +30,19 @@ export interface AuthTokens {
 
 // Broker Account Types
 export interface BrokerAccount {
-  broker_account_id: string;
   user_id: string;
-  broker_name: string;
-  account_name: string;
-  account_type: string;
-  account_status: 'active' | 'inactive' | 'pending';
+  client_id: string;
+  broker_name: 'zerodha' | 'angel' | 'finvasia' | 'zebu';
+  group: 'BFW' | 'KOU' | 'PMS';
+  capital: number;
+  account_status: 'enabled' | 'disabled' | 'pending';
+  description: string;
   created_at: string;
   updated_at: string;
-  has_credentials?: boolean;
+  has_credentials: boolean;
+  has_oauth_token: boolean;
+  token_expires_at?: string;
+  last_oauth_login?: string;
   metadata?: {
     exchanges_enabled: string[];
     products_enabled: string[];
@@ -46,16 +50,19 @@ export interface BrokerAccount {
 }
 
 export interface CreateBrokerAccount {
-  broker_name: string;
-  account_name: string;
+  broker_name: 'zerodha' | 'angel' | 'finvasia' | 'zebu';
+  client_id: string;
   api_key: string;
   api_secret: string;
-  account_status: 'active' | 'inactive' | 'pending';
+  capital: number;
+  description?: string;
 }
 
 export interface UpdateBrokerAccount {
   api_key?: string;
   api_secret?: string;
+  capital?: number;
+  description?: string;
 }
 
 // API Response Types
