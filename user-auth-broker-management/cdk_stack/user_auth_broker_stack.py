@@ -296,10 +296,11 @@ class UserAuthBrokerStack(Stack):
                     "pip install -r requirements.txt -t /asset-output && cp -au . /asset-output"
                 ]
             }),
-            handler="zerodha_oauth_handler.lambda_handler",
+            handler="refactored_oauth_handler.lambda_handler",
             timeout=Duration.seconds(30),
             environment={
                 "ENVIRONMENT": self.deploy_env,
+                "STAGE": self.deploy_env,
                 "COMPANY_PREFIX": self.company_prefix,
                 "PROJECT_NAME": self.project_name,
                 "BROKER_ACCOUNTS_TABLE": broker_accounts_table.table_name,
@@ -409,6 +410,7 @@ class UserAuthBrokerStack(Stack):
             iam.PolicyStatement(
                 effect=iam.Effect.ALLOW,
                 actions=[
+                    "secretsmanager:CreateSecret",
                     "secretsmanager:GetSecretValue",
                     "secretsmanager:UpdateSecret",
                     "secretsmanager:DescribeSecret"
