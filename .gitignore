@@ -36,7 +36,10 @@ Thumbs.db
 **/*.pem
 **/*.key
 **/credentials
-**/config
+# AWS CLI config files (not frontend config directories)
+.aws/config
+aws/config
+**/aws/config
 
 # Logs
 **/*.log
