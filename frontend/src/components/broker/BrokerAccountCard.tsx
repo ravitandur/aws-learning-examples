@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { MoreHorizontal, Edit, Trash2, Wifi, WifiOff } from 'lucide-react';
 import { BrokerAccount } from '../../types';
+import { OAuthButton } from '../oauth/OAuthButton';
+import { OAuthStatusDisplay } from '../oauth/OAuthStatusDisplay';
+import { useOAuth } from '../../context/OAuthContext';
+import { supportsOAuth } from '../../config/brokerConfigs';
 
 interface BrokerAccountCardProps {
   account: BrokerAccount;
@@ -8,6 +12,7 @@ interface BrokerAccountCardProps {
   onDelete: (clientId: string) => void;
   onTest: (clientId: string) => void;
   isTestingConnection?: boolean;
+  onOAuthUpdate?: () => void; // Callback to refresh account data
 }
 
 const BrokerAccountCard: React.FC<BrokerAccountCardProps> = ({
@@ -16,9 +21,11 @@ const BrokerAccountCard: React.FC<BrokerAccountCardProps> = ({
   onDelete,
   onTest,
   isTestingConnection = false,
+  onOAuthUpdate,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const { supportsOAuth: contextSupportsOAuth } = useOAuth();
 
   const getStatusColor = () => {
     switch (account.account_status) {
@@ -31,6 +38,21 @@ const BrokerAccountCard: React.FC<BrokerAccountCardProps> = ({
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
+  };
+
+  // Check if this broker supports OAuth
+  const brokerSupportsOAuth = supportsOAuth(account.broker_name) && contextSupportsOAuth(account.broker_name);
+
+  // Handle OAuth success
+  const handleOAuthSuccess = (data: any) => {
+    console.log('OAuth authentication successful:', data);
+    onOAuthUpdate?.();
+  };
+
+  // Handle OAuth error
+  const handleOAuthError = (error: string) => {
+    console.error('OAuth authentication failed:', error);
+    // Error is already displayed by OAuthButton component
   };
 
   return (
@@ -99,17 +121,27 @@ const BrokerAccountCard: React.FC<BrokerAccountCardProps> = ({
             <span className="text-gray-500 dark:text-gray-400">Capital:</span>
             <span className="text-gray-900 dark:text-white font-medium">₹{account.capital?.toLocaleString()}</span>
           </div>
-          {account.has_oauth_token && (
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-500 dark:text-gray-400">OAuth:</span>
-              <span className="text-green-600 dark:text-green-400 text-xs">Connected</span>
-            </div>
+          {brokerSupportsOAuth && (
+            <OAuthStatusDisplay 
+              brokerAccount={account}
+              className="mt-2"
+            />
           )}
         </div>
       </div>
 
       {/* Actions */}
       <div className="flex gap-2">
+        {brokerSupportsOAuth && (
+          <OAuthButton
+            brokerAccount={account}
+            onAuthSuccess={handleOAuthSuccess}
+            onAuthError={handleOAuthError}
+            disabled={account.account_status !== 'enabled'}
+            className=""
+          />
+        )}
+        
         <button
           onClick={() => onTest(account.client_id)}
           disabled={isTestingConnection}

@@ -219,6 +219,7 @@ const BrokerAccountsList: React.FC = () => {
               onDelete={handleDeleteAccount}
               onTest={handleTestConnection}
               isTestingConnection={testingClientId === account.client_id}
+              onOAuthUpdate={fetchBrokerAccounts}
             />
           ))}
         </div>

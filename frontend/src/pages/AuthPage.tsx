@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Turtle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import LoginForm from '../components/auth/LoginForm';
@@ -9,8 +9,9 @@ import EmailVerificationForm from '../components/auth/EmailVerificationForm';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 
 const AuthPage: React.FC = () => {
-  const { login, register, forgotPassword, resetPassword, isLoading, error, clearError } = useAuth() as any;
+  const { login, register, forgotPassword, resetPassword, isLoading, error, clearError, isAuthenticated } = useAuth() as any;
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot-password' | 'reset-password' | 'verify-email'>('login');
+  
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState(false);
   const [resetPasswordSuccess, setResetPasswordSuccess] = useState(false);
@@ -30,7 +31,7 @@ const AuthPage: React.FC = () => {
       const response = await register(userData);
       
       // Check if email verification is required
-      if (response?.email_verification_required) {
+      if (response?.email_verification_required === true) {
         // After successful registration, redirect to verification
         setPendingVerificationEmail(userData.email);
         setAuthMode('verify-email');

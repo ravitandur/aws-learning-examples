@@ -169,7 +169,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (response.success) {
         // Clear loading state so AuthPage can show verification form
-        dispatch({ type: 'CLEAR_ERROR' });
+        dispatch({ type: 'CLEAR_LOADING' });
         return response;
       } else {
         throw new Error(response.message || 'Registration failed');

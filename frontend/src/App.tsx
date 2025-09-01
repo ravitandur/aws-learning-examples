@@ -1,38 +1,59 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { OAuthProvider } from './context/OAuthContext';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import BrokersPage from './pages/BrokersPage';
 import AuthPage from './pages/AuthPage';
 import LoadingSpinner from './components/common/LoadingSpinner';
+import OAuthCallback from './components/oauth/OAuthCallback';
+
 
 // Main App Component (inside AuthProvider)
 const AppContent: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
 
-  // Show auth page if not authenticated (regardless of loading state during auth flows)
-  if (!isAuthenticated) {
-    return <AuthPage />;
-  }
-
-  // Show loading spinner only for initial app authentication check
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <LoadingSpinner message="Loading application..." />
-      </div>
-    );
-  }
-
-  // Render main application with routing
   return (
     <BrowserRouter future={{
       v7_startTransition: true,
       v7_relativeSplatPath: true
     }}>
       <Routes>
-        <Route path="/" element={<Layout />}>
+        {/* OAuth callback route - accessible without authentication */}
+        <Route path="/oauth/callback" element={<OAuthCallback />} />
+        
+        {/* Auth page route - redirect to dashboard if already authenticated */}
+        <Route 
+          path="/auth" 
+          element={
+            isLoading && !window.location.pathname.includes('/auth') ? (
+              <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+                <LoadingSpinner message="Loading application..." />
+              </div>
+            ) : isAuthenticated ? (
+              <Navigate to="/" replace />
+            ) : (
+              <AuthPage />
+            )
+          } 
+        />
+        
+        {/* Protected routes with Layout */}
+        <Route
+          path="/*"
+          element={
+            isLoading ? (
+              <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
+                <LoadingSpinner message="Loading application..." />
+              </div>
+            ) : !isAuthenticated ? (
+              <Navigate to="/auth" replace />
+            ) : (
+              <Layout />
+            )
+          }
+        >
           <Route index element={<Dashboard />} />
           <Route path="brokers" element={<BrokersPage />} />
           <Route path="strategies" element={<div className="space-y-6"><h1 className="text-2xl font-bold">Strategies</h1><p>Coming Soon</p></div>} />
@@ -41,9 +62,6 @@ const AppContent: React.FC = () => {
           <Route path="settings" element={<div className="space-y-6"><h1 className="text-2xl font-bold">Settings</h1><p>Settings configuration will be available here.</p></div>} />
           <Route path="account" element={<div className="space-y-6"><h1 className="text-2xl font-bold">Account</h1><p>Account management features will be available here.</p></div>} />
         </Route>
-        
-        {/* Fallback route */}
-        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );
@@ -53,7 +71,9 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <AuthProvider>
-      <AppContent />
+      <OAuthProvider>
+        <AppContent />
+      </OAuthProvider>
     </AuthProvider>
   );
 };

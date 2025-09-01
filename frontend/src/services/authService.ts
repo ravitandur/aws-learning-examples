@@ -5,9 +5,9 @@ class AuthService {
   /**
    * Register a new user
    */
-  async register(userData: UserRegistration): Promise<ApiResponse<{ user_id: string }>> {
+  async register(userData: UserRegistration): Promise<ApiResponse<any>> {
     try {
-      const response = await apiClient.post<ApiResponse<{ user_id: string }>>(
+      const response = await apiClient.post<ApiResponse<any>>(
         '/auth/register',
         userData
       );
