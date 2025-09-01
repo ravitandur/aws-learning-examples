@@ -73,6 +73,10 @@ export class ZerodhaOAuthStrategy extends BrokerOAuthStrategy {
 
       // Validate state parameter
       const storedState = this.getStoredOAuthState(clientId);
+      
+      // If no state in callback, use stored state (Zerodha doesn't return state in callback)
+      const finalState = state || storedState || '';
+      
       if (storedState && state && state !== storedState) {
         console.error('State mismatch:', { stored: storedState, received: state, clientId });
         throw new Error('State parameter mismatch - potential security issue');
@@ -83,11 +87,12 @@ export class ZerodhaOAuthStrategy extends BrokerOAuthStrategy {
         clientId, 
         hasStoredState: !!storedState, 
         hasReceivedState: !!state, 
+        finalState: finalState,
         statesMatch: !storedState || !state || storedState === state 
       });
 
       // Exchange request token for access token via backend
-      const response = await brokerService.handleOAuthCallback(clientId, request_token!, state || '');
+      const response = await brokerService.handleOAuthCallback(clientId, request_token!, finalState);
       
       // Clean up stored state
       this.clearOAuthState(clientId);

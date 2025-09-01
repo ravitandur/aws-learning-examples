@@ -423,11 +423,16 @@ def handle_update_broker_account(event, user_id, client_id, table, secretsmanage
         
         # Update credentials if provided
         if 'api_key' in body or 'api_secret' in body:
-            # Get existing credentials
+            # Get existing credentials using same naming logic as creation
             api_secret_arn = existing_account.get('api_key_secret_arn')
             if api_secret_arn:
+                # Use same naming logic as creation
+                company_prefix = os.environ.get('COMPANY_PREFIX', 'ql')
+                environment = os.environ.get('ENVIRONMENT', 'dev')
+                broker_name = existing_account.get('broker_name')
+                api_secret_name = f"{company_prefix}-{broker_name}-api-credentials-{environment}-{user_id}-{client_id}"
+                
                 try:
-                    api_secret_name = api_secret_arn.split(':')[-1]
                     existing_secret = secretsmanager.get_secret_value(SecretId=api_secret_name)
                     existing_creds = json.loads(existing_secret['SecretString'])
                     
@@ -446,7 +451,7 @@ def handle_update_broker_account(event, user_id, client_id, table, secretsmanage
                     )
                     
                 except Exception as e:
-                    logger.error("Failed to update credentials in Secrets Manager", extra={"error": str(e), "user_id": user_id})
+                    logger.error("Failed to update credentials in Secrets Manager", extra={"error": str(e), "user_id": user_id, "secret_name": api_secret_name})
                     return {
                         'statusCode': 500,
                         'headers': {
@@ -541,28 +546,38 @@ def handle_delete_broker_account(event, user_id, client_id, table, secretsmanage
         # Delete API credentials from Secrets Manager
         api_secret_arn = existing_account.get('api_key_secret_arn')
         if api_secret_arn:
+            # Use same naming logic as creation
+            company_prefix = os.environ.get('COMPANY_PREFIX', 'ql')
+            environment = os.environ.get('ENVIRONMENT', 'dev')
+            broker_name = existing_account.get('broker_name')
+            api_secret_name = f"{company_prefix}-{broker_name}-api-credentials-{environment}-{user_id}-{client_id}"
+            
             try:
-                api_secret_name = api_secret_arn.split(':')[-1]
                 secretsmanager.delete_secret(
                     SecretId=api_secret_name,
                     ForceDeleteWithoutRecovery=True
                 )
                 log_user_action(logger, user_id, "api_credentials_deleted", {"secret_name": api_secret_name, "client_id": client_id})
             except Exception as e:
-                logger.error("Failed to delete API secret", extra={"error": str(e), "user_id": user_id})
+                logger.error("Failed to delete API secret", extra={"error": str(e), "user_id": user_id, "secret_name": api_secret_name})
                 
         # Delete OAuth tokens from Secrets Manager
         oauth_secret_arn = existing_account.get('oauth_token_secret_arn')
         if oauth_secret_arn:
+            # Use same naming logic as creation
+            company_prefix = os.environ.get('COMPANY_PREFIX', 'ql')
+            environment = os.environ.get('ENVIRONMENT', 'dev')
+            broker_name = existing_account.get('broker_name')
+            oauth_secret_name = f"{company_prefix}-{broker_name}-oauth-tokens-{environment}-{user_id}-{client_id}"
+            
             try:
-                oauth_secret_name = oauth_secret_arn.split(':')[-1]
                 secretsmanager.delete_secret(
                     SecretId=oauth_secret_name,
                     ForceDeleteWithoutRecovery=True
                 )
                 log_user_action(logger, user_id, "oauth_tokens_deleted", {"secret_name": oauth_secret_name, "client_id": client_id})
             except Exception as e:
-                logger.error("Failed to delete OAuth secret", extra={"error": str(e), "user_id": user_id})
+                logger.error("Failed to delete OAuth secret", extra={"error": str(e), "user_id": user_id, "secret_name": oauth_secret_name})
         
         # Delete from DynamoDB
         table.delete_item(

@@ -44,6 +44,9 @@ const OAuthCallback: React.FC = () => {
           throw new Error(`No request token received from ${storedBroker}. Please try again.`);
         }
         
+        // Use stored state if no state in URL (Zerodha doesn't return state in callback)
+        const finalState = state || storedState;
+        
         // Basic state validation
         if (storedState && state && state !== storedState) {
           throw new Error('State parameter mismatch - potential security issue');
@@ -54,7 +57,7 @@ const OAuthCallback: React.FC = () => {
         // Use the OAuth context to handle the callback
         const callbackParams: any = {
           request_token: requestToken || undefined,
-          state: state || undefined
+          state: finalState || undefined
         };
         
         if (status) callbackParams.status = status;

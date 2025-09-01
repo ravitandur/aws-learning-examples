@@ -308,10 +308,28 @@ class UserAuthBrokerStack(Stack):
             }
         )
 
+        # Lambda function for broker connection testing
+        broker_connection_test_lambda = _lambda.Function(
+            self, "BrokerConnectionTestFunction",
+            function_name=self.get_resource_name("broker-connection-test"),
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            code=_lambda.Code.from_asset("lambda_functions/broker_accounts"),
+            handler="connection_tester.lambda_handler",
+            timeout=Duration.seconds(30),
+            environment={
+                "ENVIRONMENT": self.deploy_env,
+                "COMPANY_PREFIX": self.company_prefix,
+                "PROJECT_NAME": self.project_name,
+                "BROKER_ACCOUNTS_TABLE": broker_accounts_table.table_name,
+                "REGION": self.region
+            }
+        )
+
         # Grant permissions to Lambda functions
         user_profiles_table.grant_read_write_data(user_registration_lambda)
         broker_accounts_table.grant_read_write_data(broker_account_lambda)
         broker_accounts_table.grant_read_write_data(broker_oauth_lambda)
+        broker_accounts_table.grant_read_data(broker_connection_test_lambda)
         
         # Grant Cognito permissions
         user_registration_lambda.add_to_role_policy(
@@ -419,6 +437,17 @@ class UserAuthBrokerStack(Stack):
             )
         )
 
+        # Grant Secrets Manager permissions for connection testing Lambda
+        broker_connection_test_lambda.add_to_role_policy(
+            iam.PolicyStatement(
+                effect=iam.Effect.ALLOW,
+                actions=[
+                    "secretsmanager:GetSecretValue"
+                ],
+                resources=[f"arn:aws:secretsmanager:{self.region}:{self.account}:secret:{self.company_prefix}-*-credentials-{self.deploy_env}-*"]
+            )
+        )
+
         # API Gateway with Cognito authorizer
         api = apigateway.RestApi(
             self, "AlgoTradingAPI",
@@ -506,6 +535,16 @@ class UserAuthBrokerStack(Stack):
         broker_account_resource.add_method(
             "DELETE",
             apigateway.LambdaIntegration(broker_account_lambda),
+            authorizer=cognito_authorizer,
+            authorization_type=apigateway.AuthorizationType.COGNITO
+        )
+        
+        # Connection test endpoint for broker accounts
+        verify_resource = broker_account_resource.add_resource("verify")
+        
+        verify_resource.add_method(
+            "POST",
+            apigateway.LambdaIntegration(broker_connection_test_lambda),
             authorizer=cognito_authorizer,
             authorization_type=apigateway.AuthorizationType.COGNITO
         )

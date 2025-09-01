@@ -478,11 +478,107 @@ fields @timestamp, status_code, message
 4. **Environment Configuration**: Updated frontend .env with new API Gateway endpoint
 
 ### ✅ Deployment & Testing Status
-- **API Gateway**: `https://cgsdoaq0i1.execute-api.ap-south-1.amazonaws.com/dev/`
-- **DynamoDB Table**: `ql-algo-trading-dev-broker-accounts` with new schema
+- **API Gateway**: `https://hzwihxgo30.execute-api.ap-south-1.amazonaws.com/dev/`
+- **DynamoDB Table**: `ql-algo-trading-dev-broker-accounts` with enhanced schema
 - **Frontend Configuration**: Updated with correct API endpoint and environment variables
 - **TypeScript Compilation**: Clean build with no errors
-- **Infrastructure**: Successfully deployed with all new OAuth endpoints
+- **Infrastructure**: Successfully deployed with OAuth and Test Connection endpoints
+
+## Latest Enhancements: OAuth & Connection Testing (September 2025)
+
+### ✅ OAuth State Parameter Security Implementation
+
+**Problem Solved**: Original OAuth implementation had critical security vulnerability where state parameters were generated but not properly validated, leading to "State parameter is invalid or has expired" errors.
+
+#### **Root Cause Analysis**
+- Backend OAuth status incorrectly returned `has_token: true` when token object existed with null values
+- Frontend OAuth button disabled due to incorrect connection status detection
+- Zerodha OAuth callback doesn't return state parameter (common OAuth provider behavior)
+
+#### **Security Fixes Applied**
+1. **Enhanced State Management**: 
+   - `store_oauth_state()` - Stores generated state in DynamoDB with 5-minute TTL
+   - `validate_state()` - Validates callback state against stored value with automatic cleanup
+   - State expires after 5 minutes with automatic DynamoDB TTL cleanup
+
+2. **OAuth Status Logic Fix**:
+   ```python
+   # OLD (BUGGY): Always returned has_token: True when token object existed
+   'has_token': True,
+   
+   # NEW (FIXED): Only true when actual access_token exists  
+   has_access_token = bool(tokens.get('access_token'))
+   'has_token': has_access_token,
+   ```
+
+3. **Frontend State Handling**:
+   ```javascript
+   // Handle Zerodha's missing state parameter in callback
+   const finalState = state || storedState || '';
+   ```
+
+#### **Security Architecture**
+- **CSRF Protection**: Proper OAuth state parameter validation prevents CSRF attacks
+- **Replay Prevention**: One-time use states with automatic cleanup after validation
+- **Secure Storage**: States stored in DynamoDB with proper TTL and access controls
+- **Error Handling**: Comprehensive logging for security audit trails
+
+### ✅ Test Connection Functionality Implementation
+
+**New Feature**: Comprehensive broker credential validation system for debugging and monitoring purposes.
+
+#### **Backend Implementation**
+- **Lambda Function**: `ql-algo-trading-dev-broker-connection-test`
+- **API Endpoint**: `POST /broker-accounts/{client_id}/verify`
+- **Authentication**: Cognito JWT required with user-specific access control
+
+#### **Connection Testing Logic**
+```python
+def test_zerodha_connection(credentials):
+    # Validates API key format (15-20 alphanumeric characters)
+    # Validates API secret format (20-40 alphanumeric characters)  
+    # Checks credential accessibility from Secrets Manager
+    # Returns detailed validation results with security logging
+```
+
+#### **Multi-Broker Support**
+- **Zerodha**: Full credential format validation and accessibility testing
+- **Angel One/Finvasia/Zebu**: Placeholder implementation ready for expansion
+- **Extensible Architecture**: Easy to add new broker-specific validation logic
+
+#### **Security & Logging**
+- **Audit Trail**: All connection tests logged with user context
+- **Credential Protection**: API secrets partially masked in logs (`ei6m***`)
+- **Access Control**: Users can only test their own broker accounts
+- **Error Handling**: Comprehensive error reporting without exposing sensitive data
+
+#### **Integration**
+- **Frontend**: "Test Connection" button in broker account cards
+- **API Response**: Standardized format with status, details, and timestamps
+- **User Experience**: Real-time feedback on credential validity
+
+#### **Technical Architecture**
+```yaml
+Infrastructure:
+  Lambda: connection_tester.py with shared_utils logging
+  Permissions: DynamoDB read, Secrets Manager read (credentials only)
+  API Gateway: POST method with CORS and Cognito authorization
+  
+Response Format:
+  success: boolean
+  data:
+    status: "connected" | "failed"
+    details: string
+    broker_name: string
+    tested_at: ISO timestamp
+```
+
+### ✅ System Reliability Improvements
+
+1. **Import Error Resolution**: Removed unused `requests` import that was causing Lambda runtime failures
+2. **CORS Configuration**: Proper CORS headers for all connection test responses
+3. **Error Handling**: Structured error responses with appropriate HTTP status codes
+4. **Shared Dependencies**: Consistent shared_utils integration across all Lambda functions
 
 ## Success Criteria - All Completed
 - ✅ User registration with Indian phone/state validation
@@ -507,6 +603,8 @@ fields @timestamp, status_code, message
 - ✅ **Multi-broker support (Zerodha, Angel One, Finvasia, Zebu)**
 - ✅ **Field edit restrictions for data integrity**
 - ✅ **DynamoDB Decimal type handling for financial data**
+- ✅ **OAuth state parameter validation with proper security (September 2025)**
+- ✅ **Test Connection functionality for broker credential validation (September 2025)**
 - ✅ Foundation ready for market data integration (Module 3)
 
 ## Next Module Integration

@@ -131,9 +131,52 @@ class BaseBrokerOAuthHandler(ABC):
         
         return state_hash
     
+    def store_oauth_state(self, user_id: str, client_id: str, state: str) -> bool:
+        """
+        Store OAuth state parameter in DynamoDB for validation
+        
+        Args:
+            user_id: User ID
+            client_id: Client ID
+            state: Generated state parameter
+            
+        Returns:
+            True if stored successfully, False otherwise
+        """
+        try:
+            # Store state with 5-minute TTL
+            expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
+            
+            self.table.put_item(
+                Item={
+                    'user_id': f"{user_id}#oauth_state",  # Use composite key
+                    'client_id': client_id,
+                    'oauth_state': state,
+                    'created_at': datetime.now(timezone.utc).isoformat(),
+                    'expires_at': expires_at.isoformat(),
+                    'ttl': int(expires_at.timestamp())  # DynamoDB TTL
+                }
+            )
+            
+            logger.info("OAuth state stored successfully", extra={
+                "user_id": user_id,
+                "client_id": client_id,
+                "broker": self.broker_name
+            })
+            return True
+            
+        except Exception as e:
+            logger.error("Failed to store OAuth state", extra={
+                "error": str(e),
+                "user_id": user_id,
+                "client_id": client_id,
+                "broker": self.broker_name
+            })
+            return False
+    
     def validate_state(self, state: str, user_id: str, client_id: str) -> bool:
         """
-        Validate OAuth state parameter
+        Validate OAuth state parameter against stored value
         
         Args:
             state: State parameter from callback
@@ -143,11 +186,120 @@ class BaseBrokerOAuthHandler(ABC):
         Returns:
             True if state is valid, False otherwise
         """
-        # In a production system, you'd store and validate against stored state
-        # For now, we'll perform basic validation
-        if not state or len(state) < 16:
+        try:
+            if not state or len(state) < 16:
+                logger.warning("Invalid state format", extra={
+                    "state_length": len(state) if state else 0,
+                    "user_id": user_id,
+                    "client_id": client_id,
+                    "broker": self.broker_name
+                })
+                return False
+            
+            # Retrieve stored state from DynamoDB
+            response = self.table.get_item(
+                Key={
+                    'user_id': f"{user_id}#oauth_state",
+                    'client_id': client_id
+                }
+            )
+            
+            stored_state_item = response.get('Item')
+            if not stored_state_item:
+                logger.warning("No stored OAuth state found", extra={
+                    "user_id": user_id,
+                    "client_id": client_id,
+                    "broker": self.broker_name
+                })
+                return False
+            
+            stored_state = stored_state_item.get('oauth_state')
+            if not stored_state:
+                logger.warning("Stored OAuth state is empty", extra={
+                    "user_id": user_id,
+                    "client_id": client_id,
+                    "broker": self.broker_name
+                })
+                return False
+            
+            # Check if state expired
+            expires_at_str = stored_state_item.get('expires_at')
+            if expires_at_str:
+                expires_at = datetime.fromisoformat(expires_at_str.replace('Z', '+00:00'))
+                if datetime.now(timezone.utc) >= expires_at:
+                    logger.warning("OAuth state has expired", extra={
+                        "user_id": user_id,
+                        "client_id": client_id,
+                        "expires_at": expires_at.isoformat(),
+                        "broker": self.broker_name
+                    })
+                    # Clean up expired state
+                    self.cleanup_oauth_state(user_id, client_id)
+                    return False
+            
+            # Validate state matches
+            is_valid = state == stored_state
+            
+            if is_valid:
+                logger.info("OAuth state validation successful", extra={
+                    "user_id": user_id,
+                    "client_id": client_id,
+                    "broker": self.broker_name
+                })
+                # Clean up used state
+                self.cleanup_oauth_state(user_id, client_id)
+            else:
+                logger.warning("OAuth state mismatch", extra={
+                    "user_id": user_id,
+                    "client_id": client_id,
+                    "broker": self.broker_name
+                })
+            
+            return is_valid
+            
+        except Exception as e:
+            logger.error("Error validating OAuth state", extra={
+                "error": str(e),
+                "user_id": user_id,
+                "client_id": client_id,
+                "broker": self.broker_name
+            })
             return False
-        return True
+    
+    def cleanup_oauth_state(self, user_id: str, client_id: str) -> bool:
+        """
+        Clean up OAuth state after successful validation or expiry
+        
+        Args:
+            user_id: User ID
+            client_id: Client ID
+            
+        Returns:
+            True if cleanup was successful, False otherwise
+        """
+        try:
+            self.table.delete_item(
+                Key={
+                    'user_id': f"{user_id}#oauth_state",
+                    'client_id': client_id
+                }
+            )
+            
+            logger.info("OAuth state cleaned up", extra={
+                "user_id": user_id,
+                "client_id": client_id,
+                "broker": self.broker_name
+            })
+            return True
+            
+        except Exception as e:
+            logger.error("Failed to cleanup OAuth state", extra={
+                "error": str(e),
+                "user_id": user_id,
+                "client_id": client_id,
+                "broker": self.broker_name
+            })
+            return False
     
     def get_broker_account(self, user_id: str, client_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -425,6 +577,14 @@ class BaseBrokerOAuthHandler(ABC):
             state = self.generate_state(user_id, client_id)
             oauth_url = self.get_oauth_url(credentials['api_key'], state)
             
+            # Store state for validation during callback
+            if not self.store_oauth_state(user_id, client_id, state):
+                return self.create_error_response(
+                    'Failed to store OAuth state',
+                    'Unable to store state parameter for validation',
+                    500
+                )
+            
             log_user_action(logger, user_id, "oauth_login_initiated", {
                 "client_id": client_id,
                 "broker_name": self.broker_name
@@ -570,15 +730,21 @@ class BaseBrokerOAuthHandler(ABC):
                     'requires_login': True
                 }, 'No OAuth tokens found')
             
-            # Check token validity
-            is_valid = self.check_token_validity(tokens)
+            # Check if actual token exists (not just the token object)
+            has_access_token = bool(tokens.get('access_token'))
+            
+            # Only check validity if token exists
+            is_valid = False
+            if has_access_token:
+                is_valid = self.check_token_validity(tokens)
+            
             expires_at = tokens.get('token_expires_at')
             last_login = tokens.get('last_oauth_login')
             
             return self.create_success_response({
-                'has_token': True,
+                'has_token': has_access_token,
                 'is_valid': is_valid,
-                'requires_login': not is_valid,
+                'requires_login': not (has_access_token and is_valid),
                 'expires_at': expires_at,
                 'last_login': last_login
             }, 'OAuth status retrieved successfully')
