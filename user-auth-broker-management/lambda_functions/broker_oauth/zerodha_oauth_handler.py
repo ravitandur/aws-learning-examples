@@ -7,6 +7,7 @@ import sys
 import urllib.parse
 import hashlib
 import secrets
+import requests
 
 # Add paths for imports
 sys.path.append('/opt/python')
@@ -184,9 +185,8 @@ def handle_oauth_login(user_id, client_id, table, secretsmanager):
             }
         
         try:
-            # Get API key from secrets
-            api_secret_name = api_secret_arn.split(':')[-1]
-            secret_response = secretsmanager.get_secret_value(SecretId=api_secret_name)
+            # Get API key from secrets using the full ARN
+            secret_response = secretsmanager.get_secret_value(SecretId=api_secret_arn)
             credentials = json.loads(secret_response['SecretString'])
             api_key = credentials['api_key']
             
@@ -216,7 +216,8 @@ def handle_oauth_login(user_id, client_id, table, secretsmanager):
             'nonce': secrets.token_urlsafe(16)
         }
         
-        # Create OAuth URL for Zerodha
+        # Create OAuth URL for Zerodha (redirect_uri will be added by frontend)
+        # Note: Frontend will append &redirect_uri={callback_url} to this URL
         oauth_url = f"https://kite.zerodha.com/connect/login?api_key={api_key}&state={state}"
         
         log_user_action(logger, user_id, "oauth_login_initiated", {
@@ -268,7 +269,7 @@ def handle_oauth_callback(event, user_id, client_id, table, secretsmanager):
         request_token = body.get('request_token')
         state = body.get('state')
         
-        if not request_token or not state:
+        if not request_token:
             return {
                 'statusCode': 400,
                 'headers': {
@@ -277,7 +278,7 @@ def handle_oauth_callback(event, user_id, client_id, table, secretsmanager):
                 },
                 'body': json.dumps({
                     'error': 'Missing required parameters',
-                    'message': 'request_token and state are required'
+                    'message': 'request_token is required'
                 })
             }
         
@@ -321,9 +322,8 @@ def handle_oauth_callback(event, user_id, client_id, table, secretsmanager):
             }
         
         try:
-            # Get API credentials from secrets
-            api_secret_name = api_secret_arn.split(':')[-1]
-            secret_response = secretsmanager.get_secret_value(SecretId=api_secret_name)
+            # Get API credentials from secrets using the full ARN
+            secret_response = secretsmanager.get_secret_value(SecretId=api_secret_arn)
             credentials = json.loads(secret_response['SecretString'])
             api_key = credentials['api_key']
             api_secret = credentials['api_secret']
@@ -341,33 +341,65 @@ def handle_oauth_callback(event, user_id, client_id, table, secretsmanager):
                 })
             }
         
-        # TODO: Implement actual Zerodha API call to exchange request_token for access_token
-        # This would require the Zerodha Python SDK or direct API calls
-        # For now, we'll simulate the token exchange
+        # Exchange request_token for access_token using Zerodha API
+        try:
+            logger.info("Starting token exchange", extra={
+                "user_id": user_id, 
+                "client_id": client_id,
+                "request_token_length": len(request_token) if request_token else 0,
+                "api_key_length": len(api_key) if api_key else 0
+            })
+            
+            access_token = exchange_request_token_for_access_token(
+                api_key, api_secret, request_token
+            )
+            
+            logger.info("Token exchange successful", extra={
+                "user_id": user_id,
+                "client_id": client_id,
+                "access_token_length": len(access_token) if access_token else 0
+            })
+            
+        except Exception as e:
+            logger.error("Failed to exchange request token", extra={
+                "error": str(e), 
+                "user_id": user_id,
+                "client_id": client_id,
+                "request_token_prefix": request_token[:8] + "..." if request_token and len(request_token) > 8 else request_token
+            })
+            return {
+                'statusCode': 400,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({
+                    'error': 'Token exchange failed',
+                    'message': str(e)
+                })
+            }
         
         current_time = datetime.now(timezone.utc)
-        expires_at = current_time + timedelta(hours=8)  # Zerodha tokens typically expire after market hours
-        
-        # Simulated access token (in production, get this from Zerodha API)
-        access_token = f"simulated_token_{secrets.token_urlsafe(32)}"
+        expires_at = get_next_expiry_time()  # Next 6 AM IST
         
         # Store OAuth tokens in Secrets Manager
         oauth_secret_arn = account.get('oauth_token_secret_arn')
         if oauth_secret_arn:
-            oauth_secret_name = oauth_secret_arn.split(':')[-1]
-            
             oauth_token_data = {
                 'access_token': access_token,
-                'token_expires_at': expires_at.isoformat(),
+                'api_key': api_key,  # Store for Authorization header
+                'token_expires_at': expires_at,
                 'last_oauth_login': current_time.isoformat(),
+                'session_valid': True,
                 'client_id': client_id,
                 'broker_name': 'zerodha',
                 'user_id': user_id,
-                'created_at': current_time.isoformat()
+                'created_at': current_time.isoformat(),
+                'updated_at': current_time.isoformat()
             }
             
             secretsmanager.update_secret(
-                SecretId=oauth_secret_name,
+                SecretId=oauth_secret_arn,
                 SecretString=json.dumps(oauth_token_data)
             )
             
@@ -379,7 +411,7 @@ def handle_oauth_callback(event, user_id, client_id, table, secretsmanager):
                 },
                 UpdateExpression='SET token_expires_at = :expires_at, last_oauth_login = :login_time, updated_at = :updated_at',
                 ExpressionAttributeValues={
-                    ':expires_at': expires_at.isoformat(),
+                    ':expires_at': expires_at,
                     ':login_time': current_time.isoformat(),
                     ':updated_at': current_time.isoformat()
                 }
@@ -387,7 +419,7 @@ def handle_oauth_callback(event, user_id, client_id, table, secretsmanager):
             
             log_user_action(logger, user_id, "oauth_token_stored", {
                 "client_id": client_id,
-                "expires_at": expires_at.isoformat()
+                "expires_at": expires_at
             })
             
             return {
@@ -399,9 +431,9 @@ def handle_oauth_callback(event, user_id, client_id, table, secretsmanager):
                 'body': json.dumps({
                     'success': True,
                     'data': {
-                        'token_expires_at': expires_at.isoformat(),
+                        'token_expires_at': expires_at,
                         'login_time': current_time.isoformat(),
-                        'valid_until': expires_at.strftime('%Y-%m-%d %H:%M:%S UTC')
+                        'valid_until': datetime.fromisoformat(expires_at.replace('Z', '+00:00')).strftime('%Y-%m-%d %H:%M:%S UTC') if expires_at else 'Unknown'
                     },
                     'message': 'OAuth authentication successful'
                 })
@@ -489,3 +521,99 @@ def handle_oauth_status(user_id, client_id, table, secretsmanager):
                 'message': str(e)
             })
         }
+
+def exchange_request_token_for_access_token(api_key, api_secret, request_token):
+    """Exchange Zerodha request token for access token using official API"""
+    
+    try:
+        logger.info("Starting Zerodha token exchange", extra={
+            "api_key_prefix": api_key[:8] + "..." if api_key and len(api_key) > 8 else api_key,
+            "request_token_prefix": request_token[:8] + "..." if request_token and len(request_token) > 8 else request_token,
+            "api_secret_length": len(api_secret) if api_secret else 0
+        })
+        
+        # Generate checksum as per Zerodha documentation
+        # checksum = SHA-256(api_key + request_token + api_secret)
+        checksum = hashlib.sha256(f"{api_key}{request_token}{api_secret}".encode()).hexdigest()
+        
+        logger.info("Generated checksum", extra={
+            "checksum_prefix": checksum[:16] + "..." if checksum else None,
+            "input_string_length": len(f"{api_key}{request_token}{api_secret}")
+        })
+        
+        # Call Zerodha token exchange endpoint
+        logger.info("Calling Zerodha API for token exchange")
+        response = requests.post(
+            "https://api.kite.trade/session/token",
+            data={
+                "api_key": api_key,
+                "request_token": request_token,
+                "checksum": checksum
+            },
+            timeout=30
+        )
+        
+        logger.info("Zerodha API response received", extra={
+            "status_code": response.status_code,
+            "content_type": response.headers.get('content-type', 'unknown'),
+            "response_length": len(response.text) if response.text else 0
+        })
+        
+        if response.status_code != 200:
+            error_data = response.json() if response.headers.get('content-type') == 'application/json' else {}
+            error_message = error_data.get('message', f'HTTP {response.status_code}: {response.text}')
+            logger.error("Zerodha API error", extra={"error_data": error_data, "response_text": response.text[:200]})
+            raise Exception(f"Token exchange failed: {error_message}")
+        
+        token_data = response.json()
+        logger.info("Token data parsed", extra={"status": token_data.get('status'), "has_data": bool(token_data.get('data'))})
+        
+        if token_data.get('status') != 'success':
+            logger.error("Zerodha token exchange failed", extra={"token_data": token_data})
+            raise Exception(f"Zerodha API error: {token_data.get('message', 'Unknown error')}")
+        
+        access_token = token_data['data']['access_token']
+        logger.info("Access token extracted successfully", extra={"token_length": len(access_token) if access_token else 0})
+        
+        return access_token
+        
+    except requests.exceptions.RequestException as e:
+        logger.error("Network error during token exchange", extra={"error": str(e)})
+        raise Exception(f"Network error during token exchange: {str(e)}")
+    except Exception as e:
+        logger.error("Token exchange error", extra={"error": str(e)})
+        raise Exception(f"Token exchange error: {str(e)}")
+
+def get_next_expiry_time():
+    """Calculate next 6 AM IST expiry time for Zerodha tokens"""
+    
+    # Get current time in UTC
+    now = datetime.now(timezone.utc)
+    
+    # Convert to IST (UTC + 5:30)
+    ist_offset = timedelta(hours=5, minutes=30)
+    ist_now = now + ist_offset
+    
+    # Next 6 AM IST
+    next_6am_ist = ist_now.replace(hour=6, minute=0, second=0, microsecond=0)
+    
+    # If it's already past 6 AM today, move to next day
+    if ist_now.hour >= 6:
+        next_6am_ist += timedelta(days=1)
+    
+    # Convert back to UTC and return ISO format
+    next_6am_utc = next_6am_ist - ist_offset
+    return next_6am_utc.isoformat()
+
+def is_token_valid(token_expires_at):
+    """Check if OAuth token is still valid"""
+    
+    if not token_expires_at:
+        return False
+    
+    try:
+        expires_at = datetime.fromisoformat(token_expires_at.replace('Z', '+00:00'))
+        current_time = datetime.now(timezone.utc)
+        return current_time < expires_at
+    except (ValueError, TypeError):
+        return False

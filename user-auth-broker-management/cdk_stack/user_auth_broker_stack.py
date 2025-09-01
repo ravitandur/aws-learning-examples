@@ -289,7 +289,13 @@ class UserAuthBrokerStack(Stack):
             self, "BrokerOAuthFunction",
             function_name=self.get_resource_name("broker-oauth"),
             runtime=_lambda.Runtime.PYTHON_3_9,
-            code=_lambda.Code.from_asset("lambda_functions/broker_oauth"),
+            code=_lambda.Code.from_asset("lambda_functions/broker_oauth", bundling={
+                "image": _lambda.Runtime.PYTHON_3_9.bundling_image,
+                "command": [
+                    "bash", "-c",
+                    "pip install -r requirements.txt -t /asset-output && cp -au . /asset-output"
+                ]
+            }),
             handler="zerodha_oauth_handler.lambda_handler",
             timeout=Duration.seconds(30),
             environment={
