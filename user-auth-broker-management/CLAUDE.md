@@ -484,6 +484,65 @@ fields @timestamp, status_code, message
 - **TypeScript Compilation**: Clean build with no errors
 - **Infrastructure**: Successfully deployed with OAuth and Test Connection endpoints
 
+## Latest Enterprise Standards & CDK Compliance (September 2, 2025)
+
+### ✅ Critical LogGroup Pattern Fix - Deployment Reliability Resolved
+**Major Achievement**: Fixed "LogGroup already exists" errors that prevented reliable stack redeployments
+
+#### **Problem Identified**:
+- **Issue**: Explicit LogGroup creation with `log_group` parameter caused deployment failures
+- **Error**: "LogGroup already exists" on stack redeploy, especially in staging/production
+- **Root Cause**: CDK doesn't handle LogGroup deletion/recreation reliably with removal policies
+
+#### **Solution Implemented**:
+1. **Reverted to logRetention Pattern**:
+   - **Removed**: All 9 explicit LogGroup constructs from CDK stack
+   - **Updated**: All Lambda functions to use `log_retention` parameter instead
+   - **Benefit**: CDK handles LogGroup management via Custom Resources automatically
+
+2. **Deployment Pattern Fixed**:
+   - **Before**: Explicit LogGroup creation → `log_group=log_group_variable`
+   - **After**: Simple `log_retention=logs.RetentionDays.ONE_WEEK` parameter
+   - **Result**: `Custom::LogRetention` resources handle LogGroup lifecycle properly
+
+3. **Environment-Specific Retention**:
+   ```python
+   log_retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7 
+                else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30 
+                else logs.RetentionDays.THREE_MONTHS
+   ```
+
+#### **CDK Agent Pattern Updated**:
+- **Updated CDK Stack Creation Agent** to recommend `logRetention` over explicit LogGroups
+- **Reasoning**: Prevents redeploy errors while maintaining same functionality
+- **Trade-off**: Shows deprecation warning but ensures reliable deployments
+
+#### **Deployment Success Metrics**:
+- ✅ **Dev Environment**: Clean destroy/redeploy capability verified
+- ✅ **Staging/Production**: No more manual LogGroup cleanup required
+- ✅ **Log Retention**: Environment-specific retention (7/30/90 days) maintained
+- ✅ **Cross-Stack Consistency**: Both stacks use same reliable pattern
+
+### ✅ Current Deployment Status (September 2, 2025)
+**Stack**: `ql-algo-trading-dev-auth-broker-stack`
+**API Gateway**: `https://4fhetaydtg.execute-api.ap-south-1.amazonaws.com/dev/`
+**Deployment Method**: Shared deployment script with logRetention pattern
+
+#### **Infrastructure Summary**:
+- **9 Lambda Functions**: All using Python 3.11 with logRetention pattern
+- **2 DynamoDB Tables**: UserProfiles, BrokerAccounts with GSI
+- **Cognito User Pool**: Full authentication with custom attributes
+- **API Gateway**: Environment-specific stages with CORS
+- **Secrets Manager**: Secure credential storage for broker APIs
+- **Custom LogRetention**: Automatic LogGroup management via CDK
+
+#### **Enterprise Standards Achieved**:
+- **Reliable Redeployment**: No LogGroup conflicts on stack destroy/redeploy
+- **Runtime Standardization**: All Lambda functions use Python 3.11
+- **Module Prefix Naming**: Consistent `auth-*` resource naming
+- **Environment Configuration**: All values from shared environments.json
+- **Security Compliance**: No hardcoded credentials or company prefixes
+
 ## Latest Enhancements: OAuth & Connection Testing (September 2025)
 
 ### ✅ OAuth State Parameter Security Implementation

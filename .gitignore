@@ -55,6 +55,9 @@ aws/config
 # Lambda deployment packages
 **/*.zip
 
+# Copied shared utilities (deployed via deployment script)
+**/lambda_functions/**/shared_utils/
+
 # CloudFormation templates (generated)
 **/template.json
 **/template.yaml

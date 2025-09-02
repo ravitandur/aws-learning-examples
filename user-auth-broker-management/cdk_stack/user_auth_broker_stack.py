@@ -44,7 +44,7 @@ class UserAuthBrokerStack(Stack):
         """Create all AWS resources for the stack"""
         # Cognito User Pool for authentication
         user_pool = cognito.UserPool(
-            self, "AlgoTradingUserPool",
+            self, f"AuthUserPool{self.deploy_env.title()}",
             user_pool_name=self.get_resource_name("users"),
             sign_in_aliases=cognito.SignInAliases(
                 email=True,
@@ -54,7 +54,7 @@ class UserAuthBrokerStack(Stack):
                 email=True
             ),
             self_sign_up_enabled=True,  # Enable self-signup for standard signup flow
-            email=cognito.UserPoolEmail.with_cognito("quantleapanalytics@gmail.com"),  # Configure email sending
+            email=cognito.UserPoolEmail.with_cognito(self.config['company']['email']),  # Configure email sending
             standard_attributes=cognito.StandardAttributes(
                 email=cognito.StandardAttribute(
                     required=True,
@@ -89,7 +89,7 @@ class UserAuthBrokerStack(Stack):
 
         # User Pool Client for API access
         user_pool_client = cognito.UserPoolClient(
-            self, "AlgoTradingUserPoolClient",
+            self, f"AuthUserPoolClient{self.deploy_env.title()}",
             user_pool=user_pool,
             user_pool_client_name=self.get_resource_name("client"),
             generate_secret=False,  # For frontend applications
@@ -115,7 +115,7 @@ class UserAuthBrokerStack(Stack):
 
         # DynamoDB table for user profiles
         user_profiles_table = dynamodb.Table(
-            self, "UserProfiles",
+            self, f"AuthUserProfiles{self.deploy_env.title()}",
             table_name=self.get_resource_name("user-profiles"),
             partition_key=dynamodb.Attribute(
                 name="user_id",
@@ -129,7 +129,7 @@ class UserAuthBrokerStack(Stack):
 
         # DynamoDB table for broker accounts
         broker_accounts_table = dynamodb.Table(
-            self, "BrokerAccounts", 
+            self, f"AuthBrokerAccounts{self.deploy_env.title()}", 
             table_name=self.get_resource_name("broker-accounts"),
             partition_key=dynamodb.Attribute(
                 name="user_id",
@@ -158,14 +158,20 @@ class UserAuthBrokerStack(Stack):
             )
         )
 
+        # Lambda functions with logRetention (avoids redeploy LogGroup errors)
+        # Removed explicit LogGroup creation to prevent "LogGroup already exists" errors on redeploy
+
         # Lambda function for user registration
         user_registration_lambda = _lambda.Function(
-            self, "UserRegistrationFunction",
-            function_name=self.get_resource_name("user-registration"),
-            runtime=_lambda.Runtime.PYTHON_3_9,
+            self, f"AuthLambdaUserRegistration{self.deploy_env.title()}",
+            function_name=self.get_resource_name("auth-user-registration"),
+            runtime=_lambda.Runtime.PYTHON_3_11,
             code=_lambda.Code.from_asset("lambda_functions/auth"),
             handler="user_registration.lambda_handler",
             timeout=Duration.seconds(30),
+            log_retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7 
+                           else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30 
+                           else logs.RetentionDays.THREE_MONTHS,
             environment={
                 "ENVIRONMENT": self.deploy_env,
                 "COMPANY_PREFIX": self.company_prefix,
@@ -179,12 +185,15 @@ class UserAuthBrokerStack(Stack):
 
         # Lambda function for user authentication
         user_auth_lambda = _lambda.Function(
-            self, "UserAuthFunction",
-            function_name=self.get_resource_name("user-auth"),
-            runtime=_lambda.Runtime.PYTHON_3_9,
+            self, f"AuthLambdaUserAuth{self.deploy_env.title()}",
+            function_name=self.get_resource_name("auth-user-auth"),
+            runtime=_lambda.Runtime.PYTHON_3_11,
             code=_lambda.Code.from_asset("lambda_functions/auth"),
             handler="user_auth.lambda_handler",
             timeout=Duration.seconds(30),
+            log_retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7 
+                           else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30 
+                           else logs.RetentionDays.THREE_MONTHS,
             environment={
                 "ENVIRONMENT": self.deploy_env,
                 "COMPANY_PREFIX": self.company_prefix,
@@ -197,12 +206,15 @@ class UserAuthBrokerStack(Stack):
 
         # Lambda function for forgot password
         forgot_password_lambda = _lambda.Function(
-            self, "ForgotPasswordFunction",
-            function_name=self.get_resource_name("forgot-password"),
-            runtime=_lambda.Runtime.PYTHON_3_9,
+            self, f"AuthLambdaForgotPassword{self.deploy_env.title()}",
+            function_name=self.get_resource_name("auth-forgot-password"),
+            runtime=_lambda.Runtime.PYTHON_3_11,
             code=_lambda.Code.from_asset("lambda_functions/auth"),
             handler="forgot_password.lambda_handler",
             timeout=Duration.seconds(30),
+            log_retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7 
+                           else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30 
+                           else logs.RetentionDays.THREE_MONTHS,
             environment={
                 "ENVIRONMENT": self.deploy_env,
                 "COMPANY_PREFIX": self.company_prefix,
@@ -215,12 +227,15 @@ class UserAuthBrokerStack(Stack):
 
         # Lambda function for confirm forgot password
         confirm_forgot_password_lambda = _lambda.Function(
-            self, "ConfirmForgotPasswordFunction",
-            function_name=self.get_resource_name("confirm-forgot-password"),
-            runtime=_lambda.Runtime.PYTHON_3_9,
+            self, f"AuthLambdaConfirmForgotPassword{self.deploy_env.title()}",
+            function_name=self.get_resource_name("auth-confirm-forgot-password"),
+            runtime=_lambda.Runtime.PYTHON_3_11,
             code=_lambda.Code.from_asset("lambda_functions/auth"),
             handler="confirm_forgot_password.lambda_handler",
             timeout=Duration.seconds(30),
+            log_retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7 
+                           else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30 
+                           else logs.RetentionDays.THREE_MONTHS,
             environment={
                 "ENVIRONMENT": self.deploy_env,
                 "COMPANY_PREFIX": self.company_prefix,
@@ -233,12 +248,15 @@ class UserAuthBrokerStack(Stack):
 
         # Lambda function for resend verification code
         resend_verification_lambda = _lambda.Function(
-            self, "ResendVerificationFunction",
-            function_name=self.get_resource_name("resend-verification"),
-            runtime=_lambda.Runtime.PYTHON_3_9,
+            self, f"AuthLambdaResendVerification{self.deploy_env.title()}",
+            function_name=self.get_resource_name("auth-resend-verification"),
+            runtime=_lambda.Runtime.PYTHON_3_11,
             code=_lambda.Code.from_asset("lambda_functions/auth"),
             handler="resend_verification_code.lambda_handler",
             timeout=Duration.seconds(30),
+            log_retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7 
+                           else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30 
+                           else logs.RetentionDays.THREE_MONTHS,
             environment={
                 "ENVIRONMENT": self.deploy_env,
                 "COMPANY_PREFIX": self.company_prefix,
@@ -251,12 +269,15 @@ class UserAuthBrokerStack(Stack):
 
         # Lambda function for verify email
         verify_email_lambda = _lambda.Function(
-            self, "VerifyEmailFunction",
-            function_name=self.get_resource_name("verify-email"),
-            runtime=_lambda.Runtime.PYTHON_3_9,
+            self, f"AuthLambdaVerifyEmail{self.deploy_env.title()}",
+            function_name=self.get_resource_name("auth-verify-email"),
+            runtime=_lambda.Runtime.PYTHON_3_11,
             code=_lambda.Code.from_asset("lambda_functions/auth"),
             handler="verify_email.lambda_handler",
             timeout=Duration.seconds(30),
+            log_retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7 
+                           else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30 
+                           else logs.RetentionDays.THREE_MONTHS,
             environment={
                 "ENVIRONMENT": self.deploy_env,
                 "COMPANY_PREFIX": self.company_prefix,
@@ -269,12 +290,15 @@ class UserAuthBrokerStack(Stack):
 
         # Lambda function for broker account management
         broker_account_lambda = _lambda.Function(
-            self, "BrokerAccountFunction",
-            function_name=self.get_resource_name("broker-accounts"),
-            runtime=_lambda.Runtime.PYTHON_3_9,
+            self, f"AuthLambdaBrokerAccount{self.deploy_env.title()}",
+            function_name=self.get_resource_name("auth-broker-account"),
+            runtime=_lambda.Runtime.PYTHON_3_11,
             code=_lambda.Code.from_asset("lambda_functions/broker_accounts"),
             handler="broker_account_manager.lambda_handler",
             timeout=Duration.seconds(30),
+            log_retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7 
+                           else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30 
+                           else logs.RetentionDays.THREE_MONTHS,
             environment={
                 "ENVIRONMENT": self.deploy_env,
                 "COMPANY_PREFIX": self.company_prefix,
@@ -286,11 +310,11 @@ class UserAuthBrokerStack(Stack):
 
         # Lambda function for broker OAuth handling
         broker_oauth_lambda = _lambda.Function(
-            self, "BrokerOAuthFunction",
-            function_name=self.get_resource_name("broker-oauth"),
-            runtime=_lambda.Runtime.PYTHON_3_9,
+            self, f"AuthLambdaBrokerOauth{self.deploy_env.title()}",
+            function_name=self.get_resource_name("auth-broker-oauth"),
+            runtime=_lambda.Runtime.PYTHON_3_11,
             code=_lambda.Code.from_asset("lambda_functions/broker_oauth", bundling={
-                "image": _lambda.Runtime.PYTHON_3_9.bundling_image,
+                "image": _lambda.Runtime.PYTHON_3_11.bundling_image,
                 "command": [
                     "bash", "-c",
                     "pip install -r requirements.txt -t /asset-output && cp -au . /asset-output"
@@ -298,6 +322,9 @@ class UserAuthBrokerStack(Stack):
             }),
             handler="refactored_oauth_handler.lambda_handler",
             timeout=Duration.seconds(30),
+            log_retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7 
+                           else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30 
+                           else logs.RetentionDays.THREE_MONTHS,
             environment={
                 "ENVIRONMENT": self.deploy_env,
                 "STAGE": self.deploy_env,
@@ -310,12 +337,15 @@ class UserAuthBrokerStack(Stack):
 
         # Lambda function for broker connection testing
         broker_connection_test_lambda = _lambda.Function(
-            self, "BrokerConnectionTestFunction",
-            function_name=self.get_resource_name("broker-connection-test"),
-            runtime=_lambda.Runtime.PYTHON_3_9,
+            self, f"AuthLambdaBrokerConnectionTest{self.deploy_env.title()}",
+            function_name=self.get_resource_name("auth-broker-connection-test"),
+            runtime=_lambda.Runtime.PYTHON_3_11,
             code=_lambda.Code.from_asset("lambda_functions/broker_accounts"),
             handler="connection_tester.lambda_handler",
             timeout=Duration.seconds(30),
+            log_retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7 
+                           else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30 
+                           else logs.RetentionDays.THREE_MONTHS,
             environment={
                 "ENVIRONMENT": self.deploy_env,
                 "COMPANY_PREFIX": self.company_prefix,
@@ -450,7 +480,7 @@ class UserAuthBrokerStack(Stack):
 
         # API Gateway with Cognito authorizer
         api = apigateway.RestApi(
-            self, "AlgoTradingAPI",
+            self, f"AuthApiGateway{self.deploy_env.title()}",
             rest_api_name=self.get_resource_name("api"),
             description=f"API for {self.config['company']['name']} algorithmic trading platform - {self.deploy_env} environment",
             default_cors_preflight_options=apigateway.CorsOptions(
@@ -466,7 +496,7 @@ class UserAuthBrokerStack(Stack):
 
         # Cognito authorizer for API Gateway
         cognito_authorizer = apigateway.CognitoUserPoolsAuthorizer(
-            self, "CognitoAuthorizer",
+            self, f"AuthCognitoAuthorizer{self.deploy_env.title()}",
             cognito_user_pools=[user_pool]
         )
 
@@ -569,7 +599,7 @@ class UserAuthBrokerStack(Stack):
 
         # CloudWatch Dashboard for monitoring
         dashboard = cloudwatch.Dashboard(
-            self, "AlgoTradingDashboard",
+            self, f"AuthDashboard{self.deploy_env.title()}",
             dashboard_name=f"{self.env_config['dashboard_prefix']}-{self.get_resource_name('dashboard')}",
             widgets=[
                 [
@@ -642,35 +672,40 @@ class UserAuthBrokerStack(Stack):
             description="Company Resource Prefix"
         )
 
-        # Outputs
+        # Outputs with exports for cross-stack integration
         CfnOutput(
             self, "UserPoolId",
             value=user_pool.user_pool_id,
-            description="Cognito User Pool ID"
+            description="Cognito User Pool ID",
+            export_name=f"{self.stack_name}-UserPoolId"
         )
 
         CfnOutput(
             self, "UserPoolClientId", 
             value=user_pool_client.user_pool_client_id,
-            description="Cognito User Pool Client ID"
+            description="Cognito User Pool Client ID",
+            export_name=f"{self.stack_name}-UserPoolClientId"
         )
 
         CfnOutput(
             self, "ApiGatewayUrl",
             value=api.url,
-            description="API Gateway URL"
+            description="API Gateway URL",
+            export_name=f"{self.stack_name}-ApiUrl"
         )
 
         CfnOutput(
             self, "UserProfilesTableName",
             value=user_profiles_table.table_name,
-            description="User Profiles DynamoDB Table Name"
+            description="User Profiles DynamoDB Table Name",
+            export_name=f"{self.stack_name}-UserProfilesTable"
         )
 
         CfnOutput(
             self, "BrokerAccountsTableName",
             value=broker_accounts_table.table_name,
-            description="Broker Accounts DynamoDB Table Name"
+            description="Broker Accounts DynamoDB Table Name",
+            export_name=f"{self.stack_name}-BrokerAccountsTable"
         )
 
         CfnOutput(

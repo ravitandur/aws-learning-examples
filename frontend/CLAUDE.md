@@ -2,6 +2,31 @@
 
 This file provides specific guidance for frontend development in the Quantleap Analytics trading platform.
 
+## Current Environment Configuration (September 2, 2025)
+
+### ✅ Multi-API Architecture Deployment
+**Status**: ✅ Updated with both deployed stack endpoints
+
+#### **API Endpoints**:
+- **User Authentication & Broker Management**: `https://4fhetaydtg.execute-api.ap-south-1.amazonaws.com/dev/`
+- **Options Trading Platform**: `https://2f8bmi4edb.execute-api.ap-south-1.amazonaws.com/dev/`
+
+#### **Environment Variables** (`.env`):
+```env
+REACT_APP_ENVIRONMENT=dev
+REACT_APP_API_URL_DEV=https://4fhetaydtg.execute-api.ap-south-1.amazonaws.com/dev
+REACT_APP_OPTIONS_API_URL_DEV=https://2f8bmi4edb.execute-api.ap-south-1.amazonaws.com/dev
+REACT_APP_DEBUG=true
+REACT_APP_AUTH_STACK_NAME=ql-algo-trading-dev-auth-broker-stack
+REACT_APP_OPTIONS_STACK_NAME=ql-algo-trading-dev-options-trading-stack
+```
+
+#### **Development Status**:
+- **Frontend Server**: Running at `http://localhost:3000`
+- **Hot Reload**: Active with updated environment variables
+- **TypeScript**: Clean compilation with comprehensive type safety
+- **API Integration**: Dual API architecture configured and ready
+
 ## Development Standards
 
 ### Layout Pattern (MANDATORY)
