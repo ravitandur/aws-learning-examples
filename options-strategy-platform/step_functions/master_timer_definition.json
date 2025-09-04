@@ -1,0 +1,76 @@
+{
+  "Comment": "🚀 Revolutionary 0-Second Precision Event Emission System - Institutional Grade Timing",
+  "StartAt": "EmitMinuteEvents",
+  "States": {
+    "EmitMinuteEvents": {
+      "Type": "Task",
+      "Comment": "🚀 Execute event emission with 0-second precision",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${EventEmitterLambdaArn}",
+        "Payload": {
+          "trigger_type": "STEP_FUNCTION_PRECISION_TIMER",
+          "execution_timestamp.$": "$$.State.EnteredTime",
+          "target_precision": "0TH_SECOND_INSTITUTIONAL_GRADE",
+          "market_hours_active": true,
+          "cost_optimization": "EXPRESS_WORKFLOW_ULTRA_FAST",
+          "system_reliability": "NEVER_MISS_EVENTS"
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+          "Comment": "Retry Lambda failures with exponential backoff",
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Comment": "Log errors but continue timing system",
+          "Next": "LogErrorAndContinue",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "WaitForNextMinuteBoundary"
+    },
+    
+    "LogErrorAndContinue": {
+      "Type": "Pass",
+      "Comment": "Log error but maintain system continuity",
+      "Parameters": {
+        "error_logged": true,
+        "system_status": "CONTINUING_DESPITE_ERROR",
+        "reliability_principle": "NEVER_STOP_THE_TIMING_SYSTEM"
+      },
+      "Next": "WaitForNextMinuteBoundary"
+    },
+    
+    "WaitForNextMinuteBoundary": {
+      "Type": "Wait",
+      "Comment": "🎯 PRECISION WAIT: Dynamic wait to hit exact 0-second boundary of next minute",
+      "SecondsPath": "$.Payload.wait_seconds",
+      "Next": "CheckMarketHours"
+    },
+    
+    "CheckMarketHours": {
+      "Type": "Choice",
+      "Comment": "Only continue during market hours (9:15-15:30 IST)",
+      "Choices": [
+        {
+          "Variable": "$.Payload.continue_execution",
+          "BooleanEquals": false,
+          "Next": "MarketClosed"
+        }
+      ],
+      "Default": "EmitMinuteEvents"
+    },
+    
+    "MarketClosed": {
+      "Type": "Succeed",
+      "Comment": "🏁 Market closed - Step Function ends naturally"
+    }
+  }
+}

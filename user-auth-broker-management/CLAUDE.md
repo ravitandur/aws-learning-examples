@@ -1,10 +1,14 @@
-# CLAUDE.md
+# User Authentication & Broker Management - CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides **module-specific guidance** for the User Authentication & Broker Management stack.
+
+**📋 Shared Context**: Root `/CLAUDE.md` contains shared AWS configuration, deployment patterns, and enterprise standards
+**🏗️ Architecture**: Cross-stack integration patterns managed by `/.claude/agents/architecture_agent.md`
 
 ## Project Overview
 
-**Module 2**: User Authentication & Broker Management for Algorithmic Trading Platform
+**Module 1**: User Authentication & Broker Management - Foundation Stack
+**Integration**: Provides UserPoolId and BrokerAccountsTable exports for options trading platform
 
 This AWS CDK project implements user authentication using AWS Cognito with broker account management for Indian stock market trading platform. Part of progressive learning series to build complete algo trading platform.
 
@@ -40,28 +44,20 @@ Frontend → API Gateway + Cognito Authorizer → Lambda Functions → DynamoDB 
 
 ## Multi-Environment Architecture
 
-### **Quantleap Analytics (ql) Resource Naming**
-All resources follow pattern: `ql-algo-trading-{environment}-{resource}`
+**📋 Deployment**: See root `/CLAUDE.md` for shared AWS profile, CDK commands, and enterprise standards
 
-**Environments:**
-- **dev** - Development with DESTROY policy, 24h tokens, 7-day log retention
-- **staging** - Pre-production with RETAIN policy, 8h tokens, 30-day logs
-- **production** - Live environment with RETAIN policy, 1h tokens, 90-day logs
+## Module-Specific Deployment
+- **Stack Name**: `ql-algo-trading-{env}-auth-broker-stack`
+- **Current API**: `https://4fhetaydtg.execute-api.ap-south-1.amazonaws.com/dev/`
 
-**Environment Configuration:** `config/environments.json`
-- Company: Quantleap Analytics LLP (ql)
-- Project: algo-trading
-- Environment-specific: removal policies, CORS origins, token validity, log retention
+### Deploy Commands (from this project directory)
+```bash
+cd user-auth-broker-management
+source venv/bin/activate
+./deploy.sh -p user-auth-broker-management -e dev -a account2
+```
 
-## Key Commands
-
-### Deployment
-- `./deploy.sh -e dev -p account2` - Deploy to development
-- `./deploy.sh -e staging -p account2` - Deploy to staging  
-- `./deploy.sh -e production -p account2` - Deploy to production
-- `cdk destroy ql-algo-trading-dev-auth-broker-stack --profile account2` - Clean up environment
-- `source venv/bin/activate && cdk synth --context environment=dev` - Synthesize for environment
-- `source venv/bin/activate && cdk deploy ql-algo-trading-dev-auth-broker-stack --profile account2 --require-approval never` - Manual deployment
+**Important**: Use the `deploy.sh` script in this project directory, not the root deploy.sh
 
 ### Testing APIs
 ```bash

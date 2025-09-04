@@ -1,6 +1,9 @@
 # Frontend - CLAUDE.md
 
-This file provides specific guidance for frontend development in the Quantleap Analytics trading platform.
+This file provides **frontend-specific guidance** for the Quantleap Analytics trading platform.
+
+**📋 Shared Context**: Root `/CLAUDE.md` contains shared AWS configuration, deployment patterns, and enterprise standards
+**🏗️ Architecture**: Complex architectural decisions managed by `/.claude/agents/architecture_agent.md`
 
 ## Current Environment Configuration (September 2, 2025)
 
