@@ -34,7 +34,7 @@ interface ToastProviderProps {
 
 export const ToastProvider: React.FC<ToastProviderProps> = ({ 
   children, 
-  maxToasts = 5,
+  maxToasts = 10,
   position = 'bottom-right'
 }) => {
   const [toasts, setToasts] = useState<ToastData[]>([]);

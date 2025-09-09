@@ -115,7 +115,7 @@ const Toast: React.FC<ToastProps> = ({
 
   return (
     <div 
-      className={`fixed ${getPositionClasses()} z-50 max-w-sm w-full sm:w-auto`}
+      className="relative max-w-sm w-full sm:w-auto"
       role="alert"
       aria-live="polite"
     >
