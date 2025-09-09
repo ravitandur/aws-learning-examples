@@ -8,8 +8,7 @@ const BrokersPage: React.FC = () => {
   return (
     <StandardLayout>
       <PageHeader 
-        title="Broker Accounts" 
-        emoji="🏦"
+        title="Broker Accounts"
         description="Manage your trading accounts and API connections. Your credentials are stored securely and encrypted using AWS Secrets Manager."
         pageType="management"
         breadcrumbs={[

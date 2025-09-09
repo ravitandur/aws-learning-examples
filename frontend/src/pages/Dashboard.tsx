@@ -78,7 +78,7 @@ const Dashboard: React.FC = () => {
   return (
     <StandardLayout>
       <PageHeader 
-        title={`${getWelcomeMessage()}, ${user?.fullName?.split(' ')[0]}! 👋`}
+        title={`${getWelcomeMessage()}, ${user?.fullName?.split(' ')[0]}!`}
         description="Welcome to your algorithmic trading dashboard. Monitor your strategies, manage broker accounts, and track performance."
         pageType="dashboard"
         status="active"

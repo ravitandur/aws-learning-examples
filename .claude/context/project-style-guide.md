@@ -1,7 +1,7 @@
 ---
 created: 2025-09-05T19:46:11Z
-last_updated: 2025-09-05T19:46:11Z
-version: 1.0
+last_updated: 2025-09-09T20:13:30Z
+version: 1.1
 author: Claude Code PM System
 ---
 
@@ -133,6 +133,52 @@ const PageComponent: React.FC = () => {
 <h1 className="text-2xl font-bold">   // Page titles (never text-3xl)
 <div className="bg-white dark:bg-gray-800 rounded-lg shadow"> // Cards
 <input className="bg-white dark:bg-gray-700"> // Form inputs
+```
+
+#### 2025 Minimalist Design Standards (ENFORCED)
+```tsx
+// STRICT DESIGN COMPLIANCE - ALL COMPONENTS MUST FOLLOW
+// 1. NO EMOJI DECORATIONS - Content-first professional interface
+❌ <h1>🚀 Revolutionary Strategy Creator</h1>
+✅ <h1>Strategy Creator</h1>
+
+// 2. NO MARKETING LANGUAGE - Business-focused terminology  
+❌ "Revolutionary Features Active"
+✅ "Active Features"
+
+// 3. GLASSMORPHISM EFFECTS - Modern depth with backdrop-blur
+<header className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-md">
+
+// 4. CLEAN TYPOGRAPHY - Professional, readable text hierarchy
+<h1 className="text-2xl font-bold">           // Page titles only
+<h2 className="text-lg font-semibold">        // Section headers
+<p className="text-gray-600 dark:text-gray-300"> // Body text
+
+// 5. SUBTLE INTERACTIONS - Hover effects over constant animations
+className="hover:shadow-lg transition-all duration-200"
+
+// 6. ICON USAGE - Functional icons, not decorative symbols
+✅ <Edit className="h-4 w-4" />              // Action icons
+❌ <div className="text-3xl">🎯</div>         // Decorative emojis
+
+// 7. COLOR PSYCHOLOGY - Professional blue primary palette
+text-blue-600    // Primary actions and accents
+text-gray-600    // Secondary text and descriptions  
+text-green-600   // Success states and positive actions
+text-red-600     // Errors and destructive actions
+```
+
+#### Design Audit Checklist
+```tsx
+// BEFORE COMMITTING - RUN THIS CHECKLIST:
+// □ No emoji in titles, headers, or UI labels
+// □ No "Revolutionary/Amazing/Stunning" marketing language  
+// □ Consistent glassmorphism backdrop-blur usage
+// □ Professional typography hierarchy maintained
+// □ Hover effects over constant animations
+// □ Functional icons, no decorative symbols
+// □ Blue-gray professional color palette
+// □ Content-first, information-focused layout
 ```
 
 ## File Structure Patterns

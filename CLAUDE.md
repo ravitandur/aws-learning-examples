@@ -428,3 +428,4 @@ def calculate_next_minute_wait_seconds(current_ist: datetime) -> int:
 - **Performance Validation**: ✅ All revolutionary features benchmarked and validated
 - **Documentation**: ✅ All CLAUDE.md files updated with latest enhancements
 - .claude directory exists at project root
+- all frontent components must follow minimalist 2025 design trends.

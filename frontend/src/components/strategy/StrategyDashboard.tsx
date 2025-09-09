@@ -116,30 +116,27 @@ const StrategyDashboard: React.FC = () => {
       {/* Revolutionary Features Status */}
       <Card className="bg-gradient-to-r from-blue-50 to-purple-50">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <span>🎯</span>
-            <span>Revolutionary Features Status</span>
-          </CardTitle>
+          <CardTitle>Features Status</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-3xl mb-2">⚡</div>
+              <div className="text-sm font-medium text-gray-500 mb-2">GSI2</div>
               <div className="font-semibold text-green-600">GSI2 Optimization</div>
               <div className="text-sm text-gray-600">99.5% Reduction</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl mb-2">🏦</div>
+              <div className="text-sm font-medium text-gray-500 mb-2">Multi-Broker</div>
               <div className="font-semibold text-blue-600">Multi-Broker</div>
               <div className="text-sm text-gray-600">5 Brokers Active</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl mb-2">🎯</div>
+              <div className="text-sm font-medium text-gray-500 mb-2">Timing</div>
               <div className="font-semibold text-purple-600">0-Second Timing</div>
               <div className="text-sm text-gray-600">Institutional Grade</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl mb-2">🛡️</div>
+              <div className="text-sm font-medium text-gray-500 mb-2">Weekend Safe</div>
               <div className="font-semibold text-green-600">Weekend Shield</div>
               <div className="text-sm text-gray-600">100% Protection</div>
             </div>
@@ -196,7 +193,7 @@ const StrategyDashboard: React.FC = () => {
               {/* Revolutionary Multi-Broker Allocation */}
               <div>
                 <div className="text-sm font-medium text-gray-700 mb-2">
-                  🏦 Multi-Broker Allocation (Revolutionary Feature)
+                  Multi-Broker Allocation
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {strategy.brokerAllocations.map(allocation => (
@@ -210,28 +207,28 @@ const StrategyDashboard: React.FC = () => {
               {/* Revolutionary Features Status */}
               <div>
                 <div className="text-sm font-medium text-gray-700 mb-2">
-                  🎯 Revolutionary Features Active
+                  Active Features
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Badge 
                     variant={strategy.revolutionaryFeatures.gsi2Optimized ? 'success' : 'default'}
                   >
-                    ⚡ GSI2 Optimized
+                    GSI2 Optimized
                   </Badge>
                   <Badge 
                     variant={strategy.revolutionaryFeatures.multibrokerEnabled ? 'info' : 'default'}
                   >
-                    🏦 Multi-Broker
+                    Multi-Broker
                   </Badge>
                   <Badge 
                     variant={strategy.revolutionaryFeatures.timingPrecision < 1 ? 'success' : 'default'}
                   >
-                    🎯 {strategy.revolutionaryFeatures.timingPrecision}s Precision
+                    {strategy.revolutionaryFeatures.timingPrecision}s Precision
                   </Badge>
                   <Badge 
                     variant={strategy.revolutionaryFeatures.weekendProtected ? 'success' : 'default'}
                   >
-                    🛡️ Weekend Protected
+                    Weekend Protected
                   </Badge>
                 </div>
               </div>

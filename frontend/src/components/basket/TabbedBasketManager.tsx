@@ -206,7 +206,7 @@ const TabbedBasketManager: React.FC = () => {
           {/* Left Panel Header */}
           <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">🧺 Baskets</h2>
+              <h2 className="text-lg font-semibold">Baskets</h2>
               <Badge variant="info" size="sm">{baskets.length}</Badge>
             </div>
             
@@ -234,7 +234,7 @@ const TabbedBasketManager: React.FC = () => {
             ) : filteredBaskets.length === 0 ? (
               <div className="flex items-center justify-center py-12">
                 <div className="text-center">
-                  <div className="text-6xl mb-4">📊</div>
+                  <div className="text-sm font-medium text-gray-500 mb-4">Performance</div>
                   <h3 className="text-lg font-medium mb-2">No Baskets Yet</h3>
                   <p className="text-sm text-gray-600 mb-4">Create your first basket</p>
                   <Button onClick={() => setShowCreateDialog(true)} leftIcon={<Plus className="h-4 w-4" />} size="sm">
@@ -388,7 +388,7 @@ const TabbedBasketManager: React.FC = () => {
                           </div>
                         ) : (
                           <div className="text-center py-8">
-                            <div className="text-4xl mb-4">🎯</div>
+                            <div className="text-sm font-medium text-gray-500 mb-4">Details</div>
                             <h3 className="text-lg font-medium mb-2">No Strategies Yet</h3>
                             <p className="text-gray-600 mb-4">Add your first strategy to start building this basket</p>
                             <Button onClick={() => setShowStrategyWizard(true)} leftIcon={<Plus className="h-4 w-4" />}>
@@ -576,7 +576,7 @@ const TabbedBasketManager: React.FC = () => {
               /* Empty State */
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
-                  <div className="text-8xl mb-6">🧺</div>
+                  <div className="text-sm font-medium text-gray-500 mb-6">No baskets</div>
                   <h3 className="text-xl font-semibold mb-4">Welcome to Basket Management</h3>
                   <p className="text-gray-600 mb-8 max-w-md">
                     Create and manage your strategy baskets with revolutionary multi-broker allocation and performance tracking.

@@ -174,7 +174,7 @@ const BasketManagement: React.FC = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold">🧺 Basket Management</h1>
+            <h1 className="text-2xl font-bold">Basket Management</h1>
             <p className="text-gray-600 dark:text-gray-300">
               Manage strategy baskets with revolutionary multi-broker allocation
             </p>
@@ -242,7 +242,7 @@ const BasketManagement: React.FC = () => {
       {showCreateForm && (
         <Card className="border-2 border-blue-500">
           <CardHeader>
-            <CardTitle>🚀 Create New Revolutionary Basket</CardTitle>
+            <CardTitle>Create New Basket</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -265,7 +265,7 @@ const BasketManagement: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">🎯 Add Strategies to Basket</label>
+              <label className="block text-sm font-medium mb-2">Add Strategies to Basket</label>
               <div className="space-y-2">
                 {availableStrategies.map(strategy => (
                   <div key={strategy.strategyId} className="flex items-center space-x-2 p-3 border rounded-lg">
@@ -307,7 +307,7 @@ const BasketManagement: React.FC = () => {
                 disabled={creating}
                 leftIcon={creating ? <RefreshCw className="h-4 w-4 animate-spin" /> : undefined}
               >
-                {creating ? 'Creating...' : '🚀 Create Revolutionary Basket'}
+                {creating ? 'Creating...' : 'Create Basket'}
               </Button>
               <Button 
                 variant="outline" 
@@ -373,7 +373,7 @@ const BasketManagement: React.FC = () => {
 
               {/* Strategies in Basket */}
               <div>
-                <div className="text-sm font-medium text-gray-700 mb-2">🎯 Strategies</div>
+                <div className="text-sm font-medium text-gray-700 mb-2">Strategies</div>
                 <div className="space-y-2">
                   {basket.strategies.map(strategy => (
                     <div key={strategy.strategyId} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
@@ -411,7 +411,7 @@ const BasketManagement: React.FC = () => {
       {baskets.length === 0 && !showCreateForm && (
         <Card className="text-center py-12">
           <CardContent>
-            <div className="text-4xl mb-4">🧺</div>
+            <div className="text-sm font-medium text-gray-500 mb-4">No baskets</div>
             <h3 className="text-lg font-semibold mb-2">No Baskets Created Yet</h3>
             <p className="text-gray-600 mb-6">
               Create your first revolutionary basket to start managing strategies with multi-broker allocation

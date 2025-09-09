@@ -247,7 +247,7 @@ const BasketAllocation: React.FC<BasketAllocationProps> = ({
             Back to Baskets
           </Button>
           <div>
-            <h1 className="text-2xl font-bold">🏦 Allocate Basket to Brokers</h1>
+            <h1 className="text-2xl font-bold">Allocate Basket to Brokers</h1>
             <p className="text-gray-600 dark:text-gray-300">
               Allocating: <span className="font-medium">{basket.basket_name}</span>
             </p>
@@ -262,7 +262,7 @@ const BasketAllocation: React.FC<BasketAllocationProps> = ({
       {/* Basket Summary */}
       <Card>
         <CardHeader>
-          <CardTitle>📊 Basket Summary</CardTitle>
+          <CardTitle>Basket Summary</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -341,7 +341,7 @@ const BasketAllocation: React.FC<BasketAllocationProps> = ({
         <CardContent className="space-y-4">
           {newAllocations.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              <div className="text-4xl mb-2">🏦</div>
+              <div className="text-sm font-medium text-gray-500 mb-2">Empty</div>
               <p>No allocations added yet. Click "Add Allocation" to start.</p>
             </div>
           ) : (

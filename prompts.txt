@@ -1,0 +1,6656 @@
+{
+  "Comment": "Statemachine used to notify at every one minute starting from 9:10 to 4:50",
+  "StartAt": "INITIALIZE_MINUTE_CHANGE_NOTIFICATION",
+  "States": {
+    "INITIALIZE_MINUTE_CHANGE_NOTIFICATION": {
+      "Type": "Task",
+      "Resource": "${AWSAPIInitializeMinuteChangeNotificationArn}",
+      "Next": "WAIT_FOR_9_10"
+    },
+    "WAIT_FOR_9_10": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_10",
+      "Next": "NOTIFY_9_10"
+    },
+    "NOTIFY_9_10": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 10
+      },
+      "Next": "WAIT_FOR_9_11"
+    },
+    "WAIT_FOR_9_11": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_11",
+      "Next": "NOTIFY_9_11"
+    },
+    "NOTIFY_9_11": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 11
+      },
+      "Next": "WAIT_FOR_9_12"
+    },
+    "WAIT_FOR_9_12": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_12",
+      "Next": "NOTIFY_9_12"
+    },
+    "NOTIFY_9_12": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 12
+      },
+      "Next": "WAIT_FOR_9_13"
+    },
+    "WAIT_FOR_9_13": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_13",
+      "Next": "NOTIFY_9_13"
+    },
+    "NOTIFY_9_13": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 13
+      },
+      "Next": "WAIT_FOR_9_14"
+    },
+    "WAIT_FOR_9_14": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_14",
+      "Next": "NOTIFY_9_14"
+    },
+    "NOTIFY_9_14": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 14
+      },
+      "Next": "WAIT_FOR_9_15"
+    },
+    "WAIT_FOR_9_15": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_15",
+      "Next": "NOTIFY_9_15"
+    },
+    "NOTIFY_9_15": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 15
+      },
+      "Next": "WAIT_FOR_9_16"
+    },
+    "WAIT_FOR_9_16": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_16",
+      "Next": "NOTIFY_9_16"
+    },
+    "NOTIFY_9_16": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 16
+      },
+      "Next": "WAIT_FOR_9_17"
+    },
+    "WAIT_FOR_9_17": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_17",
+      "Next": "NOTIFY_9_17"
+    },
+    "NOTIFY_9_17": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 17
+      },
+      "Next": "WAIT_FOR_9_18"
+    },
+    "WAIT_FOR_9_18": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_18",
+      "Next": "NOTIFY_9_18"
+    },
+    "NOTIFY_9_18": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 18
+      },
+      "Next": "WAIT_FOR_9_19"
+    },
+    "WAIT_FOR_9_19": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_19",
+      "Next": "NOTIFY_9_19"
+    },
+    "NOTIFY_9_19": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 19
+      },
+      "Next": "WAIT_FOR_9_20"
+    },
+    "WAIT_FOR_9_20": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_20",
+      "Next": "NOTIFY_9_20"
+    },
+    "NOTIFY_9_20": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 20
+      },
+      "Next": "WAIT_FOR_9_21"
+    },
+    "WAIT_FOR_9_21": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_21",
+      "Next": "NOTIFY_9_21"
+    },
+    "NOTIFY_9_21": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 21
+      },
+      "Next": "WAIT_FOR_9_22"
+    },
+    "WAIT_FOR_9_22": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_22",
+      "Next": "NOTIFY_9_22"
+    },
+    "NOTIFY_9_22": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 22
+      },
+      "Next": "WAIT_FOR_9_23"
+    },
+    "WAIT_FOR_9_23": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_23",
+      "Next": "NOTIFY_9_23"
+    },
+    "NOTIFY_9_23": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 23
+      },
+      "Next": "WAIT_FOR_9_24"
+    },
+    "WAIT_FOR_9_24": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_24",
+      "Next": "NOTIFY_9_24"
+    },
+    "NOTIFY_9_24": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 24
+      },
+      "Next": "WAIT_FOR_9_25"
+    },
+    "WAIT_FOR_9_25": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_25",
+      "Next": "NOTIFY_9_25"
+    },
+    "NOTIFY_9_25": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 25
+      },
+      "Next": "WAIT_FOR_9_26"
+    },
+    "WAIT_FOR_9_26": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_26",
+      "Next": "NOTIFY_9_26"
+    },
+    "NOTIFY_9_26": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 26
+      },
+      "Next": "WAIT_FOR_9_27"
+    },
+    "WAIT_FOR_9_27": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_27",
+      "Next": "NOTIFY_9_27"
+    },
+    "NOTIFY_9_27": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 27
+      },
+      "Next": "WAIT_FOR_9_28"
+    },
+    "WAIT_FOR_9_28": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_28",
+      "Next": "NOTIFY_9_28"
+    },
+    "NOTIFY_9_28": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 28
+      },
+      "Next": "WAIT_FOR_9_29"
+    },
+    "WAIT_FOR_9_29": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_29",
+      "Next": "NOTIFY_9_29"
+    },
+    "NOTIFY_9_29": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 29
+      },
+      "Next": "WAIT_FOR_9_30"
+    },
+    "WAIT_FOR_9_30": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_30",
+      "Next": "NOTIFY_9_30"
+    },
+    "NOTIFY_9_30": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 30
+      },
+      "Next": "WAIT_FOR_9_31"
+    },
+    "WAIT_FOR_9_31": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_31",
+      "Next": "NOTIFY_9_31"
+    },
+    "NOTIFY_9_31": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 31
+      },
+      "Next": "WAIT_FOR_9_32"
+    },
+    "WAIT_FOR_9_32": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_32",
+      "Next": "NOTIFY_9_32"
+    },
+    "NOTIFY_9_32": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 32
+      },
+      "Next": "WAIT_FOR_9_33"
+    },
+    "WAIT_FOR_9_33": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_33",
+      "Next": "NOTIFY_9_33"
+    },
+    "NOTIFY_9_33": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 33
+      },
+      "Next": "WAIT_FOR_9_34"
+    },
+    "WAIT_FOR_9_34": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_34",
+      "Next": "NOTIFY_9_34"
+    },
+    "NOTIFY_9_34": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 34
+      },
+      "Next": "WAIT_FOR_9_35"
+    },
+    "WAIT_FOR_9_35": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_35",
+      "Next": "NOTIFY_9_35"
+    },
+    "NOTIFY_9_35": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 35
+      },
+      "Next": "WAIT_FOR_9_36"
+    },
+    "WAIT_FOR_9_36": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_36",
+      "Next": "NOTIFY_9_36"
+    },
+    "NOTIFY_9_36": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 36
+      },
+      "Next": "WAIT_FOR_9_37"
+    },
+    "WAIT_FOR_9_37": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_37",
+      "Next": "NOTIFY_9_37"
+    },
+    "NOTIFY_9_37": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 37
+      },
+      "Next": "WAIT_FOR_9_38"
+    },
+    "WAIT_FOR_9_38": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_38",
+      "Next": "NOTIFY_9_38"
+    },
+    "NOTIFY_9_38": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 38
+      },
+      "Next": "WAIT_FOR_9_39"
+    },
+    "WAIT_FOR_9_39": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_39",
+      "Next": "NOTIFY_9_39"
+    },
+    "NOTIFY_9_39": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 39
+      },
+      "Next": "WAIT_FOR_9_40"
+    },
+    "WAIT_FOR_9_40": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_40",
+      "Next": "NOTIFY_9_40"
+    },
+    "NOTIFY_9_40": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 40
+      },
+      "Next": "WAIT_FOR_9_41"
+    },
+    "WAIT_FOR_9_41": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_41",
+      "Next": "NOTIFY_9_41"
+    },
+    "NOTIFY_9_41": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 41
+      },
+      "Next": "WAIT_FOR_9_42"
+    },
+    "WAIT_FOR_9_42": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_42",
+      "Next": "NOTIFY_9_42"
+    },
+    "NOTIFY_9_42": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 42
+      },
+      "Next": "WAIT_FOR_9_43"
+    },
+    "WAIT_FOR_9_43": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_43",
+      "Next": "NOTIFY_9_43"
+    },
+    "NOTIFY_9_43": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 43
+      },
+      "Next": "WAIT_FOR_9_44"
+    },
+    "WAIT_FOR_9_44": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_44",
+      "Next": "NOTIFY_9_44"
+    },
+    "NOTIFY_9_44": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 44
+      },
+      "Next": "WAIT_FOR_9_45"
+    },
+    "WAIT_FOR_9_45": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_45",
+      "Next": "NOTIFY_9_45"
+    },
+    "NOTIFY_9_45": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 45
+      },
+      "Next": "WAIT_FOR_9_46"
+    },
+    "WAIT_FOR_9_46": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_46",
+      "Next": "NOTIFY_9_46"
+    },
+    "NOTIFY_9_46": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 46
+      },
+      "Next": "WAIT_FOR_9_47"
+    },
+    "WAIT_FOR_9_47": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_47",
+      "Next": "NOTIFY_9_47"
+    },
+    "NOTIFY_9_47": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 47
+      },
+      "Next": "WAIT_FOR_9_48"
+    },
+    "WAIT_FOR_9_48": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_48",
+      "Next": "NOTIFY_9_48"
+    },
+    "NOTIFY_9_48": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 48
+      },
+      "Next": "WAIT_FOR_9_49"
+    },
+    "WAIT_FOR_9_49": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_49",
+      "Next": "NOTIFY_9_49"
+    },
+    "NOTIFY_9_49": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 49
+      },
+      "Next": "WAIT_FOR_9_50"
+    },
+    "WAIT_FOR_9_50": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_50",
+      "Next": "NOTIFY_9_50"
+    },
+    "NOTIFY_9_50": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 50
+      },
+      "Next": "WAIT_FOR_9_51"
+    },
+    "WAIT_FOR_9_51": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_51",
+      "Next": "NOTIFY_9_51"
+    },
+    "NOTIFY_9_51": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 51
+      },
+      "Next": "WAIT_FOR_9_52"
+    },
+    "WAIT_FOR_9_52": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_52",
+      "Next": "NOTIFY_9_52"
+    },
+    "NOTIFY_9_52": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 52
+      },
+      "Next": "WAIT_FOR_9_53"
+    },
+    "WAIT_FOR_9_53": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_53",
+      "Next": "NOTIFY_9_53"
+    },
+    "NOTIFY_9_53": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 53
+      },
+      "Next": "WAIT_FOR_9_54"
+    },
+    "WAIT_FOR_9_54": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_54",
+      "Next": "NOTIFY_9_54"
+    },
+    "NOTIFY_9_54": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 54
+      },
+      "Next": "WAIT_FOR_9_55"
+    },
+    "WAIT_FOR_9_55": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_55",
+      "Next": "NOTIFY_9_55"
+    },
+    "NOTIFY_9_55": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 55
+      },
+      "Next": "WAIT_FOR_9_56"
+    },
+    "WAIT_FOR_9_56": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_56",
+      "Next": "NOTIFY_9_56"
+    },
+    "NOTIFY_9_56": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 56
+      },
+      "Next": "WAIT_FOR_9_57"
+    },
+    "WAIT_FOR_9_57": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_57",
+      "Next": "NOTIFY_9_57"
+    },
+    "NOTIFY_9_57": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 57
+      },
+      "Next": "WAIT_FOR_9_58"
+    },
+    "WAIT_FOR_9_58": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_58",
+      "Next": "NOTIFY_9_58"
+    },
+    "NOTIFY_9_58": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 58
+      },
+      "Next": "WAIT_FOR_9_59"
+    },
+    "WAIT_FOR_9_59": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_9_59",
+      "Next": "NOTIFY_9_59"
+    },
+    "NOTIFY_9_59": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 9,
+        "minute": 59
+      },
+      "Next": "WAIT_FOR_10_0"
+    },
+    "WAIT_FOR_10_0": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_0",
+      "Next": "NOTIFY_10_0"
+    },
+    "NOTIFY_10_0": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 0
+      },
+      "Next": "WAIT_FOR_10_1"
+    },
+    "WAIT_FOR_10_1": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_1",
+      "Next": "NOTIFY_10_1"
+    },
+    "NOTIFY_10_1": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 1
+      },
+      "Next": "WAIT_FOR_10_2"
+    },
+    "WAIT_FOR_10_2": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_2",
+      "Next": "NOTIFY_10_2"
+    },
+    "NOTIFY_10_2": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 2
+      },
+      "Next": "WAIT_FOR_10_3"
+    },
+    "WAIT_FOR_10_3": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_3",
+      "Next": "NOTIFY_10_3"
+    },
+    "NOTIFY_10_3": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 3
+      },
+      "Next": "WAIT_FOR_10_4"
+    },
+    "WAIT_FOR_10_4": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_4",
+      "Next": "NOTIFY_10_4"
+    },
+    "NOTIFY_10_4": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 4
+      },
+      "Next": "WAIT_FOR_10_5"
+    },
+    "WAIT_FOR_10_5": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_5",
+      "Next": "NOTIFY_10_5"
+    },
+    "NOTIFY_10_5": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 5
+      },
+      "Next": "WAIT_FOR_10_6"
+    },
+    "WAIT_FOR_10_6": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_6",
+      "Next": "NOTIFY_10_6"
+    },
+    "NOTIFY_10_6": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 6
+      },
+      "Next": "WAIT_FOR_10_7"
+    },
+    "WAIT_FOR_10_7": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_7",
+      "Next": "NOTIFY_10_7"
+    },
+    "NOTIFY_10_7": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 7
+      },
+      "Next": "WAIT_FOR_10_8"
+    },
+    "WAIT_FOR_10_8": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_8",
+      "Next": "NOTIFY_10_8"
+    },
+    "NOTIFY_10_8": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 8
+      },
+      "Next": "WAIT_FOR_10_9"
+    },
+    "WAIT_FOR_10_9": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_9",
+      "Next": "NOTIFY_10_9"
+    },
+    "NOTIFY_10_9": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 9
+      },
+      "Next": "WAIT_FOR_10_10"
+    },
+    "WAIT_FOR_10_10": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_10",
+      "Next": "NOTIFY_10_10"
+    },
+    "NOTIFY_10_10": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 10
+      },
+      "Next": "WAIT_FOR_10_11"
+    },
+    "WAIT_FOR_10_11": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_11",
+      "Next": "NOTIFY_10_11"
+    },
+    "NOTIFY_10_11": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 11
+      },
+      "Next": "WAIT_FOR_10_12"
+    },
+    "WAIT_FOR_10_12": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_12",
+      "Next": "NOTIFY_10_12"
+    },
+    "NOTIFY_10_12": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 12
+      },
+      "Next": "WAIT_FOR_10_13"
+    },
+    "WAIT_FOR_10_13": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_13",
+      "Next": "NOTIFY_10_13"
+    },
+    "NOTIFY_10_13": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 13
+      },
+      "Next": "WAIT_FOR_10_14"
+    },
+    "WAIT_FOR_10_14": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_14",
+      "Next": "NOTIFY_10_14"
+    },
+    "NOTIFY_10_14": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 14
+      },
+      "Next": "WAIT_FOR_10_15"
+    },
+    "WAIT_FOR_10_15": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_15",
+      "Next": "NOTIFY_10_15"
+    },
+    "NOTIFY_10_15": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 15
+      },
+      "Next": "WAIT_FOR_10_16"
+    },
+    "WAIT_FOR_10_16": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_16",
+      "Next": "NOTIFY_10_16"
+    },
+    "NOTIFY_10_16": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 16
+      },
+      "Next": "WAIT_FOR_10_17"
+    },
+    "WAIT_FOR_10_17": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_17",
+      "Next": "NOTIFY_10_17"
+    },
+    "NOTIFY_10_17": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 17
+      },
+      "Next": "WAIT_FOR_10_18"
+    },
+    "WAIT_FOR_10_18": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_18",
+      "Next": "NOTIFY_10_18"
+    },
+    "NOTIFY_10_18": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 18
+      },
+      "Next": "WAIT_FOR_10_19"
+    },
+    "WAIT_FOR_10_19": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_19",
+      "Next": "NOTIFY_10_19"
+    },
+    "NOTIFY_10_19": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 19
+      },
+      "Next": "WAIT_FOR_10_20"
+    },
+    "WAIT_FOR_10_20": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_20",
+      "Next": "NOTIFY_10_20"
+    },
+    "NOTIFY_10_20": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 20
+      },
+      "Next": "WAIT_FOR_10_21"
+    },
+    "WAIT_FOR_10_21": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_21",
+      "Next": "NOTIFY_10_21"
+    },
+    "NOTIFY_10_21": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 21
+      },
+      "Next": "WAIT_FOR_10_22"
+    },
+    "WAIT_FOR_10_22": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_22",
+      "Next": "NOTIFY_10_22"
+    },
+    "NOTIFY_10_22": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 22
+      },
+      "Next": "WAIT_FOR_10_23"
+    },
+    "WAIT_FOR_10_23": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_23",
+      "Next": "NOTIFY_10_23"
+    },
+    "NOTIFY_10_23": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 23
+      },
+      "Next": "WAIT_FOR_10_24"
+    },
+    "WAIT_FOR_10_24": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_24",
+      "Next": "NOTIFY_10_24"
+    },
+    "NOTIFY_10_24": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 24
+      },
+      "Next": "WAIT_FOR_10_25"
+    },
+    "WAIT_FOR_10_25": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_25",
+      "Next": "NOTIFY_10_25"
+    },
+    "NOTIFY_10_25": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 25
+      },
+      "Next": "WAIT_FOR_10_26"
+    },
+    "WAIT_FOR_10_26": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_26",
+      "Next": "NOTIFY_10_26"
+    },
+    "NOTIFY_10_26": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 26
+      },
+      "Next": "WAIT_FOR_10_27"
+    },
+    "WAIT_FOR_10_27": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_27",
+      "Next": "NOTIFY_10_27"
+    },
+    "NOTIFY_10_27": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 27
+      },
+      "Next": "WAIT_FOR_10_28"
+    },
+    "WAIT_FOR_10_28": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_28",
+      "Next": "NOTIFY_10_28"
+    },
+    "NOTIFY_10_28": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 28
+      },
+      "Next": "WAIT_FOR_10_29"
+    },
+    "WAIT_FOR_10_29": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_29",
+      "Next": "NOTIFY_10_29"
+    },
+    "NOTIFY_10_29": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 29
+      },
+      "Next": "WAIT_FOR_10_30"
+    },
+    "WAIT_FOR_10_30": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_30",
+      "Next": "NOTIFY_10_30"
+    },
+    "NOTIFY_10_30": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 30
+      },
+      "Next": "WAIT_FOR_10_31"
+    },
+    "WAIT_FOR_10_31": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_31",
+      "Next": "NOTIFY_10_31"
+    },
+    "NOTIFY_10_31": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 31
+      },
+      "Next": "WAIT_FOR_10_32"
+    },
+    "WAIT_FOR_10_32": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_32",
+      "Next": "NOTIFY_10_32"
+    },
+    "NOTIFY_10_32": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 32
+      },
+      "Next": "WAIT_FOR_10_33"
+    },
+    "WAIT_FOR_10_33": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_33",
+      "Next": "NOTIFY_10_33"
+    },
+    "NOTIFY_10_33": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 33
+      },
+      "Next": "WAIT_FOR_10_34"
+    },
+    "WAIT_FOR_10_34": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_34",
+      "Next": "NOTIFY_10_34"
+    },
+    "NOTIFY_10_34": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 34
+      },
+      "Next": "WAIT_FOR_10_35"
+    },
+    "WAIT_FOR_10_35": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_35",
+      "Next": "NOTIFY_10_35"
+    },
+    "NOTIFY_10_35": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 35
+      },
+      "Next": "WAIT_FOR_10_36"
+    },
+    "WAIT_FOR_10_36": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_36",
+      "Next": "NOTIFY_10_36"
+    },
+    "NOTIFY_10_36": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 36
+      },
+      "Next": "WAIT_FOR_10_37"
+    },
+    "WAIT_FOR_10_37": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_37",
+      "Next": "NOTIFY_10_37"
+    },
+    "NOTIFY_10_37": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 37
+      },
+      "Next": "WAIT_FOR_10_38"
+    },
+    "WAIT_FOR_10_38": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_38",
+      "Next": "NOTIFY_10_38"
+    },
+    "NOTIFY_10_38": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 38
+      },
+      "Next": "WAIT_FOR_10_39"
+    },
+    "WAIT_FOR_10_39": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_39",
+      "Next": "NOTIFY_10_39"
+    },
+    "NOTIFY_10_39": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 39
+      },
+      "Next": "WAIT_FOR_10_40"
+    },
+    "WAIT_FOR_10_40": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_40",
+      "Next": "NOTIFY_10_40"
+    },
+    "NOTIFY_10_40": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 40
+      },
+      "Next": "WAIT_FOR_10_41"
+    },
+    "WAIT_FOR_10_41": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_41",
+      "Next": "NOTIFY_10_41"
+    },
+    "NOTIFY_10_41": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 41
+      },
+      "Next": "WAIT_FOR_10_42"
+    },
+    "WAIT_FOR_10_42": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_42",
+      "Next": "NOTIFY_10_42"
+    },
+    "NOTIFY_10_42": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 42
+      },
+      "Next": "WAIT_FOR_10_43"
+    },
+    "WAIT_FOR_10_43": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_43",
+      "Next": "NOTIFY_10_43"
+    },
+    "NOTIFY_10_43": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 43
+      },
+      "Next": "WAIT_FOR_10_44"
+    },
+    "WAIT_FOR_10_44": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_44",
+      "Next": "NOTIFY_10_44"
+    },
+    "NOTIFY_10_44": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 44
+      },
+      "Next": "WAIT_FOR_10_45"
+    },
+    "WAIT_FOR_10_45": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_45",
+      "Next": "NOTIFY_10_45"
+    },
+    "NOTIFY_10_45": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 45
+      },
+      "Next": "WAIT_FOR_10_46"
+    },
+    "WAIT_FOR_10_46": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_46",
+      "Next": "NOTIFY_10_46"
+    },
+    "NOTIFY_10_46": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 46
+      },
+      "Next": "WAIT_FOR_10_47"
+    },
+    "WAIT_FOR_10_47": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_47",
+      "Next": "NOTIFY_10_47"
+    },
+    "NOTIFY_10_47": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 47
+      },
+      "Next": "WAIT_FOR_10_48"
+    },
+    "WAIT_FOR_10_48": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_48",
+      "Next": "NOTIFY_10_48"
+    },
+    "NOTIFY_10_48": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 48
+      },
+      "Next": "WAIT_FOR_10_49"
+    },
+    "WAIT_FOR_10_49": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_49",
+      "Next": "NOTIFY_10_49"
+    },
+    "NOTIFY_10_49": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 49
+      },
+      "Next": "WAIT_FOR_10_50"
+    },
+    "WAIT_FOR_10_50": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_50",
+      "Next": "NOTIFY_10_50"
+    },
+    "NOTIFY_10_50": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 50
+      },
+      "Next": "WAIT_FOR_10_51"
+    },
+    "WAIT_FOR_10_51": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_51",
+      "Next": "NOTIFY_10_51"
+    },
+    "NOTIFY_10_51": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 51
+      },
+      "Next": "WAIT_FOR_10_52"
+    },
+    "WAIT_FOR_10_52": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_52",
+      "Next": "NOTIFY_10_52"
+    },
+    "NOTIFY_10_52": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 52
+      },
+      "Next": "WAIT_FOR_10_53"
+    },
+    "WAIT_FOR_10_53": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_53",
+      "Next": "NOTIFY_10_53"
+    },
+    "NOTIFY_10_53": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 53
+      },
+      "Next": "WAIT_FOR_10_54"
+    },
+    "WAIT_FOR_10_54": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_54",
+      "Next": "NOTIFY_10_54"
+    },
+    "NOTIFY_10_54": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 54
+      },
+      "Next": "WAIT_FOR_10_55"
+    },
+    "WAIT_FOR_10_55": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_55",
+      "Next": "NOTIFY_10_55"
+    },
+    "NOTIFY_10_55": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 55
+      },
+      "Next": "WAIT_FOR_10_56"
+    },
+    "WAIT_FOR_10_56": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_56",
+      "Next": "NOTIFY_10_56"
+    },
+    "NOTIFY_10_56": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 56
+      },
+      "Next": "WAIT_FOR_10_57"
+    },
+    "WAIT_FOR_10_57": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_57",
+      "Next": "NOTIFY_10_57"
+    },
+    "NOTIFY_10_57": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 57
+      },
+      "Next": "WAIT_FOR_10_58"
+    },
+    "WAIT_FOR_10_58": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_58",
+      "Next": "NOTIFY_10_58"
+    },
+    "NOTIFY_10_58": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 58
+      },
+      "Next": "WAIT_FOR_10_59"
+    },
+    "WAIT_FOR_10_59": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_10_59",
+      "Next": "NOTIFY_10_59"
+    },
+    "NOTIFY_10_59": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 10,
+        "minute": 59
+      },
+      "Next": "WAIT_FOR_11_0"
+    },
+    "WAIT_FOR_11_0": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_0",
+      "Next": "NOTIFY_11_0"
+    },
+    "NOTIFY_11_0": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 0
+      },
+      "Next": "WAIT_FOR_11_1"
+    },
+    "WAIT_FOR_11_1": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_1",
+      "Next": "NOTIFY_11_1"
+    },
+    "NOTIFY_11_1": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 1
+      },
+      "Next": "WAIT_FOR_11_2"
+    },
+    "WAIT_FOR_11_2": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_2",
+      "Next": "NOTIFY_11_2"
+    },
+    "NOTIFY_11_2": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 2
+      },
+      "Next": "WAIT_FOR_11_3"
+    },
+    "WAIT_FOR_11_3": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_3",
+      "Next": "NOTIFY_11_3"
+    },
+    "NOTIFY_11_3": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 3
+      },
+      "Next": "WAIT_FOR_11_4"
+    },
+    "WAIT_FOR_11_4": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_4",
+      "Next": "NOTIFY_11_4"
+    },
+    "NOTIFY_11_4": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 4
+      },
+      "Next": "WAIT_FOR_11_5"
+    },
+    "WAIT_FOR_11_5": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_5",
+      "Next": "NOTIFY_11_5"
+    },
+    "NOTIFY_11_5": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 5
+      },
+      "Next": "WAIT_FOR_11_6"
+    },
+    "WAIT_FOR_11_6": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_6",
+      "Next": "NOTIFY_11_6"
+    },
+    "NOTIFY_11_6": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 6
+      },
+      "Next": "WAIT_FOR_11_7"
+    },
+    "WAIT_FOR_11_7": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_7",
+      "Next": "NOTIFY_11_7"
+    },
+    "NOTIFY_11_7": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 7
+      },
+      "Next": "WAIT_FOR_11_8"
+    },
+    "WAIT_FOR_11_8": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_8",
+      "Next": "NOTIFY_11_8"
+    },
+    "NOTIFY_11_8": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 8
+      },
+      "Next": "WAIT_FOR_11_9"
+    },
+    "WAIT_FOR_11_9": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_9",
+      "Next": "NOTIFY_11_9"
+    },
+    "NOTIFY_11_9": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 9
+      },
+      "Next": "WAIT_FOR_11_10"
+    },
+    "WAIT_FOR_11_10": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_10",
+      "Next": "NOTIFY_11_10"
+    },
+    "NOTIFY_11_10": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 10
+      },
+      "Next": "WAIT_FOR_11_11"
+    },
+    "WAIT_FOR_11_11": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_11",
+      "Next": "NOTIFY_11_11"
+    },
+    "NOTIFY_11_11": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 11
+      },
+      "Next": "WAIT_FOR_11_12"
+    },
+    "WAIT_FOR_11_12": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_12",
+      "Next": "NOTIFY_11_12"
+    },
+    "NOTIFY_11_12": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 12
+      },
+      "Next": "WAIT_FOR_11_13"
+    },
+    "WAIT_FOR_11_13": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_13",
+      "Next": "NOTIFY_11_13"
+    },
+    "NOTIFY_11_13": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 13
+      },
+      "Next": "WAIT_FOR_11_14"
+    },
+    "WAIT_FOR_11_14": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_14",
+      "Next": "NOTIFY_11_14"
+    },
+    "NOTIFY_11_14": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 14
+      },
+      "Next": "WAIT_FOR_11_15"
+    },
+    "WAIT_FOR_11_15": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_15",
+      "Next": "NOTIFY_11_15"
+    },
+    "NOTIFY_11_15": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 15
+      },
+      "Next": "WAIT_FOR_11_16"
+    },
+    "WAIT_FOR_11_16": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_16",
+      "Next": "NOTIFY_11_16"
+    },
+    "NOTIFY_11_16": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 16
+      },
+      "Next": "WAIT_FOR_11_17"
+    },
+    "WAIT_FOR_11_17": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_17",
+      "Next": "NOTIFY_11_17"
+    },
+    "NOTIFY_11_17": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 17
+      },
+      "Next": "WAIT_FOR_11_18"
+    },
+    "WAIT_FOR_11_18": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_18",
+      "Next": "NOTIFY_11_18"
+    },
+    "NOTIFY_11_18": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 18
+      },
+      "Next": "WAIT_FOR_11_19"
+    },
+    "WAIT_FOR_11_19": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_19",
+      "Next": "NOTIFY_11_19"
+    },
+    "NOTIFY_11_19": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 19
+      },
+      "Next": "WAIT_FOR_11_20"
+    },
+    "WAIT_FOR_11_20": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_20",
+      "Next": "NOTIFY_11_20"
+    },
+    "NOTIFY_11_20": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 20
+      },
+      "Next": "WAIT_FOR_11_21"
+    },
+    "WAIT_FOR_11_21": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_21",
+      "Next": "NOTIFY_11_21"
+    },
+    "NOTIFY_11_21": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 21
+      },
+      "Next": "WAIT_FOR_11_22"
+    },
+    "WAIT_FOR_11_22": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_22",
+      "Next": "NOTIFY_11_22"
+    },
+    "NOTIFY_11_22": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 22
+      },
+      "Next": "WAIT_FOR_11_23"
+    },
+    "WAIT_FOR_11_23": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_23",
+      "Next": "NOTIFY_11_23"
+    },
+    "NOTIFY_11_23": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 23
+      },
+      "Next": "WAIT_FOR_11_24"
+    },
+    "WAIT_FOR_11_24": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_24",
+      "Next": "NOTIFY_11_24"
+    },
+    "NOTIFY_11_24": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 24
+      },
+      "Next": "WAIT_FOR_11_25"
+    },
+    "WAIT_FOR_11_25": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_25",
+      "Next": "NOTIFY_11_25"
+    },
+    "NOTIFY_11_25": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 25
+      },
+      "Next": "WAIT_FOR_11_26"
+    },
+    "WAIT_FOR_11_26": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_26",
+      "Next": "NOTIFY_11_26"
+    },
+    "NOTIFY_11_26": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 26
+      },
+      "Next": "WAIT_FOR_11_27"
+    },
+    "WAIT_FOR_11_27": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_27",
+      "Next": "NOTIFY_11_27"
+    },
+    "NOTIFY_11_27": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 27
+      },
+      "Next": "WAIT_FOR_11_28"
+    },
+    "WAIT_FOR_11_28": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_28",
+      "Next": "NOTIFY_11_28"
+    },
+    "NOTIFY_11_28": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 28
+      },
+      "Next": "WAIT_FOR_11_29"
+    },
+    "WAIT_FOR_11_29": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_29",
+      "Next": "NOTIFY_11_29"
+    },
+    "NOTIFY_11_29": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 29
+      },
+      "Next": "WAIT_FOR_11_30"
+    },
+    "WAIT_FOR_11_30": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_30",
+      "Next": "NOTIFY_11_30"
+    },
+    "NOTIFY_11_30": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 30
+      },
+      "Next": "WAIT_FOR_11_31"
+    },
+    "WAIT_FOR_11_31": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_31",
+      "Next": "NOTIFY_11_31"
+    },
+    "NOTIFY_11_31": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 31
+      },
+      "Next": "WAIT_FOR_11_32"
+    },
+    "WAIT_FOR_11_32": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_32",
+      "Next": "NOTIFY_11_32"
+    },
+    "NOTIFY_11_32": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 32
+      },
+      "Next": "WAIT_FOR_11_33"
+    },
+    "WAIT_FOR_11_33": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_33",
+      "Next": "NOTIFY_11_33"
+    },
+    "NOTIFY_11_33": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 33
+      },
+      "Next": "WAIT_FOR_11_34"
+    },
+    "WAIT_FOR_11_34": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_34",
+      "Next": "NOTIFY_11_34"
+    },
+    "NOTIFY_11_34": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 34
+      },
+      "Next": "WAIT_FOR_11_35"
+    },
+    "WAIT_FOR_11_35": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_35",
+      "Next": "NOTIFY_11_35"
+    },
+    "NOTIFY_11_35": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 35
+      },
+      "Next": "WAIT_FOR_11_36"
+    },
+    "WAIT_FOR_11_36": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_36",
+      "Next": "NOTIFY_11_36"
+    },
+    "NOTIFY_11_36": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 36
+      },
+      "Next": "WAIT_FOR_11_37"
+    },
+    "WAIT_FOR_11_37": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_37",
+      "Next": "NOTIFY_11_37"
+    },
+    "NOTIFY_11_37": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 37
+      },
+      "Next": "WAIT_FOR_11_38"
+    },
+    "WAIT_FOR_11_38": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_38",
+      "Next": "NOTIFY_11_38"
+    },
+    "NOTIFY_11_38": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 38
+      },
+      "Next": "WAIT_FOR_11_39"
+    },
+    "WAIT_FOR_11_39": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_39",
+      "Next": "NOTIFY_11_39"
+    },
+    "NOTIFY_11_39": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 39
+      },
+      "Next": "WAIT_FOR_11_40"
+    },
+    "WAIT_FOR_11_40": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_40",
+      "Next": "NOTIFY_11_40"
+    },
+    "NOTIFY_11_40": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 40
+      },
+      "Next": "WAIT_FOR_11_41"
+    },
+    "WAIT_FOR_11_41": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_41",
+      "Next": "NOTIFY_11_41"
+    },
+    "NOTIFY_11_41": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 41
+      },
+      "Next": "WAIT_FOR_11_42"
+    },
+    "WAIT_FOR_11_42": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_42",
+      "Next": "NOTIFY_11_42"
+    },
+    "NOTIFY_11_42": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 42
+      },
+      "Next": "WAIT_FOR_11_43"
+    },
+    "WAIT_FOR_11_43": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_43",
+      "Next": "NOTIFY_11_43"
+    },
+    "NOTIFY_11_43": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 43
+      },
+      "Next": "WAIT_FOR_11_44"
+    },
+    "WAIT_FOR_11_44": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_44",
+      "Next": "NOTIFY_11_44"
+    },
+    "NOTIFY_11_44": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 44
+      },
+      "Next": "WAIT_FOR_11_45"
+    },
+    "WAIT_FOR_11_45": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_45",
+      "Next": "NOTIFY_11_45"
+    },
+    "NOTIFY_11_45": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 45
+      },
+      "Next": "WAIT_FOR_11_46"
+    },
+    "WAIT_FOR_11_46": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_46",
+      "Next": "NOTIFY_11_46"
+    },
+    "NOTIFY_11_46": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 46
+      },
+      "Next": "WAIT_FOR_11_47"
+    },
+    "WAIT_FOR_11_47": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_47",
+      "Next": "NOTIFY_11_47"
+    },
+    "NOTIFY_11_47": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 47
+      },
+      "Next": "WAIT_FOR_11_48"
+    },
+    "WAIT_FOR_11_48": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_48",
+      "Next": "NOTIFY_11_48"
+    },
+    "NOTIFY_11_48": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 48
+      },
+      "Next": "WAIT_FOR_11_49"
+    },
+    "WAIT_FOR_11_49": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_49",
+      "Next": "NOTIFY_11_49"
+    },
+    "NOTIFY_11_49": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 49
+      },
+      "Next": "WAIT_FOR_11_50"
+    },
+    "WAIT_FOR_11_50": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_50",
+      "Next": "NOTIFY_11_50"
+    },
+    "NOTIFY_11_50": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 50
+      },
+      "Next": "WAIT_FOR_11_51"
+    },
+    "WAIT_FOR_11_51": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_51",
+      "Next": "NOTIFY_11_51"
+    },
+    "NOTIFY_11_51": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 51
+      },
+      "Next": "WAIT_FOR_11_52"
+    },
+    "WAIT_FOR_11_52": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_52",
+      "Next": "NOTIFY_11_52"
+    },
+    "NOTIFY_11_52": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 52
+      },
+      "Next": "WAIT_FOR_11_53"
+    },
+    "WAIT_FOR_11_53": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_53",
+      "Next": "NOTIFY_11_53"
+    },
+    "NOTIFY_11_53": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 53
+      },
+      "Next": "WAIT_FOR_11_54"
+    },
+    "WAIT_FOR_11_54": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_54",
+      "Next": "NOTIFY_11_54"
+    },
+    "NOTIFY_11_54": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 54
+      },
+      "Next": "WAIT_FOR_11_55"
+    },
+    "WAIT_FOR_11_55": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_55",
+      "Next": "NOTIFY_11_55"
+    },
+    "NOTIFY_11_55": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 55
+      },
+      "Next": "WAIT_FOR_11_56"
+    },
+    "WAIT_FOR_11_56": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_56",
+      "Next": "NOTIFY_11_56"
+    },
+    "NOTIFY_11_56": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 56
+      },
+      "Next": "WAIT_FOR_11_57"
+    },
+    "WAIT_FOR_11_57": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_57",
+      "Next": "NOTIFY_11_57"
+    },
+    "NOTIFY_11_57": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 57
+      },
+      "Next": "WAIT_FOR_11_58"
+    },
+    "WAIT_FOR_11_58": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_58",
+      "Next": "NOTIFY_11_58"
+    },
+    "NOTIFY_11_58": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 58
+      },
+      "Next": "WAIT_FOR_11_59"
+    },
+    "WAIT_FOR_11_59": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_11_59",
+      "Next": "NOTIFY_11_59"
+    },
+    "NOTIFY_11_59": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 11,
+        "minute": 59
+      },
+      "Next": "WAIT_FOR_12_0"
+    },
+    "WAIT_FOR_12_0": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_0",
+      "Next": "NOTIFY_12_0"
+    },
+    "NOTIFY_12_0": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 0
+      },
+      "Next": "WAIT_FOR_12_1"
+    },
+    "WAIT_FOR_12_1": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_1",
+      "Next": "NOTIFY_12_1"
+    },
+    "NOTIFY_12_1": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 1
+      },
+      "Next": "WAIT_FOR_12_2"
+    },
+    "WAIT_FOR_12_2": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_2",
+      "Next": "NOTIFY_12_2"
+    },
+    "NOTIFY_12_2": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 2
+      },
+      "Next": "WAIT_FOR_12_3"
+    },
+    "WAIT_FOR_12_3": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_3",
+      "Next": "NOTIFY_12_3"
+    },
+    "NOTIFY_12_3": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 3
+      },
+      "Next": "WAIT_FOR_12_4"
+    },
+    "WAIT_FOR_12_4": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_4",
+      "Next": "NOTIFY_12_4"
+    },
+    "NOTIFY_12_4": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 4
+      },
+      "Next": "WAIT_FOR_12_5"
+    },
+    "WAIT_FOR_12_5": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_5",
+      "Next": "NOTIFY_12_5"
+    },
+    "NOTIFY_12_5": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 5
+      },
+      "Next": "WAIT_FOR_12_6"
+    },
+    "WAIT_FOR_12_6": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_6",
+      "Next": "NOTIFY_12_6"
+    },
+    "NOTIFY_12_6": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 6
+      },
+      "Next": "WAIT_FOR_12_7"
+    },
+    "WAIT_FOR_12_7": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_7",
+      "Next": "NOTIFY_12_7"
+    },
+    "NOTIFY_12_7": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 7
+      },
+      "Next": "WAIT_FOR_12_8"
+    },
+    "WAIT_FOR_12_8": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_8",
+      "Next": "NOTIFY_12_8"
+    },
+    "NOTIFY_12_8": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 8
+      },
+      "Next": "WAIT_FOR_12_9"
+    },
+    "WAIT_FOR_12_9": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_9",
+      "Next": "NOTIFY_12_9"
+    },
+    "NOTIFY_12_9": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 9
+      },
+      "Next": "WAIT_FOR_12_10"
+    },
+    "WAIT_FOR_12_10": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_10",
+      "Next": "NOTIFY_12_10"
+    },
+    "NOTIFY_12_10": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 10
+      },
+      "Next": "WAIT_FOR_12_11"
+    },
+    "WAIT_FOR_12_11": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_11",
+      "Next": "NOTIFY_12_11"
+    },
+    "NOTIFY_12_11": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 11
+      },
+      "Next": "WAIT_FOR_12_12"
+    },
+    "WAIT_FOR_12_12": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_12",
+      "Next": "NOTIFY_12_12"
+    },
+    "NOTIFY_12_12": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 12
+      },
+      "Next": "WAIT_FOR_12_13"
+    },
+    "WAIT_FOR_12_13": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_13",
+      "Next": "NOTIFY_12_13"
+    },
+    "NOTIFY_12_13": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 13
+      },
+      "Next": "WAIT_FOR_12_14"
+    },
+    "WAIT_FOR_12_14": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_14",
+      "Next": "NOTIFY_12_14"
+    },
+    "NOTIFY_12_14": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 14
+      },
+      "Next": "WAIT_FOR_12_15"
+    },
+    "WAIT_FOR_12_15": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_15",
+      "Next": "NOTIFY_12_15"
+    },
+    "NOTIFY_12_15": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 15
+      },
+      "Next": "WAIT_FOR_12_16"
+    },
+    "WAIT_FOR_12_16": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_16",
+      "Next": "NOTIFY_12_16"
+    },
+    "NOTIFY_12_16": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 16
+      },
+      "Next": "WAIT_FOR_12_17"
+    },
+    "WAIT_FOR_12_17": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_17",
+      "Next": "NOTIFY_12_17"
+    },
+    "NOTIFY_12_17": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 17
+      },
+      "Next": "WAIT_FOR_12_18"
+    },
+    "WAIT_FOR_12_18": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_18",
+      "Next": "NOTIFY_12_18"
+    },
+    "NOTIFY_12_18": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 18
+      },
+      "Next": "WAIT_FOR_12_19"
+    },
+    "WAIT_FOR_12_19": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_19",
+      "Next": "NOTIFY_12_19"
+    },
+    "NOTIFY_12_19": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 19
+      },
+      "Next": "WAIT_FOR_12_20"
+    },
+    "WAIT_FOR_12_20": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_20",
+      "Next": "NOTIFY_12_20"
+    },
+    "NOTIFY_12_20": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 20
+      },
+      "Next": "WAIT_FOR_12_21"
+    },
+    "WAIT_FOR_12_21": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_21",
+      "Next": "NOTIFY_12_21"
+    },
+    "NOTIFY_12_21": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 21
+      },
+      "Next": "WAIT_FOR_12_22"
+    },
+    "WAIT_FOR_12_22": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_22",
+      "Next": "NOTIFY_12_22"
+    },
+    "NOTIFY_12_22": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 22
+      },
+      "Next": "WAIT_FOR_12_23"
+    },
+    "WAIT_FOR_12_23": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_23",
+      "Next": "NOTIFY_12_23"
+    },
+    "NOTIFY_12_23": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 23
+      },
+      "Next": "WAIT_FOR_12_24"
+    },
+    "WAIT_FOR_12_24": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_24",
+      "Next": "NOTIFY_12_24"
+    },
+    "NOTIFY_12_24": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 24
+      },
+      "Next": "WAIT_FOR_12_25"
+    },
+    "WAIT_FOR_12_25": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_25",
+      "Next": "NOTIFY_12_25"
+    },
+    "NOTIFY_12_25": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 25
+      },
+      "Next": "WAIT_FOR_12_26"
+    },
+    "WAIT_FOR_12_26": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_26",
+      "Next": "NOTIFY_12_26"
+    },
+    "NOTIFY_12_26": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 26
+      },
+      "Next": "WAIT_FOR_12_27"
+    },
+    "WAIT_FOR_12_27": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_27",
+      "Next": "NOTIFY_12_27"
+    },
+    "NOTIFY_12_27": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 27
+      },
+      "Next": "WAIT_FOR_12_28"
+    },
+    "WAIT_FOR_12_28": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_28",
+      "Next": "NOTIFY_12_28"
+    },
+    "NOTIFY_12_28": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 28
+      },
+      "Next": "WAIT_FOR_12_29"
+    },
+    "WAIT_FOR_12_29": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_29",
+      "Next": "NOTIFY_12_29"
+    },
+    "NOTIFY_12_29": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 29
+      },
+      "Next": "WAIT_FOR_12_30"
+    },
+    "WAIT_FOR_12_30": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_30",
+      "Next": "NOTIFY_12_30"
+    },
+    "NOTIFY_12_30": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 30
+      },
+      "Next": "WAIT_FOR_12_31"
+    },
+    "WAIT_FOR_12_31": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_31",
+      "Next": "NOTIFY_12_31"
+    },
+    "NOTIFY_12_31": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 31
+      },
+      "Next": "WAIT_FOR_12_32"
+    },
+    "WAIT_FOR_12_32": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_32",
+      "Next": "NOTIFY_12_32"
+    },
+    "NOTIFY_12_32": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 32
+      },
+      "Next": "WAIT_FOR_12_33"
+    },
+    "WAIT_FOR_12_33": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_33",
+      "Next": "NOTIFY_12_33"
+    },
+    "NOTIFY_12_33": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 33
+      },
+      "Next": "WAIT_FOR_12_34"
+    },
+    "WAIT_FOR_12_34": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_34",
+      "Next": "NOTIFY_12_34"
+    },
+    "NOTIFY_12_34": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 34
+      },
+      "Next": "WAIT_FOR_12_35"
+    },
+    "WAIT_FOR_12_35": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_35",
+      "Next": "NOTIFY_12_35"
+    },
+    "NOTIFY_12_35": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 35
+      },
+      "Next": "WAIT_FOR_12_36"
+    },
+    "WAIT_FOR_12_36": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_36",
+      "Next": "NOTIFY_12_36"
+    },
+    "NOTIFY_12_36": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 36
+      },
+      "Next": "WAIT_FOR_12_37"
+    },
+    "WAIT_FOR_12_37": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_37",
+      "Next": "NOTIFY_12_37"
+    },
+    "NOTIFY_12_37": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 37
+      },
+      "Next": "WAIT_FOR_12_38"
+    },
+    "WAIT_FOR_12_38": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_38",
+      "Next": "NOTIFY_12_38"
+    },
+    "NOTIFY_12_38": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 38
+      },
+      "Next": "WAIT_FOR_12_39"
+    },
+    "WAIT_FOR_12_39": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_39",
+      "Next": "NOTIFY_12_39"
+    },
+    "NOTIFY_12_39": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 39
+      },
+      "Next": "WAIT_FOR_12_40"
+    },
+    "WAIT_FOR_12_40": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_40",
+      "Next": "NOTIFY_12_40"
+    },
+    "NOTIFY_12_40": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 40
+      },
+      "Next": "WAIT_FOR_12_41"
+    },
+    "WAIT_FOR_12_41": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_41",
+      "Next": "NOTIFY_12_41"
+    },
+    "NOTIFY_12_41": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 41
+      },
+      "Next": "WAIT_FOR_12_42"
+    },
+    "WAIT_FOR_12_42": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_42",
+      "Next": "NOTIFY_12_42"
+    },
+    "NOTIFY_12_42": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 42
+      },
+      "Next": "WAIT_FOR_12_43"
+    },
+    "WAIT_FOR_12_43": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_43",
+      "Next": "NOTIFY_12_43"
+    },
+    "NOTIFY_12_43": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 43
+      },
+      "Next": "WAIT_FOR_12_44"
+    },
+    "WAIT_FOR_12_44": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_44",
+      "Next": "NOTIFY_12_44"
+    },
+    "NOTIFY_12_44": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 44
+      },
+      "Next": "WAIT_FOR_12_45"
+    },
+    "WAIT_FOR_12_45": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_45",
+      "Next": "NOTIFY_12_45"
+    },
+    "NOTIFY_12_45": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 45
+      },
+      "Next": "WAIT_FOR_12_46"
+    },
+    "WAIT_FOR_12_46": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_46",
+      "Next": "NOTIFY_12_46"
+    },
+    "NOTIFY_12_46": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 46
+      },
+      "Next": "WAIT_FOR_12_47"
+    },
+    "WAIT_FOR_12_47": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_47",
+      "Next": "NOTIFY_12_47"
+    },
+    "NOTIFY_12_47": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 47
+      },
+      "Next": "WAIT_FOR_12_48"
+    },
+    "WAIT_FOR_12_48": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_48",
+      "Next": "NOTIFY_12_48"
+    },
+    "NOTIFY_12_48": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 48
+      },
+      "Next": "WAIT_FOR_12_49"
+    },
+    "WAIT_FOR_12_49": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_49",
+      "Next": "NOTIFY_12_49"
+    },
+    "NOTIFY_12_49": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 49
+      },
+      "Next": "WAIT_FOR_12_50"
+    },
+    "WAIT_FOR_12_50": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_50",
+      "Next": "NOTIFY_12_50"
+    },
+    "NOTIFY_12_50": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 50
+      },
+      "Next": "WAIT_FOR_12_51"
+    },
+    "WAIT_FOR_12_51": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_51",
+      "Next": "NOTIFY_12_51"
+    },
+    "NOTIFY_12_51": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 51
+      },
+      "Next": "WAIT_FOR_12_52"
+    },
+    "WAIT_FOR_12_52": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_52",
+      "Next": "NOTIFY_12_52"
+    },
+    "NOTIFY_12_52": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 52
+      },
+      "Next": "WAIT_FOR_12_53"
+    },
+    "WAIT_FOR_12_53": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_53",
+      "Next": "NOTIFY_12_53"
+    },
+    "NOTIFY_12_53": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 53
+      },
+      "Next": "WAIT_FOR_12_54"
+    },
+    "WAIT_FOR_12_54": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_54",
+      "Next": "NOTIFY_12_54"
+    },
+    "NOTIFY_12_54": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 54
+      },
+      "Next": "WAIT_FOR_12_55"
+    },
+    "WAIT_FOR_12_55": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_55",
+      "Next": "NOTIFY_12_55"
+    },
+    "NOTIFY_12_55": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 55
+      },
+      "Next": "WAIT_FOR_12_56"
+    },
+    "WAIT_FOR_12_56": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_56",
+      "Next": "NOTIFY_12_56"
+    },
+    "NOTIFY_12_56": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 56
+      },
+      "Next": "WAIT_FOR_12_57"
+    },
+    "WAIT_FOR_12_57": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_57",
+      "Next": "NOTIFY_12_57"
+    },
+    "NOTIFY_12_57": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 57
+      },
+      "Next": "WAIT_FOR_12_58"
+    },
+    "WAIT_FOR_12_58": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_58",
+      "Next": "NOTIFY_12_58"
+    },
+    "NOTIFY_12_58": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 58
+      },
+      "Next": "WAIT_FOR_12_59"
+    },
+    "WAIT_FOR_12_59": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_12_59",
+      "Next": "NOTIFY_12_59"
+    },
+    "NOTIFY_12_59": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 12,
+        "minute": 59
+      },
+      "Next": "WAIT_FOR_13_0"
+    },
+    "WAIT_FOR_13_0": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_0",
+      "Next": "NOTIFY_13_0"
+    },
+    "NOTIFY_13_0": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 0
+      },
+      "Next": "WAIT_FOR_13_1"
+    },
+    "WAIT_FOR_13_1": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_1",
+      "Next": "NOTIFY_13_1"
+    },
+    "NOTIFY_13_1": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 1
+      },
+      "Next": "WAIT_FOR_13_2"
+    },
+    "WAIT_FOR_13_2": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_2",
+      "Next": "NOTIFY_13_2"
+    },
+    "NOTIFY_13_2": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 2
+      },
+      "Next": "WAIT_FOR_13_3"
+    },
+    "WAIT_FOR_13_3": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_3",
+      "Next": "NOTIFY_13_3"
+    },
+    "NOTIFY_13_3": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 3
+      },
+      "Next": "WAIT_FOR_13_4"
+    },
+    "WAIT_FOR_13_4": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_4",
+      "Next": "NOTIFY_13_4"
+    },
+    "NOTIFY_13_4": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 4
+      },
+      "Next": "WAIT_FOR_13_5"
+    },
+    "WAIT_FOR_13_5": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_5",
+      "Next": "NOTIFY_13_5"
+    },
+    "NOTIFY_13_5": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 5
+      },
+      "Next": "WAIT_FOR_13_6"
+    },
+    "WAIT_FOR_13_6": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_6",
+      "Next": "NOTIFY_13_6"
+    },
+    "NOTIFY_13_6": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 6
+      },
+      "Next": "WAIT_FOR_13_7"
+    },
+    "WAIT_FOR_13_7": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_7",
+      "Next": "NOTIFY_13_7"
+    },
+    "NOTIFY_13_7": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 7
+      },
+      "Next": "WAIT_FOR_13_8"
+    },
+    "WAIT_FOR_13_8": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_8",
+      "Next": "NOTIFY_13_8"
+    },
+    "NOTIFY_13_8": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 8
+      },
+      "Next": "WAIT_FOR_13_9"
+    },
+    "WAIT_FOR_13_9": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_9",
+      "Next": "NOTIFY_13_9"
+    },
+    "NOTIFY_13_9": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 9
+      },
+      "Next": "WAIT_FOR_13_10"
+    },
+    "WAIT_FOR_13_10": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_10",
+      "Next": "NOTIFY_13_10"
+    },
+    "NOTIFY_13_10": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 10
+      },
+      "Next": "WAIT_FOR_13_11"
+    },
+    "WAIT_FOR_13_11": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_11",
+      "Next": "NOTIFY_13_11"
+    },
+    "NOTIFY_13_11": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 11
+      },
+      "Next": "WAIT_FOR_13_12"
+    },
+    "WAIT_FOR_13_12": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_12",
+      "Next": "NOTIFY_13_12"
+    },
+    "NOTIFY_13_12": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 12
+      },
+      "Next": "WAIT_FOR_13_13"
+    },
+    "WAIT_FOR_13_13": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_13",
+      "Next": "NOTIFY_13_13"
+    },
+    "NOTIFY_13_13": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 13
+      },
+      "Next": "WAIT_FOR_13_14"
+    },
+    "WAIT_FOR_13_14": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_14",
+      "Next": "NOTIFY_13_14"
+    },
+    "NOTIFY_13_14": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 14
+      },
+      "Next": "WAIT_FOR_13_15"
+    },
+    "WAIT_FOR_13_15": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_15",
+      "Next": "NOTIFY_13_15"
+    },
+    "NOTIFY_13_15": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 15
+      },
+      "Next": "WAIT_FOR_13_16"
+    },
+    "WAIT_FOR_13_16": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_16",
+      "Next": "NOTIFY_13_16"
+    },
+    "NOTIFY_13_16": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 16
+      },
+      "Next": "WAIT_FOR_13_17"
+    },
+    "WAIT_FOR_13_17": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_17",
+      "Next": "NOTIFY_13_17"
+    },
+    "NOTIFY_13_17": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 17
+      },
+      "Next": "WAIT_FOR_13_18"
+    },
+    "WAIT_FOR_13_18": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_18",
+      "Next": "NOTIFY_13_18"
+    },
+    "NOTIFY_13_18": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 18
+      },
+      "Next": "WAIT_FOR_13_19"
+    },
+    "WAIT_FOR_13_19": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_19",
+      "Next": "NOTIFY_13_19"
+    },
+    "NOTIFY_13_19": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 19
+      },
+      "Next": "WAIT_FOR_13_20"
+    },
+    "WAIT_FOR_13_20": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_20",
+      "Next": "NOTIFY_13_20"
+    },
+    "NOTIFY_13_20": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 20
+      },
+      "Next": "WAIT_FOR_13_21"
+    },
+    "WAIT_FOR_13_21": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_21",
+      "Next": "NOTIFY_13_21"
+    },
+    "NOTIFY_13_21": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 21
+      },
+      "Next": "WAIT_FOR_13_22"
+    },
+    "WAIT_FOR_13_22": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_22",
+      "Next": "NOTIFY_13_22"
+    },
+    "NOTIFY_13_22": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 22
+      },
+      "Next": "WAIT_FOR_13_23"
+    },
+    "WAIT_FOR_13_23": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_23",
+      "Next": "NOTIFY_13_23"
+    },
+    "NOTIFY_13_23": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 23
+      },
+      "Next": "WAIT_FOR_13_24"
+    },
+    "WAIT_FOR_13_24": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_24",
+      "Next": "NOTIFY_13_24"
+    },
+    "NOTIFY_13_24": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 24
+      },
+      "Next": "WAIT_FOR_13_25"
+    },
+    "WAIT_FOR_13_25": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_25",
+      "Next": "NOTIFY_13_25"
+    },
+    "NOTIFY_13_25": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 25
+      },
+      "Next": "WAIT_FOR_13_26"
+    },
+    "WAIT_FOR_13_26": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_26",
+      "Next": "NOTIFY_13_26"
+    },
+    "NOTIFY_13_26": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 26
+      },
+      "Next": "WAIT_FOR_13_27"
+    },
+    "WAIT_FOR_13_27": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_27",
+      "Next": "NOTIFY_13_27"
+    },
+    "NOTIFY_13_27": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 27
+      },
+      "Next": "WAIT_FOR_13_28"
+    },
+    "WAIT_FOR_13_28": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_28",
+      "Next": "NOTIFY_13_28"
+    },
+    "NOTIFY_13_28": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 28
+      },
+      "Next": "WAIT_FOR_13_29"
+    },
+    "WAIT_FOR_13_29": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_29",
+      "Next": "NOTIFY_13_29"
+    },
+    "NOTIFY_13_29": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 29
+      },
+      "Next": "WAIT_FOR_13_30"
+    },
+    "WAIT_FOR_13_30": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_30",
+      "Next": "NOTIFY_13_30"
+    },
+    "NOTIFY_13_30": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 30
+      },
+      "Next": "WAIT_FOR_13_31"
+    },
+    "WAIT_FOR_13_31": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_31",
+      "Next": "NOTIFY_13_31"
+    },
+    "NOTIFY_13_31": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 31
+      },
+      "Next": "WAIT_FOR_13_32"
+    },
+    "WAIT_FOR_13_32": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_32",
+      "Next": "NOTIFY_13_32"
+    },
+    "NOTIFY_13_32": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 32
+      },
+      "Next": "WAIT_FOR_13_33"
+    },
+    "WAIT_FOR_13_33": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_33",
+      "Next": "NOTIFY_13_33"
+    },
+    "NOTIFY_13_33": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 33
+      },
+      "Next": "WAIT_FOR_13_34"
+    },
+    "WAIT_FOR_13_34": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_34",
+      "Next": "NOTIFY_13_34"
+    },
+    "NOTIFY_13_34": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 34
+      },
+      "Next": "WAIT_FOR_13_35"
+    },
+    "WAIT_FOR_13_35": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_35",
+      "Next": "NOTIFY_13_35"
+    },
+    "NOTIFY_13_35": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 35
+      },
+      "Next": "WAIT_FOR_13_36"
+    },
+    "WAIT_FOR_13_36": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_36",
+      "Next": "NOTIFY_13_36"
+    },
+    "NOTIFY_13_36": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 36
+      },
+      "Next": "WAIT_FOR_13_37"
+    },
+    "WAIT_FOR_13_37": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_37",
+      "Next": "NOTIFY_13_37"
+    },
+    "NOTIFY_13_37": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 37
+      },
+      "Next": "WAIT_FOR_13_38"
+    },
+    "WAIT_FOR_13_38": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_38",
+      "Next": "NOTIFY_13_38"
+    },
+    "NOTIFY_13_38": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 38
+      },
+      "Next": "WAIT_FOR_13_39"
+    },
+    "WAIT_FOR_13_39": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_39",
+      "Next": "NOTIFY_13_39"
+    },
+    "NOTIFY_13_39": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 39
+      },
+      "Next": "WAIT_FOR_13_40"
+    },
+    "WAIT_FOR_13_40": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_40",
+      "Next": "NOTIFY_13_40"
+    },
+    "NOTIFY_13_40": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 40
+      },
+      "Next": "WAIT_FOR_13_41"
+    },
+    "WAIT_FOR_13_41": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_41",
+      "Next": "NOTIFY_13_41"
+    },
+    "NOTIFY_13_41": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 41
+      },
+      "Next": "WAIT_FOR_13_42"
+    },
+    "WAIT_FOR_13_42": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_42",
+      "Next": "NOTIFY_13_42"
+    },
+    "NOTIFY_13_42": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 42
+      },
+      "Next": "WAIT_FOR_13_43"
+    },
+    "WAIT_FOR_13_43": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_43",
+      "Next": "NOTIFY_13_43"
+    },
+    "NOTIFY_13_43": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 43
+      },
+      "Next": "WAIT_FOR_13_44"
+    },
+    "WAIT_FOR_13_44": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_44",
+      "Next": "NOTIFY_13_44"
+    },
+    "NOTIFY_13_44": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 44
+      },
+      "Next": "WAIT_FOR_13_45"
+    },
+    "WAIT_FOR_13_45": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_45",
+      "Next": "NOTIFY_13_45"
+    },
+    "NOTIFY_13_45": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 45
+      },
+      "Next": "WAIT_FOR_13_46"
+    },
+    "WAIT_FOR_13_46": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_46",
+      "Next": "NOTIFY_13_46"
+    },
+    "NOTIFY_13_46": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 46
+      },
+      "Next": "WAIT_FOR_13_47"
+    },
+    "WAIT_FOR_13_47": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_47",
+      "Next": "NOTIFY_13_47"
+    },
+    "NOTIFY_13_47": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 47
+      },
+      "Next": "WAIT_FOR_13_48"
+    },
+    "WAIT_FOR_13_48": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_48",
+      "Next": "NOTIFY_13_48"
+    },
+    "NOTIFY_13_48": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 48
+      },
+      "Next": "WAIT_FOR_13_49"
+    },
+    "WAIT_FOR_13_49": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_49",
+      "Next": "NOTIFY_13_49"
+    },
+    "NOTIFY_13_49": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 49
+      },
+      "Next": "WAIT_FOR_13_50"
+    },
+    "WAIT_FOR_13_50": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_50",
+      "Next": "NOTIFY_13_50"
+    },
+    "NOTIFY_13_50": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 50
+      },
+      "Next": "WAIT_FOR_13_51"
+    },
+    "WAIT_FOR_13_51": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_51",
+      "Next": "NOTIFY_13_51"
+    },
+    "NOTIFY_13_51": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 51
+      },
+      "Next": "WAIT_FOR_13_52"
+    },
+    "WAIT_FOR_13_52": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_52",
+      "Next": "NOTIFY_13_52"
+    },
+    "NOTIFY_13_52": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 52
+      },
+      "Next": "WAIT_FOR_13_53"
+    },
+    "WAIT_FOR_13_53": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_53",
+      "Next": "NOTIFY_13_53"
+    },
+    "NOTIFY_13_53": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 53
+      },
+      "Next": "WAIT_FOR_13_54"
+    },
+    "WAIT_FOR_13_54": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_54",
+      "Next": "NOTIFY_13_54"
+    },
+    "NOTIFY_13_54": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 54
+      },
+      "Next": "WAIT_FOR_13_55"
+    },
+    "WAIT_FOR_13_55": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_55",
+      "Next": "NOTIFY_13_55"
+    },
+    "NOTIFY_13_55": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 55
+      },
+      "Next": "WAIT_FOR_13_56"
+    },
+    "WAIT_FOR_13_56": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_56",
+      "Next": "NOTIFY_13_56"
+    },
+    "NOTIFY_13_56": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 56
+      },
+      "Next": "WAIT_FOR_13_57"
+    },
+    "WAIT_FOR_13_57": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_57",
+      "Next": "NOTIFY_13_57"
+    },
+    "NOTIFY_13_57": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 57
+      },
+      "Next": "WAIT_FOR_13_58"
+    },
+    "WAIT_FOR_13_58": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_58",
+      "Next": "NOTIFY_13_58"
+    },
+    "NOTIFY_13_58": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 58
+      },
+      "Next": "WAIT_FOR_13_59"
+    },
+    "WAIT_FOR_13_59": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_13_59",
+      "Next": "NOTIFY_13_59"
+    },
+    "NOTIFY_13_59": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 13,
+        "minute": 59
+      },
+      "Next": "WAIT_FOR_14_0"
+    },
+    "WAIT_FOR_14_0": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_0",
+      "Next": "NOTIFY_14_0"
+    },
+    "NOTIFY_14_0": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 0
+      },
+      "Next": "WAIT_FOR_14_1"
+    },
+    "WAIT_FOR_14_1": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_1",
+      "Next": "NOTIFY_14_1"
+    },
+    "NOTIFY_14_1": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 1
+      },
+      "Next": "WAIT_FOR_14_2"
+    },
+    "WAIT_FOR_14_2": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_2",
+      "Next": "NOTIFY_14_2"
+    },
+    "NOTIFY_14_2": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 2
+      },
+      "Next": "WAIT_FOR_14_3"
+    },
+    "WAIT_FOR_14_3": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_3",
+      "Next": "NOTIFY_14_3"
+    },
+    "NOTIFY_14_3": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 3
+      },
+      "Next": "WAIT_FOR_14_4"
+    },
+    "WAIT_FOR_14_4": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_4",
+      "Next": "NOTIFY_14_4"
+    },
+    "NOTIFY_14_4": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 4
+      },
+      "Next": "WAIT_FOR_14_5"
+    },
+    "WAIT_FOR_14_5": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_5",
+      "Next": "NOTIFY_14_5"
+    },
+    "NOTIFY_14_5": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 5
+      },
+      "Next": "WAIT_FOR_14_6"
+    },
+    "WAIT_FOR_14_6": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_6",
+      "Next": "NOTIFY_14_6"
+    },
+    "NOTIFY_14_6": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 6
+      },
+      "Next": "WAIT_FOR_14_7"
+    },
+    "WAIT_FOR_14_7": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_7",
+      "Next": "NOTIFY_14_7"
+    },
+    "NOTIFY_14_7": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 7
+      },
+      "Next": "WAIT_FOR_14_8"
+    },
+    "WAIT_FOR_14_8": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_8",
+      "Next": "NOTIFY_14_8"
+    },
+    "NOTIFY_14_8": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 8
+      },
+      "Next": "WAIT_FOR_14_9"
+    },
+    "WAIT_FOR_14_9": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_9",
+      "Next": "NOTIFY_14_9"
+    },
+    "NOTIFY_14_9": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 9
+      },
+      "Next": "WAIT_FOR_14_10"
+    },
+    "WAIT_FOR_14_10": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_10",
+      "Next": "NOTIFY_14_10"
+    },
+    "NOTIFY_14_10": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 10
+      },
+      "Next": "WAIT_FOR_14_11"
+    },
+    "WAIT_FOR_14_11": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_11",
+      "Next": "NOTIFY_14_11"
+    },
+    "NOTIFY_14_11": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 11
+      },
+      "Next": "WAIT_FOR_14_12"
+    },
+    "WAIT_FOR_14_12": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_12",
+      "Next": "NOTIFY_14_12"
+    },
+    "NOTIFY_14_12": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 12
+      },
+      "Next": "WAIT_FOR_14_13"
+    },
+    "WAIT_FOR_14_13": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_13",
+      "Next": "NOTIFY_14_13"
+    },
+    "NOTIFY_14_13": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 13
+      },
+      "Next": "WAIT_FOR_14_14"
+    },
+    "WAIT_FOR_14_14": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_14",
+      "Next": "NOTIFY_14_14"
+    },
+    "NOTIFY_14_14": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 14
+      },
+      "Next": "WAIT_FOR_14_15"
+    },
+    "WAIT_FOR_14_15": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_15",
+      "Next": "NOTIFY_14_15"
+    },
+    "NOTIFY_14_15": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 15
+      },
+      "Next": "WAIT_FOR_14_16"
+    },
+    "WAIT_FOR_14_16": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_16",
+      "Next": "NOTIFY_14_16"
+    },
+    "NOTIFY_14_16": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 16
+      },
+      "Next": "WAIT_FOR_14_17"
+    },
+    "WAIT_FOR_14_17": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_17",
+      "Next": "NOTIFY_14_17"
+    },
+    "NOTIFY_14_17": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 17
+      },
+      "Next": "WAIT_FOR_14_18"
+    },
+    "WAIT_FOR_14_18": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_18",
+      "Next": "NOTIFY_14_18"
+    },
+    "NOTIFY_14_18": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 18
+      },
+      "Next": "WAIT_FOR_14_19"
+    },
+    "WAIT_FOR_14_19": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_19",
+      "Next": "NOTIFY_14_19"
+    },
+    "NOTIFY_14_19": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 19
+      },
+      "Next": "WAIT_FOR_14_20"
+    },
+    "WAIT_FOR_14_20": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_20",
+      "Next": "NOTIFY_14_20"
+    },
+    "NOTIFY_14_20": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 20
+      },
+      "Next": "WAIT_FOR_14_21"
+    },
+    "WAIT_FOR_14_21": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_21",
+      "Next": "NOTIFY_14_21"
+    },
+    "NOTIFY_14_21": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 21
+      },
+      "Next": "WAIT_FOR_14_22"
+    },
+    "WAIT_FOR_14_22": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_22",
+      "Next": "NOTIFY_14_22"
+    },
+    "NOTIFY_14_22": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 22
+      },
+      "Next": "WAIT_FOR_14_23"
+    },
+    "WAIT_FOR_14_23": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_23",
+      "Next": "NOTIFY_14_23"
+    },
+    "NOTIFY_14_23": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 23
+      },
+      "Next": "WAIT_FOR_14_24"
+    },
+    "WAIT_FOR_14_24": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_24",
+      "Next": "NOTIFY_14_24"
+    },
+    "NOTIFY_14_24": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 24
+      },
+      "Next": "WAIT_FOR_14_25"
+    },
+    "WAIT_FOR_14_25": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_25",
+      "Next": "NOTIFY_14_25"
+    },
+    "NOTIFY_14_25": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 25
+      },
+      "Next": "WAIT_FOR_14_26"
+    },
+    "WAIT_FOR_14_26": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_26",
+      "Next": "NOTIFY_14_26"
+    },
+    "NOTIFY_14_26": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 26
+      },
+      "Next": "WAIT_FOR_14_27"
+    },
+    "WAIT_FOR_14_27": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_27",
+      "Next": "NOTIFY_14_27"
+    },
+    "NOTIFY_14_27": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 27
+      },
+      "Next": "WAIT_FOR_14_28"
+    },
+    "WAIT_FOR_14_28": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_28",
+      "Next": "NOTIFY_14_28"
+    },
+    "NOTIFY_14_28": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 28
+      },
+      "Next": "WAIT_FOR_14_29"
+    },
+    "WAIT_FOR_14_29": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_29",
+      "Next": "NOTIFY_14_29"
+    },
+    "NOTIFY_14_29": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 29
+      },
+      "Next": "WAIT_FOR_14_30"
+    },
+    "WAIT_FOR_14_30": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_30",
+      "Next": "NOTIFY_14_30"
+    },
+    "NOTIFY_14_30": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 30
+      },
+      "Next": "WAIT_FOR_14_31"
+    },
+    "WAIT_FOR_14_31": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_31",
+      "Next": "NOTIFY_14_31"
+    },
+    "NOTIFY_14_31": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 31
+      },
+      "Next": "WAIT_FOR_14_32"
+    },
+    "WAIT_FOR_14_32": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_32",
+      "Next": "NOTIFY_14_32"
+    },
+    "NOTIFY_14_32": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 32
+      },
+      "Next": "WAIT_FOR_14_33"
+    },
+    "WAIT_FOR_14_33": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_33",
+      "Next": "NOTIFY_14_33"
+    },
+    "NOTIFY_14_33": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 33
+      },
+      "Next": "WAIT_FOR_14_34"
+    },
+    "WAIT_FOR_14_34": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_34",
+      "Next": "NOTIFY_14_34"
+    },
+    "NOTIFY_14_34": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 34
+      },
+      "Next": "WAIT_FOR_14_35"
+    },
+    "WAIT_FOR_14_35": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_35",
+      "Next": "NOTIFY_14_35"
+    },
+    "NOTIFY_14_35": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 35
+      },
+      "Next": "WAIT_FOR_14_36"
+    },
+    "WAIT_FOR_14_36": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_36",
+      "Next": "NOTIFY_14_36"
+    },
+    "NOTIFY_14_36": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 36
+      },
+      "Next": "WAIT_FOR_14_37"
+    },
+    "WAIT_FOR_14_37": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_37",
+      "Next": "NOTIFY_14_37"
+    },
+    "NOTIFY_14_37": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 37
+      },
+      "Next": "WAIT_FOR_14_38"
+    },
+    "WAIT_FOR_14_38": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_38",
+      "Next": "NOTIFY_14_38"
+    },
+    "NOTIFY_14_38": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 38
+      },
+      "Next": "WAIT_FOR_14_39"
+    },
+    "WAIT_FOR_14_39": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_39",
+      "Next": "NOTIFY_14_39"
+    },
+    "NOTIFY_14_39": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 39
+      },
+      "Next": "WAIT_FOR_14_40"
+    },
+    "WAIT_FOR_14_40": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_40",
+      "Next": "NOTIFY_14_40"
+    },
+    "NOTIFY_14_40": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 40
+      },
+      "Next": "WAIT_FOR_14_41"
+    },
+    "WAIT_FOR_14_41": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_41",
+      "Next": "NOTIFY_14_41"
+    },
+    "NOTIFY_14_41": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 41
+      },
+      "Next": "WAIT_FOR_14_42"
+    },
+    "WAIT_FOR_14_42": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_42",
+      "Next": "NOTIFY_14_42"
+    },
+    "NOTIFY_14_42": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 42
+      },
+      "Next": "WAIT_FOR_14_43"
+    },
+    "WAIT_FOR_14_43": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_43",
+      "Next": "NOTIFY_14_43"
+    },
+    "NOTIFY_14_43": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 43
+      },
+      "Next": "WAIT_FOR_14_44"
+    },
+    "WAIT_FOR_14_44": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_44",
+      "Next": "NOTIFY_14_44"
+    },
+    "NOTIFY_14_44": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 44
+      },
+      "Next": "WAIT_FOR_14_45"
+    },
+    "WAIT_FOR_14_45": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_45",
+      "Next": "NOTIFY_14_45"
+    },
+    "NOTIFY_14_45": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 45
+      },
+      "Next": "WAIT_FOR_14_46"
+    },
+    "WAIT_FOR_14_46": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_46",
+      "Next": "NOTIFY_14_46"
+    },
+    "NOTIFY_14_46": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 46
+      },
+      "Next": "WAIT_FOR_14_47"
+    },
+    "WAIT_FOR_14_47": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_47",
+      "Next": "NOTIFY_14_47"
+    },
+    "NOTIFY_14_47": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 47
+      },
+      "Next": "WAIT_FOR_14_48"
+    },
+    "WAIT_FOR_14_48": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_48",
+      "Next": "NOTIFY_14_48"
+    },
+    "NOTIFY_14_48": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 48
+      },
+      "Next": "WAIT_FOR_14_49"
+    },
+    "WAIT_FOR_14_49": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_49",
+      "Next": "NOTIFY_14_49"
+    },
+    "NOTIFY_14_49": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 49
+      },
+      "Next": "WAIT_FOR_14_50"
+    },
+    "WAIT_FOR_14_50": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_50",
+      "Next": "NOTIFY_14_50"
+    },
+    "NOTIFY_14_50": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 50
+      },
+      "Next": "WAIT_FOR_14_51"
+    },
+    "WAIT_FOR_14_51": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_51",
+      "Next": "NOTIFY_14_51"
+    },
+    "NOTIFY_14_51": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 51
+      },
+      "Next": "WAIT_FOR_14_52"
+    },
+    "WAIT_FOR_14_52": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_52",
+      "Next": "NOTIFY_14_52"
+    },
+    "NOTIFY_14_52": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 52
+      },
+      "Next": "WAIT_FOR_14_53"
+    },
+    "WAIT_FOR_14_53": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_53",
+      "Next": "NOTIFY_14_53"
+    },
+    "NOTIFY_14_53": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 53
+      },
+      "Next": "WAIT_FOR_14_54"
+    },
+    "WAIT_FOR_14_54": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_54",
+      "Next": "NOTIFY_14_54"
+    },
+    "NOTIFY_14_54": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 54
+      },
+      "Next": "WAIT_FOR_14_55"
+    },
+    "WAIT_FOR_14_55": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_55",
+      "Next": "NOTIFY_14_55"
+    },
+    "NOTIFY_14_55": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 55
+      },
+      "Next": "WAIT_FOR_14_56"
+    },
+    "WAIT_FOR_14_56": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_56",
+      "Next": "NOTIFY_14_56"
+    },
+    "NOTIFY_14_56": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 56
+      },
+      "Next": "WAIT_FOR_14_57"
+    },
+    "WAIT_FOR_14_57": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_57",
+      "Next": "NOTIFY_14_57"
+    },
+    "NOTIFY_14_57": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 57
+      },
+      "Next": "WAIT_FOR_14_58"
+    },
+    "WAIT_FOR_14_58": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_58",
+      "Next": "NOTIFY_14_58"
+    },
+    "NOTIFY_14_58": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 58
+      },
+      "Next": "WAIT_FOR_14_59"
+    },
+    "WAIT_FOR_14_59": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_14_59",
+      "Next": "NOTIFY_14_59"
+    },
+    "NOTIFY_14_59": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 14,
+        "minute": 59
+      },
+      "Next": "WAIT_FOR_15_0"
+    },
+    "WAIT_FOR_15_0": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_0",
+      "Next": "NOTIFY_15_0"
+    },
+    "NOTIFY_15_0": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 0
+      },
+      "Next": "WAIT_FOR_15_1"
+    },
+    "WAIT_FOR_15_1": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_1",
+      "Next": "NOTIFY_15_1"
+    },
+    "NOTIFY_15_1": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 1
+      },
+      "Next": "WAIT_FOR_15_2"
+    },
+    "WAIT_FOR_15_2": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_2",
+      "Next": "NOTIFY_15_2"
+    },
+    "NOTIFY_15_2": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 2
+      },
+      "Next": "WAIT_FOR_15_3"
+    },
+    "WAIT_FOR_15_3": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_3",
+      "Next": "NOTIFY_15_3"
+    },
+    "NOTIFY_15_3": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 3
+      },
+      "Next": "WAIT_FOR_15_4"
+    },
+    "WAIT_FOR_15_4": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_4",
+      "Next": "NOTIFY_15_4"
+    },
+    "NOTIFY_15_4": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 4
+      },
+      "Next": "WAIT_FOR_15_5"
+    },
+    "WAIT_FOR_15_5": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_5",
+      "Next": "NOTIFY_15_5"
+    },
+    "NOTIFY_15_5": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 5
+      },
+      "Next": "WAIT_FOR_15_6"
+    },
+    "WAIT_FOR_15_6": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_6",
+      "Next": "NOTIFY_15_6"
+    },
+    "NOTIFY_15_6": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 6
+      },
+      "Next": "WAIT_FOR_15_7"
+    },
+    "WAIT_FOR_15_7": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_7",
+      "Next": "NOTIFY_15_7"
+    },
+    "NOTIFY_15_7": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 7
+      },
+      "Next": "WAIT_FOR_15_8"
+    },
+    "WAIT_FOR_15_8": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_8",
+      "Next": "NOTIFY_15_8"
+    },
+    "NOTIFY_15_8": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 8
+      },
+      "Next": "WAIT_FOR_15_9"
+    },
+    "WAIT_FOR_15_9": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_9",
+      "Next": "NOTIFY_15_9"
+    },
+    "NOTIFY_15_9": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 9
+      },
+      "Next": "WAIT_FOR_15_10"
+    },
+    "WAIT_FOR_15_10": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_10",
+      "Next": "NOTIFY_15_10"
+    },
+    "NOTIFY_15_10": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 10
+      },
+      "Next": "WAIT_FOR_15_11"
+    },
+    "WAIT_FOR_15_11": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_11",
+      "Next": "NOTIFY_15_11"
+    },
+    "NOTIFY_15_11": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 11
+      },
+      "Next": "WAIT_FOR_15_12"
+    },
+    "WAIT_FOR_15_12": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_12",
+      "Next": "NOTIFY_15_12"
+    },
+    "NOTIFY_15_12": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 12
+      },
+      "Next": "WAIT_FOR_15_13"
+    },
+    "WAIT_FOR_15_13": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_13",
+      "Next": "NOTIFY_15_13"
+    },
+    "NOTIFY_15_13": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 13
+      },
+      "Next": "WAIT_FOR_15_14"
+    },
+    "WAIT_FOR_15_14": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_14",
+      "Next": "NOTIFY_15_14"
+    },
+    "NOTIFY_15_14": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 14
+      },
+      "Next": "WAIT_FOR_15_15"
+    },
+    "WAIT_FOR_15_15": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_15",
+      "Next": "NOTIFY_15_15"
+    },
+    "NOTIFY_15_15": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 15
+      },
+      "Next": "WAIT_FOR_15_16"
+    },
+    "WAIT_FOR_15_16": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_16",
+      "Next": "NOTIFY_15_16"
+    },
+    "NOTIFY_15_16": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 16
+      },
+      "Next": "WAIT_FOR_15_17"
+    },
+    "WAIT_FOR_15_17": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_17",
+      "Next": "NOTIFY_15_17"
+    },
+    "NOTIFY_15_17": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 17
+      },
+      "Next": "WAIT_FOR_15_18"
+    },
+    "WAIT_FOR_15_18": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_18",
+      "Next": "NOTIFY_15_18"
+    },
+    "NOTIFY_15_18": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 18
+      },
+      "Next": "WAIT_FOR_15_19"
+    },
+    "WAIT_FOR_15_19": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_19",
+      "Next": "NOTIFY_15_19"
+    },
+    "NOTIFY_15_19": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 19
+      },
+      "Next": "WAIT_FOR_15_20"
+    },
+    "WAIT_FOR_15_20": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_20",
+      "Next": "NOTIFY_15_20"
+    },
+    "NOTIFY_15_20": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 20
+      },
+      "Next": "WAIT_FOR_15_21"
+    },
+    "WAIT_FOR_15_21": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_21",
+      "Next": "NOTIFY_15_21"
+    },
+    "NOTIFY_15_21": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 21
+      },
+      "Next": "WAIT_FOR_15_22"
+    },
+    "WAIT_FOR_15_22": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_22",
+      "Next": "NOTIFY_15_22"
+    },
+    "NOTIFY_15_22": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 22
+      },
+      "Next": "WAIT_FOR_15_23"
+    },
+    "WAIT_FOR_15_23": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_23",
+      "Next": "NOTIFY_15_23"
+    },
+    "NOTIFY_15_23": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 23
+      },
+      "Next": "WAIT_FOR_15_24"
+    },
+    "WAIT_FOR_15_24": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_24",
+      "Next": "NOTIFY_15_24"
+    },
+    "NOTIFY_15_24": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 24
+      },
+      "Next": "WAIT_FOR_15_25"
+    },
+    "WAIT_FOR_15_25": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_25",
+      "Next": "NOTIFY_15_25"
+    },
+    "NOTIFY_15_25": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 25
+      },
+      "Next": "WAIT_FOR_15_26"
+    },
+    "WAIT_FOR_15_26": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_26",
+      "Next": "NOTIFY_15_26"
+    },
+    "NOTIFY_15_26": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 26
+      },
+      "Next": "WAIT_FOR_15_27"
+    },
+    "WAIT_FOR_15_27": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_27",
+      "Next": "NOTIFY_15_27"
+    },
+    "NOTIFY_15_27": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 27
+      },
+      "Next": "WAIT_FOR_15_28"
+    },
+    "WAIT_FOR_15_28": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_28",
+      "Next": "NOTIFY_15_28"
+    },
+    "NOTIFY_15_28": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 28
+      },
+      "Next": "WAIT_FOR_15_29"
+    },
+    "WAIT_FOR_15_29": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_29",
+      "Next": "NOTIFY_15_29"
+    },
+    "NOTIFY_15_29": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 29
+      },
+      "Next": "WAIT_FOR_15_30"
+    },
+    "WAIT_FOR_15_30": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_30",
+      "Next": "NOTIFY_15_30"
+    },
+    "NOTIFY_15_30": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 30
+      },
+      "Next": "WAIT_FOR_15_31"
+    },
+    "WAIT_FOR_15_31": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_31",
+      "Next": "NOTIFY_15_31"
+    },
+    "NOTIFY_15_31": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 31
+      },
+      "Next": "WAIT_FOR_15_32"
+    },
+    "WAIT_FOR_15_32": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_32",
+      "Next": "NOTIFY_15_32"
+    },
+    "NOTIFY_15_32": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 32
+      },
+      "Next": "WAIT_FOR_15_33"
+    },
+    "WAIT_FOR_15_33": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_33",
+      "Next": "NOTIFY_15_33"
+    },
+    "NOTIFY_15_33": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 33
+      },
+      "Next": "WAIT_FOR_15_34"
+    },
+    "WAIT_FOR_15_34": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_34",
+      "Next": "NOTIFY_15_34"
+    },
+    "NOTIFY_15_34": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 34
+      },
+      "Next": "WAIT_FOR_15_35"
+    },
+    "WAIT_FOR_15_35": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_35",
+      "Next": "NOTIFY_15_35"
+    },
+    "NOTIFY_15_35": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 35
+      },
+      "Next": "WAIT_FOR_15_36"
+    },
+    "WAIT_FOR_15_36": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_36",
+      "Next": "NOTIFY_15_36"
+    },
+    "NOTIFY_15_36": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 36
+      },
+      "Next": "WAIT_FOR_15_37"
+    },
+    "WAIT_FOR_15_37": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_37",
+      "Next": "NOTIFY_15_37"
+    },
+    "NOTIFY_15_37": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 37
+      },
+      "Next": "WAIT_FOR_15_38"
+    },
+    "WAIT_FOR_15_38": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_38",
+      "Next": "NOTIFY_15_38"
+    },
+    "NOTIFY_15_38": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 38
+      },
+      "Next": "WAIT_FOR_15_39"
+    },
+    "WAIT_FOR_15_39": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_39",
+      "Next": "NOTIFY_15_39"
+    },
+    "NOTIFY_15_39": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 39
+      },
+      "Next": "WAIT_FOR_15_40"
+    },
+    "WAIT_FOR_15_40": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_40",
+      "Next": "NOTIFY_15_40"
+    },
+    "NOTIFY_15_40": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 40
+      },
+      "Next": "WAIT_FOR_15_41"
+    },
+    "WAIT_FOR_15_41": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_41",
+      "Next": "NOTIFY_15_41"
+    },
+    "NOTIFY_15_41": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 41
+      },
+      "Next": "WAIT_FOR_15_42"
+    },
+    "WAIT_FOR_15_42": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_42",
+      "Next": "NOTIFY_15_42"
+    },
+    "NOTIFY_15_42": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 42
+      },
+      "Next": "WAIT_FOR_15_43"
+    },
+    "WAIT_FOR_15_43": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_43",
+      "Next": "NOTIFY_15_43"
+    },
+    "NOTIFY_15_43": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 43
+      },
+      "Next": "WAIT_FOR_15_44"
+    },
+    "WAIT_FOR_15_44": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_44",
+      "Next": "NOTIFY_15_44"
+    },
+    "NOTIFY_15_44": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 44
+      },
+      "Next": "WAIT_FOR_15_45"
+    },
+    "WAIT_FOR_15_45": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_45",
+      "Next": "NOTIFY_15_45"
+    },
+    "NOTIFY_15_45": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 45
+      },
+      "Next": "WAIT_FOR_15_46"
+    },
+    "WAIT_FOR_15_46": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_46",
+      "Next": "NOTIFY_15_46"
+    },
+    "NOTIFY_15_46": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 46
+      },
+      "Next": "WAIT_FOR_15_47"
+    },
+    "WAIT_FOR_15_47": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_47",
+      "Next": "NOTIFY_15_47"
+    },
+    "NOTIFY_15_47": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 47
+      },
+      "Next": "WAIT_FOR_15_48"
+    },
+    "WAIT_FOR_15_48": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_48",
+      "Next": "NOTIFY_15_48"
+    },
+    "NOTIFY_15_48": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 48
+      },
+      "Next": "WAIT_FOR_15_49"
+    },
+    "WAIT_FOR_15_49": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_49",
+      "Next": "NOTIFY_15_49"
+    },
+    "NOTIFY_15_49": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 49
+      },
+      "Next": "WAIT_FOR_15_50"
+    },
+    "WAIT_FOR_15_50": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_50",
+      "Next": "NOTIFY_15_50"
+    },
+    "NOTIFY_15_50": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 50
+      },
+      "Next": "WAIT_FOR_15_51"
+    },
+    "WAIT_FOR_15_51": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_51",
+      "Next": "NOTIFY_15_51"
+    },
+    "NOTIFY_15_51": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 51
+      },
+      "Next": "WAIT_FOR_15_52"
+    },
+    "WAIT_FOR_15_52": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_52",
+      "Next": "NOTIFY_15_52"
+    },
+    "NOTIFY_15_52": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 52
+      },
+      "Next": "WAIT_FOR_15_53"
+    },
+    "WAIT_FOR_15_53": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_53",
+      "Next": "NOTIFY_15_53"
+    },
+    "NOTIFY_15_53": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 53
+      },
+      "Next": "WAIT_FOR_15_54"
+    },
+    "WAIT_FOR_15_54": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_54",
+      "Next": "NOTIFY_15_54"
+    },
+    "NOTIFY_15_54": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 54
+      },
+      "Next": "WAIT_FOR_15_55"
+    },
+    "WAIT_FOR_15_55": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_55",
+      "Next": "NOTIFY_15_55"
+    },
+    "NOTIFY_15_55": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 55
+      },
+      "Next": "WAIT_FOR_15_56"
+    },
+    "WAIT_FOR_15_56": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_56",
+      "Next": "NOTIFY_15_56"
+    },
+    "NOTIFY_15_56": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 56
+      },
+      "Next": "WAIT_FOR_15_57"
+    },
+    "WAIT_FOR_15_57": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_57",
+      "Next": "NOTIFY_15_57"
+    },
+    "NOTIFY_15_57": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 57
+      },
+      "Next": "WAIT_FOR_15_58"
+    },
+    "WAIT_FOR_15_58": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_58",
+      "Next": "NOTIFY_15_58"
+    },
+    "NOTIFY_15_58": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 58
+      },
+      "Next": "WAIT_FOR_15_59"
+    },
+    "WAIT_FOR_15_59": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_15_59",
+      "Next": "NOTIFY_15_59"
+    },
+    "NOTIFY_15_59": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 15,
+        "minute": 59
+      },
+      "Next": "WAIT_FOR_16_0"
+    },
+    "WAIT_FOR_16_0": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_0",
+      "Next": "NOTIFY_16_0"
+    },
+    "NOTIFY_16_0": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 0
+      },
+      "Next": "WAIT_FOR_16_1"
+    },
+    "WAIT_FOR_16_1": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_1",
+      "Next": "NOTIFY_16_1"
+    },
+    "NOTIFY_16_1": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 1
+      },
+      "Next": "WAIT_FOR_16_2"
+    },
+    "WAIT_FOR_16_2": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_2",
+      "Next": "NOTIFY_16_2"
+    },
+    "NOTIFY_16_2": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 2
+      },
+      "Next": "WAIT_FOR_16_3"
+    },
+    "WAIT_FOR_16_3": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_3",
+      "Next": "NOTIFY_16_3"
+    },
+    "NOTIFY_16_3": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 3
+      },
+      "Next": "WAIT_FOR_16_4"
+    },
+    "WAIT_FOR_16_4": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_4",
+      "Next": "NOTIFY_16_4"
+    },
+    "NOTIFY_16_4": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 4
+      },
+      "Next": "WAIT_FOR_16_5"
+    },
+    "WAIT_FOR_16_5": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_5",
+      "Next": "NOTIFY_16_5"
+    },
+    "NOTIFY_16_5": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 5
+      },
+      "Next": "WAIT_FOR_16_6"
+    },
+    "WAIT_FOR_16_6": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_6",
+      "Next": "NOTIFY_16_6"
+    },
+    "NOTIFY_16_6": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 6
+      },
+      "Next": "WAIT_FOR_16_7"
+    },
+    "WAIT_FOR_16_7": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_7",
+      "Next": "NOTIFY_16_7"
+    },
+    "NOTIFY_16_7": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 7
+      },
+      "Next": "WAIT_FOR_16_8"
+    },
+    "WAIT_FOR_16_8": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_8",
+      "Next": "NOTIFY_16_8"
+    },
+    "NOTIFY_16_8": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 8
+      },
+      "Next": "WAIT_FOR_16_9"
+    },
+    "WAIT_FOR_16_9": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_9",
+      "Next": "NOTIFY_16_9"
+    },
+    "NOTIFY_16_9": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 9
+      },
+      "Next": "WAIT_FOR_16_10"
+    },
+    "WAIT_FOR_16_10": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_10",
+      "Next": "NOTIFY_16_10"
+    },
+    "NOTIFY_16_10": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 10
+      },
+      "Next": "WAIT_FOR_16_11"
+    },
+    "WAIT_FOR_16_11": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_11",
+      "Next": "NOTIFY_16_11"
+    },
+    "NOTIFY_16_11": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 11
+      },
+      "Next": "WAIT_FOR_16_12"
+    },
+    "WAIT_FOR_16_12": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_12",
+      "Next": "NOTIFY_16_12"
+    },
+    "NOTIFY_16_12": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 12
+      },
+      "Next": "WAIT_FOR_16_13"
+    },
+    "WAIT_FOR_16_13": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_13",
+      "Next": "NOTIFY_16_13"
+    },
+    "NOTIFY_16_13": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 13
+      },
+      "Next": "WAIT_FOR_16_14"
+    },
+    "WAIT_FOR_16_14": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_14",
+      "Next": "NOTIFY_16_14"
+    },
+    "NOTIFY_16_14": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 14
+      },
+      "Next": "WAIT_FOR_16_15"
+    },
+    "WAIT_FOR_16_15": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_15",
+      "Next": "NOTIFY_16_15"
+    },
+    "NOTIFY_16_15": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 15
+      },
+      "Next": "WAIT_FOR_16_16"
+    },
+    "WAIT_FOR_16_16": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_16",
+      "Next": "NOTIFY_16_16"
+    },
+    "NOTIFY_16_16": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 16
+      },
+      "Next": "WAIT_FOR_16_17"
+    },
+    "WAIT_FOR_16_17": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_17",
+      "Next": "NOTIFY_16_17"
+    },
+    "NOTIFY_16_17": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 17
+      },
+      "Next": "WAIT_FOR_16_18"
+    },
+    "WAIT_FOR_16_18": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_18",
+      "Next": "NOTIFY_16_18"
+    },
+    "NOTIFY_16_18": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 18
+      },
+      "Next": "WAIT_FOR_16_19"
+    },
+    "WAIT_FOR_16_19": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_19",
+      "Next": "NOTIFY_16_19"
+    },
+    "NOTIFY_16_19": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 19
+      },
+      "Next": "WAIT_FOR_16_20"
+    },
+    "WAIT_FOR_16_20": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_20",
+      "Next": "NOTIFY_16_20"
+    },
+    "NOTIFY_16_20": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 20
+      },
+      "Next": "WAIT_FOR_16_21"
+    },
+    "WAIT_FOR_16_21": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_21",
+      "Next": "NOTIFY_16_21"
+    },
+    "NOTIFY_16_21": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 21
+      },
+      "Next": "WAIT_FOR_16_22"
+    },
+    "WAIT_FOR_16_22": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_22",
+      "Next": "NOTIFY_16_22"
+    },
+    "NOTIFY_16_22": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 22
+      },
+      "Next": "WAIT_FOR_16_23"
+    },
+    "WAIT_FOR_16_23": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_23",
+      "Next": "NOTIFY_16_23"
+    },
+    "NOTIFY_16_23": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 23
+      },
+      "Next": "WAIT_FOR_16_24"
+    },
+    "WAIT_FOR_16_24": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_24",
+      "Next": "NOTIFY_16_24"
+    },
+    "NOTIFY_16_24": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 24
+      },
+      "Next": "WAIT_FOR_16_25"
+    },
+    "WAIT_FOR_16_25": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_25",
+      "Next": "NOTIFY_16_25"
+    },
+    "NOTIFY_16_25": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 25
+      },
+      "Next": "WAIT_FOR_16_26"
+    },
+    "WAIT_FOR_16_26": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_26",
+      "Next": "NOTIFY_16_26"
+    },
+    "NOTIFY_16_26": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 26
+      },
+      "Next": "WAIT_FOR_16_27"
+    },
+    "WAIT_FOR_16_27": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_27",
+      "Next": "NOTIFY_16_27"
+    },
+    "NOTIFY_16_27": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 27
+      },
+      "Next": "WAIT_FOR_16_28"
+    },
+    "WAIT_FOR_16_28": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_28",
+      "Next": "NOTIFY_16_28"
+    },
+    "NOTIFY_16_28": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 28
+      },
+      "Next": "WAIT_FOR_16_29"
+    },
+    "WAIT_FOR_16_29": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_29",
+      "Next": "NOTIFY_16_29"
+    },
+    "NOTIFY_16_29": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 29
+      },
+      "Next": "WAIT_FOR_16_30"
+    },
+    "WAIT_FOR_16_30": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_30",
+      "Next": "NOTIFY_16_30"
+    },
+    "NOTIFY_16_30": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 30
+      },
+      "Next": "WAIT_FOR_16_31"
+    },
+    "WAIT_FOR_16_31": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_31",
+      "Next": "NOTIFY_16_31"
+    },
+    "NOTIFY_16_31": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 31
+      },
+      "Next": "WAIT_FOR_16_32"
+    },
+    "WAIT_FOR_16_32": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_32",
+      "Next": "NOTIFY_16_32"
+    },
+    "NOTIFY_16_32": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 32
+      },
+      "Next": "WAIT_FOR_16_33"
+    },
+    "WAIT_FOR_16_33": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_33",
+      "Next": "NOTIFY_16_33"
+    },
+    "NOTIFY_16_33": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 33
+      },
+      "Next": "WAIT_FOR_16_34"
+    },
+    "WAIT_FOR_16_34": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_34",
+      "Next": "NOTIFY_16_34"
+    },
+    "NOTIFY_16_34": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 34
+      },
+      "Next": "WAIT_FOR_16_35"
+    },
+    "WAIT_FOR_16_35": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_35",
+      "Next": "NOTIFY_16_35"
+    },
+    "NOTIFY_16_35": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 35
+      },
+      "Next": "WAIT_FOR_16_36"
+    },
+    "WAIT_FOR_16_36": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_36",
+      "Next": "NOTIFY_16_36"
+    },
+    "NOTIFY_16_36": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 36
+      },
+      "Next": "WAIT_FOR_16_37"
+    },
+    "WAIT_FOR_16_37": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_37",
+      "Next": "NOTIFY_16_37"
+    },
+    "NOTIFY_16_37": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 37
+      },
+      "Next": "WAIT_FOR_16_38"
+    },
+    "WAIT_FOR_16_38": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_38",
+      "Next": "NOTIFY_16_38"
+    },
+    "NOTIFY_16_38": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 38
+      },
+      "Next": "WAIT_FOR_16_39"
+    },
+    "WAIT_FOR_16_39": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_39",
+      "Next": "NOTIFY_16_39"
+    },
+    "NOTIFY_16_39": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 39
+      },
+      "Next": "WAIT_FOR_16_40"
+    },
+    "WAIT_FOR_16_40": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_40",
+      "Next": "NOTIFY_16_40"
+    },
+    "NOTIFY_16_40": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 40
+      },
+      "Next": "WAIT_FOR_16_41"
+    },
+    "WAIT_FOR_16_41": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_41",
+      "Next": "NOTIFY_16_41"
+    },
+    "NOTIFY_16_41": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 41
+      },
+      "Next": "WAIT_FOR_16_42"
+    },
+    "WAIT_FOR_16_42": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_42",
+      "Next": "NOTIFY_16_42"
+    },
+    "NOTIFY_16_42": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 42
+      },
+      "Next": "WAIT_FOR_16_43"
+    },
+    "WAIT_FOR_16_43": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_43",
+      "Next": "NOTIFY_16_43"
+    },
+    "NOTIFY_16_43": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 43
+      },
+      "Next": "WAIT_FOR_16_44"
+    },
+    "WAIT_FOR_16_44": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_44",
+      "Next": "NOTIFY_16_44"
+    },
+    "NOTIFY_16_44": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 44
+      },
+      "Next": "WAIT_FOR_16_45"
+    },
+    "WAIT_FOR_16_45": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_45",
+      "Next": "NOTIFY_16_45"
+    },
+    "NOTIFY_16_45": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 45
+      },
+      "Next": "WAIT_FOR_16_46"
+    },
+    "WAIT_FOR_16_46": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_46",
+      "Next": "NOTIFY_16_46"
+    },
+    "NOTIFY_16_46": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 46
+      },
+      "Next": "WAIT_FOR_16_47"
+    },
+    "WAIT_FOR_16_47": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_47",
+      "Next": "NOTIFY_16_47"
+    },
+    "NOTIFY_16_47": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 47
+      },
+      "Next": "WAIT_FOR_16_48"
+    },
+    "WAIT_FOR_16_48": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_48",
+      "Next": "NOTIFY_16_48"
+    },
+    "NOTIFY_16_48": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 48
+      },
+      "Next": "WAIT_FOR_16_49"
+    },
+    "WAIT_FOR_16_49": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_49",
+      "Next": "NOTIFY_16_49"
+    },
+    "NOTIFY_16_49": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 49
+      },
+      "Next": "WAIT_FOR_16_50"
+    },
+    "WAIT_FOR_16_50": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_50",
+      "Next": "NOTIFY_16_50"
+    },
+    "NOTIFY_16_50": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 50
+      },
+      "Next": "WAIT_FOR_16_51"
+    },
+    "WAIT_FOR_16_51": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_51",
+      "Next": "NOTIFY_16_51"
+    },
+    "NOTIFY_16_51": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 51
+      },
+      "Next": "WAIT_FOR_16_52"
+    },
+    "WAIT_FOR_16_52": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_52",
+      "Next": "NOTIFY_16_52"
+    },
+    "NOTIFY_16_52": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 52
+      },
+      "Next": "WAIT_FOR_16_53"
+    },
+    "WAIT_FOR_16_53": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_53",
+      "Next": "NOTIFY_16_53"
+    },
+    "NOTIFY_16_53": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 53
+      },
+      "Next": "WAIT_FOR_16_54"
+    },
+    "WAIT_FOR_16_54": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_54",
+      "Next": "NOTIFY_16_54"
+    },
+    "NOTIFY_16_54": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 54
+      },
+      "Next": "WAIT_FOR_16_55"
+    },
+    "WAIT_FOR_16_55": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_55",
+      "Next": "NOTIFY_16_55"
+    },
+    "NOTIFY_16_55": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 55
+      },
+      "Next": "WAIT_FOR_16_56"
+    },
+    "WAIT_FOR_16_56": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_56",
+      "Next": "NOTIFY_16_56"
+    },
+    "NOTIFY_16_56": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 56
+      },
+      "Next": "WAIT_FOR_16_57"
+    },
+    "WAIT_FOR_16_57": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_57",
+      "Next": "NOTIFY_16_57"
+    },
+    "NOTIFY_16_57": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 57
+      },
+      "Next": "WAIT_FOR_16_58"
+    },
+    "WAIT_FOR_16_58": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_58",
+      "Next": "NOTIFY_16_58"
+    },
+    "NOTIFY_16_58": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 58
+      },
+      "Next": "WAIT_FOR_16_59"
+    },
+    "WAIT_FOR_16_59": {
+      "Type": "Wait",
+      "TimestampPath": "$.time_16_59",
+      "Next": "NOTIFY_16_59"
+    },
+    "NOTIFY_16_59": {
+      "Type": "Task",
+      "Resource": "${AWSAPINotifyMinuteChangedArn}",
+      "Parameters": {
+        "hour": 16,
+        "minute": 59
+      },
+      "Next": "End"
+    },
+    "End": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}
+
+
+Above is the statem machine I am using currently.
+I need to generate the same stepo function with same parameters and naming conventions.
+AWSAPIInitializeMinuteChangeNotificationArn this function only returns
+data = {}
+key1 = 'time_9_10'
+data[key1] = Pendulum.get_in_state_machine_wait_format(ist_hour=9, ist_minute=10)
+return data
+
+returns 9:10 IST in UTC ISO format which will be used.
+
+AWSAPINotifyMinuteChangedArn [our event emitter equivalent] should return the event compatable for next run:
+temp = MinuteChangeNotification.get_next_minute(hour, minute)
+next_hour = temp['hour']
+next_minute = temp['minute']
+return {f'time_{next_hour}_{next_minute}': Pendulum.get_in_state_machine_wait_format(ist_hour=next_hour, ist_minute=next_minute)}
+
+I want to continue using event emitter functionality as it is emitting all required events on event bridge at every minute.
+Can you generate/modify the python script to generate the above statemachine.
+state machine should contain from 9:10 IST to 23:35 IST.
+
+
+As per my understanding and requirements this is flow user will use for creating the baskets, strategies, legs and associating baskets to broker.
+1. User will create a basket
+2. User will create one or more strategy.
+3. User will create one or legs with base lots.
+This completes defining the basket. i.e. baskets/strategies can be created individually by the user without associating to brokers.
+After basket creation, user can associate this basket to existing broker account, during this time user only provide the lot_multiplier.
+This complete the basket allocation to broker.
+
+Once basket is created and associated with broker below section explain the execution flow.
+
+At every 5 minutes from market open for each user,
+We need to query the strategy table and identify the strategies to be executed in next 5 minutes.
+As, we are maintaining all required data in single table, this single query should reqturn all the data.
+We will batch the events and send them to SQS.
+Lamdba function will process the events and trigger the step function which schdule the trigger based on wait seconds.
+When step function invokes the single strategy execute lambda function we already have all the data required and for each leg we need to execute we need to
+calculate the final lots based on base lots and lot_multiplier
+
+when user selects Baskets in navigation, we need to show the baskets page. This page should be split into two verically. Left side we will show all available baskets and right side we will show basket details. Initially left size content will be empty. On righ side page header we should show add baket. When user clicks on it we should show dialog which
+takes basket name and description. Once basket is created user can clienk on add strategy and strategy wizard should be shown in which user can add one or more legs and can give strategy name. When user clicks on OK, this strategy will be added to basket. use the best UI?UX flows while developing this
+
+
+ Latest 2024-2025 UI/UX Trends:
+
+  1. Minimal Maximalism - Rich but clean, less visual noise
+  2. Subtle Interactions - Hover effects over constant animations
+  3. Content-First Design - Background supports, doesn't compete with content
+  4. Performance-Conscious - Fewer DOM elements and animations
+  5. Clean Glassmorphism - Single-layer blur effects, not multi-layered
+  6. Soft Shadows & Layers - Depth without harshness
+  7. Rounded Corners - Softer, friendlier UI elements
+  8. Vibrant Colors with Neutrals - Balanced color palettes
+  9. Dark Mode - Essential for modern apps
+  10. Inclusive Design - Accessibility for all users
+
+  Refining PageHeader with minimalist 2025 design trends…
+
+

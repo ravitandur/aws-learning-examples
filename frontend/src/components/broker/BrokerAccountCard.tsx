@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { MoreHorizontal, Edit, Trash2, Wifi, WifiOff, Copy, Check, AlertCircle } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { MoreHorizontal, Edit, Trash2, Wifi, WifiOff, AlertCircle } from 'lucide-react';
 import { BrokerAccount } from '../../types';
 import { OAuthButton } from '../oauth/OAuthButton';
 import { OAuthStatusDisplay } from '../oauth/OAuthStatusDisplay';
@@ -30,7 +30,6 @@ const BrokerAccountCard: React.FC<BrokerAccountCardProps> = ({
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const { supportsOAuth: contextSupportsOAuth } = useOAuth();
@@ -71,16 +70,6 @@ const BrokerAccountCard: React.FC<BrokerAccountCardProps> = ({
     }
   };
 
-  // Copy to clipboard functionality
-  const copyToClipboard = useCallback(async (text: string, field: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedField(field);
-      setTimeout(() => setCopiedField(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy to clipboard:', err);
-    }
-  }, []);
 
   // Check if this broker supports OAuth
   const brokerSupportsOAuth = supportsOAuth(account.broker_name) && contextSupportsOAuth(account.broker_name);
@@ -147,23 +136,9 @@ const BrokerAccountCard: React.FC<BrokerAccountCardProps> = ({
           <h3 id={`broker-${account.client_id}-title`} className="text-lg font-semibold text-gray-900 dark:text-white capitalize truncate">
             {account.broker_name}
           </h3>
-          <div className="flex items-center gap-2 mt-1">
-            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-              Client ID: {account.client_id}
-            </p>
-            <button
-              onClick={() => copyToClipboard(account.client_id, 'client_id')}
-              className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-              title="Copy Client ID"
-              aria-label="Copy Client ID to clipboard"
-            >
-              {copiedField === 'client_id' ? (
-                <Check className="w-3 h-3 text-green-600" />
-              ) : (
-                <Copy className="w-3 h-3 text-gray-400 hover:text-gray-600" />
-              )}
-            </button>
-          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
+            Client ID: {account.client_id}
+          </p>
           {account.description && (
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 line-clamp-2">
               {account.description}
@@ -246,23 +221,9 @@ const BrokerAccountCard: React.FC<BrokerAccountCardProps> = ({
         <div className="mt-3 space-y-2">
           <div className="flex justify-between items-center text-sm">
             <span className="text-gray-500 dark:text-gray-400">Capital:</span>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-900 dark:text-white font-medium tabular-nums">
-                ₹{account.capital?.toLocaleString('en-IN') || '0'}
-              </span>
-              <button
-                onClick={() => copyToClipboard(account.capital?.toString() || '0', 'capital')}
-                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                title="Copy Capital Amount"
-                aria-label="Copy capital amount to clipboard"
-              >
-                {copiedField === 'capital' ? (
-                  <Check className="w-3 h-3 text-green-600" />
-                ) : (
-                  <Copy className="w-3 h-3 text-gray-400 hover:text-gray-600" />
-                )}
-              </button>
-            </div>
+            <span className="text-gray-900 dark:text-white font-medium tabular-nums">
+              ₹{account.capital?.toLocaleString('en-IN') || '0'}
+            </span>
           </div>
           {brokerSupportsOAuth && (
             <OAuthStatusDisplay 

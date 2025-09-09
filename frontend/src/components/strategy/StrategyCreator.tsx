@@ -122,7 +122,7 @@ const StrategyCreator: React.FC = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>🚀 Revolutionary Strategy Creator</CardTitle>
+          <CardTitle>Strategy Creator</CardTitle>
           <p className="text-sm text-gray-600">
             Create strategies with revolutionary multi-broker allocation
           </p>
@@ -171,7 +171,7 @@ const StrategyCreator: React.FC = () => {
           {/* Strategy Legs with Revolutionary Multi-Broker Allocation */}
           <div>
             <h3 className="text-lg font-semibold mb-4">
-              🎯 Strategy Legs (Revolutionary Multi-Broker Allocation)
+              Strategy Legs
             </h3>
             
             {formData.legs.map((leg, legIndex) => (
@@ -204,7 +204,7 @@ const StrategyCreator: React.FC = () => {
                   
                   {/* Revolutionary Broker Allocation */}
                   <div>
-                    <h4 className="font-medium mb-2">🏦 Broker Allocation (Revolutionary Feature)</h4>
+                    <h4 className="font-medium mb-2">Broker Allocation</h4>
                     {leg.brokerAllocations.map((allocation, allocIndex) => (
                       <div key={allocIndex} className="flex items-center space-x-2 mb-2 p-2 bg-gray-50 rounded">
                         <Select 
@@ -264,22 +264,22 @@ const StrategyCreator: React.FC = () => {
           {formData.legs.length > 0 && (
             <Card className="bg-blue-50 border-blue-200">
               <CardContent className="pt-4">
-                <h4 className="font-semibold text-blue-900 mb-2">🎉 Revolutionary Features Active</h4>
+                <h4 className="font-semibold text-blue-900 mb-2">Active Features</h4>
                 <ul className="text-sm space-y-2 text-blue-800">
                   <li className="flex items-center gap-2">
                     <Badge variant="success" size="sm">✓</Badge>
                     Multi-Broker Allocation: {formData.legs.reduce((total, leg) => total + leg.brokerAllocations.length, 0)} broker connections
                   </li>
                   <li className="flex items-center gap-2">
-                    <Badge variant="info" size="sm">⚡</Badge>
+                    <Badge variant="info" size="sm">GSI2</Badge>
                     GSI2 Optimization: 99.5% query reduction for ultra-fast execution
                   </li>
                   <li className="flex items-center gap-2">
-                    <Badge variant="default" size="sm">🎯</Badge>
+                    <Badge variant="default" size="sm">Timing</Badge>
                     0-Second Precision: Institutional-grade timing system
                   </li>
                   <li className="flex items-center gap-2">
-                    <Badge variant="warning" size="sm">🛡️</Badge>
+                    <Badge variant="warning" size="sm">Weekend Safe</Badge>
                     Weekend Protection: Database-level weekend execution prevention
                   </li>
                   <li className="flex items-center gap-2">
@@ -293,7 +293,7 @@ const StrategyCreator: React.FC = () => {
 
           <div className="flex space-x-4">
             <Button onClick={createStrategy} className="flex-1">
-              🚀 Create Revolutionary Strategy
+              Create Strategy
             </Button>
           </div>
         </CardContent>

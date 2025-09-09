@@ -40,7 +40,6 @@ const BasketsPage: React.FC = () => {
     <StandardLayout>
       <PageHeader 
         title="Basket Management" 
-        emoji="🧺"
         description="Create and manage your strategy baskets with revolutionary multi-broker allocation and performance tracking."
         pageType="management"
         breadcrumbs={[
