@@ -121,22 +121,23 @@ export interface Strategy {
 }
 
 export interface Basket {
-  basketId: string;
-  basketName: string;
+  basket_id: string;
+  basket_name: string;
   description?: string;
   strategies: Strategy[];
   status: 'ACTIVE' | 'PAUSED' | 'INACTIVE';
-  createdAt: string;
+  created_at: string;
 }
 
 export interface CreateBasket {
-  basketName: string;
+  basket_name: string;
   description?: string;
   strategies: string[];
+  initial_capital: number;
 }
 
 export interface UpdateBasket {
-  basketName?: string;
+  basket_name?: string;
   description?: string;
   strategies?: string[];
   status?: 'ACTIVE' | 'PAUSED' | 'INACTIVE';

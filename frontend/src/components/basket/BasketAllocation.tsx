@@ -49,7 +49,7 @@ const BasketAllocation: React.FC<BasketAllocationProps> = ({
       
       // Load existing allocations for this basket
       try {
-        const allocations = await allocationService.getBasketAllocations(basket.basketId);
+        const allocations = await allocationService.getBasketAllocations(basket.basket_id);
         setExistingAllocations(allocations);
       } catch (allocError) {
         console.warn('Failed to load existing allocations:', allocError);
@@ -67,7 +67,7 @@ const BasketAllocation: React.FC<BasketAllocationProps> = ({
 
   useEffect(() => {
     loadData();
-  }, [basket.basketId]);
+  }, [basket.basket_id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const addNewAllocation = () => {
     setNewAllocations(prev => [...prev, {
@@ -147,7 +147,7 @@ const BasketAllocation: React.FC<BasketAllocationProps> = ({
       };
 
       // Create basket allocations using the allocation service
-      await allocationService.createBasketAllocations(basket.basketId, createData);
+      await allocationService.createBasketAllocations(basket.basket_id, createData);
       
       setSuccess(`Successfully allocated basket to ${newAllocations.length} broker account(s)`);
       setNewAllocations([]);
@@ -183,7 +183,7 @@ const BasketAllocation: React.FC<BasketAllocationProps> = ({
           <div>
             <h1 className="text-2xl font-bold">Allocate Basket to Brokers</h1>
             <p className="text-gray-600 dark:text-gray-300">
-              Allocating: {basket.basketName}
+              Allocating: {basket.basket_name}
             </p>
           </div>
         </div>
@@ -249,7 +249,7 @@ const BasketAllocation: React.FC<BasketAllocationProps> = ({
           <div>
             <h1 className="text-2xl font-bold">🏦 Allocate Basket to Brokers</h1>
             <p className="text-gray-600 dark:text-gray-300">
-              Allocating: <span className="font-medium">{basket.basketName}</span>
+              Allocating: <span className="font-medium">{basket.basket_name}</span>
             </p>
           </div>
         </div>
@@ -268,7 +268,7 @@ const BasketAllocation: React.FC<BasketAllocationProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <div className="text-sm text-gray-600">Basket Name</div>
-              <div className="font-semibold">{basket.basketName}</div>
+              <div className="font-semibold">{basket.basket_name}</div>
             </div>
             <div>
               <div className="text-sm text-gray-600">Status</div>

@@ -1,5 +1,6 @@
 import json
 import boto3
+from botocore.exceptions import ClientError
 import uuid
 from datetime import datetime, timezone
 from typing import Dict, Any
@@ -171,9 +172,6 @@ def handle_create_basket(event, user_id, table):
             'initial_capital': initial_capital,
             'current_capital': initial_capital,  # Initially same as initial
             
-            # Strategy Management
-            'strategy_count': 0,
-            'active_strategy_count': 0,
             
             # Performance Metrics (initialized)
             'total_return': Decimal('0'),
@@ -192,12 +190,58 @@ def handle_create_basket(event, user_id, table):
             'entity_type': 'BASKET'
         }
         
-        # Store basket in single table
-        table.put_item(Item=basket_item)
+        # Store basket in single table with uniqueness constraint
+        # Use conditional expression to prevent duplicate basket names per user
+        try:
+            # First check for existing baskets with same name
+            existing_check = table.query(
+                KeyConditionExpression='user_id = :user_id AND begins_with(sort_key, :basket_prefix)',
+                FilterExpression='basket_name = :basket_name',
+                ExpressionAttributeValues={
+                    ':user_id': user_id,
+                    ':basket_prefix': 'BASKET#',
+                    ':basket_name': basket_name
+                },
+                Select='COUNT'
+            )
+            
+            if existing_check['Count'] > 0:
+                return {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'error': 'Basket name already exists',
+                        'message': f'A basket with the name "{basket_name}" already exists. Please choose a different name.'
+                    })
+                }
+            
+            # Put item with additional condition to ensure no race condition
+            table.put_item(Item=basket_item,
+                ConditionExpression='attribute_not_exists(user_id) AND attribute_not_exists(sort_key)'
+            )
+            
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+                return {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'error': 'Basket creation failed',
+                        'message': 'A basket with this ID already exists (race condition detected)'
+                    })
+                }
+            else:
+                raise e
         
         log_user_action(logger, user_id, "basket_created", {
             "basket_id": basket_id, 
-            "name": basket_name,
+            "basket_name": basket_name,
             "initial_capital": float(initial_capital)
         })
         
@@ -386,6 +430,37 @@ def handle_update_basket(event, user_id, basket_id, table):
         # Only allow updates to specific fields
         updatable_fields = ['basket_name', 'description', 'status']
         
+        # Check for basket_name uniqueness if it's being updated
+        if 'basket_name' in body:
+            new_basket_name = body['basket_name'].strip()
+            current_basket_name = response['Item'].get('basket_name')
+            
+            # Only check if the name is actually changing
+            if new_basket_name != current_basket_name:
+                existing_check = table.query(
+                    KeyConditionExpression='user_id = :user_id AND begins_with(sort_key, :basket_prefix)',
+                    FilterExpression='basket_name = :basket_name',
+                    ExpressionAttributeValues={
+                        ':user_id': user_id,
+                        ':basket_prefix': 'BASKET#',
+                        ':basket_name': new_basket_name
+                    },
+                    Select='COUNT'
+                )
+                
+                if existing_check['Count'] > 0:
+                    return {
+                        'statusCode': 400,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({
+                            'error': 'Basket name already exists',
+                            'message': f'A basket with the name "{new_basket_name}" already exists. Please choose a different name.'
+                        })
+                    }
+        
         for field in updatable_fields:
             if field in body:
                 update_expression_parts.append(f'{field} = :{field}')
@@ -462,8 +537,25 @@ def handle_delete_basket(event, user_id, basket_id, table):
         
         basket = response['Item']
         
-        # Check if basket has active strategies
-        if basket.get('active_strategy_count', 0) > 0:
+        # Check if basket has active strategies by doing a count query
+        strategies_count_response = table.query(
+            KeyConditionExpression='user_id = :user_id AND begins_with(sort_key, :strategy_prefix)',
+            FilterExpression='basket_id = :basket_id AND #status IN (:active, :pending)',
+            ExpressionAttributeNames={
+                '#status': 'status'  # Use expression attribute name for reserved keyword
+            },
+            ExpressionAttributeValues={
+                ':user_id': user_id,
+                ':strategy_prefix': 'STRATEGY#',
+                ':basket_id': basket_id,
+                ':active': 'ACTIVE',
+                ':pending': 'PENDING'
+            },
+            Select='COUNT'  # Only return count, not the items
+        )
+        
+        active_strategy_count = strategies_count_response.get('Count', 0)
+        if active_strategy_count > 0:
             return {
                 'statusCode': 400,
                 'headers': {
@@ -472,7 +564,8 @@ def handle_delete_basket(event, user_id, basket_id, table):
                 },
                 'body': json.dumps({
                     'error': 'Cannot delete basket with active strategies',
-                    'message': 'Please delete all strategies first'
+                    'message': f'Please delete {active_strategy_count} active/pending strategies first',
+                    'active_strategy_count': active_strategy_count
                 })
             }
         

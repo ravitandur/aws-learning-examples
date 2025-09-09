@@ -41,9 +41,17 @@ class BasketService {
    */
   async createBasket(basketData: CreateBasket): Promise<Basket> {
     try {
+      // Send data directly - no transformation needed since types match backend
+      const apiPayload = {
+        name: basketData.basket_name,
+        description: basketData.description,
+        strategies: basketData.strategies,
+        initial_capital: basketData.initial_capital
+      };
+
       const response = await optionsApiClient.post<ApiResponse<Basket>>(
         '/options/baskets',
-        basketData
+        apiPayload
       );
 
       if (!response.success || !response.data) {
@@ -61,9 +69,16 @@ class BasketService {
    */
   async updateBasket(basketId: string, updates: UpdateBasket): Promise<Basket> {
     try {
+      // Send data directly - no transformation needed since types match backend
+      const apiPayload: any = {};
+      if (updates.basket_name !== undefined) apiPayload.name = updates.basket_name;
+      if (updates.description !== undefined) apiPayload.description = updates.description;
+      if (updates.strategies !== undefined) apiPayload.strategies = updates.strategies;
+      if (updates.status !== undefined) apiPayload.status = updates.status;
+
       const response = await optionsApiClient.put<ApiResponse<Basket>>(
         `/options/baskets/${basketId}`,
-        updates
+        apiPayload
       );
 
       if (!response.success || !response.data) {

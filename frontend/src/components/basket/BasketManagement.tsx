@@ -95,9 +95,10 @@ const BasketManagement: React.FC = () => {
       }
 
       const createBasketData: CreateBasket = {
-        basketName: formData.basketName.trim(),
+        basket_name: formData.basketName.trim(),
         description: formData.description.trim() || undefined,
-        strategies: formData.strategies
+        strategies: formData.strategies,
+        initial_capital: 100000 // Default initial capital
       };
 
       const newBasket = await basketService.createBasket(createBasketData);
@@ -119,7 +120,7 @@ const BasketManagement: React.FC = () => {
       setError(null);
       
       await basketService.deleteBasket(basketId);
-      setBaskets(prev => prev.filter(basket => basket.basketId !== basketId));
+      setBaskets(prev => prev.filter(basket => basket.basket_id !== basketId));
       
     } catch (error: any) {
       console.error('Failed to delete basket:', error);
@@ -323,11 +324,11 @@ const BasketManagement: React.FC = () => {
       {/* Baskets List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {baskets.map(basket => (
-          <Card key={basket.basketId} className="border-l-4 border-l-blue-500">
+          <Card key={basket.basket_id} className="border-l-4 border-l-blue-500">
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-lg">{basket.basketName}</CardTitle>
+                  <CardTitle className="text-lg">{basket.basket_name}</CardTitle>
                   {basket.description && (
                     <p className="text-sm text-gray-600 mt-1">{basket.description}</p>
                   )}
@@ -342,10 +343,10 @@ const BasketManagement: React.FC = () => {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    onClick={() => handleDeleteBasket(basket.basketId)}
-                    disabled={deleting === basket.basketId}
+                    onClick={() => handleDeleteBasket(basket.basket_id)}
+                    disabled={deleting === basket.basket_id}
                   >
-                    {deleting === basket.basketId ? (
+                    {deleting === basket.basket_id ? (
                       <RefreshCw className="h-4 w-4 animate-spin" />
                     ) : (
                       <Trash2 className="h-4 w-4" />
