@@ -1,7 +1,7 @@
 ---
 created: 2025-09-05T19:46:11Z
-last_updated: 2025-09-08T17:56:25Z
-version: 1.2
+last_updated: 2025-09-09T20:30:29Z
+version: 1.3
 author: Claude Code PM System
 ---
 
@@ -92,6 +92,22 @@ aws-learning-examples/
 ├── frontend/                             # Main React/TypeScript frontend
 │   ├── package.json                      # Dependencies & scripts
 │   ├── src/                              # React application source
+│   │   ├── components/                   # Organized component structure
+│   │   │   ├── auth/                     # Authentication components
+│   │   │   ├── basket/                   # Strategy basket management (10+ components)
+│   │   │   ├── broker/                   # Broker account management
+│   │   │   ├── common/                   # Shared UI components (10+ components)
+│   │   │   │   ├── Toast.tsx             # Fixed overlapping notifications
+│   │   │   │   ├── ToastContainer.tsx    # Container-managed positioning
+│   │   │   │   ├── PageHeader.tsx        # Glassmorphism unified header
+│   │   │   │   └── StandardLayout.tsx    # 2025 minimalist layout
+│   │   │   ├── layout/                   # App layout components
+│   │   │   ├── oauth/                    # OAuth integration components
+│   │   │   ├── strategy/                 # Strategy creation components
+│   │   │   └── ui/                       # Base UI elements (15+ components)
+│   │   ├── pages/                        # Page-level components
+│   │   ├── services/                     # API and business logic services
+│   │   └── types/                        # TypeScript type definitions
 │   └── public/                           # Static assets
 ```
 
@@ -159,5 +175,6 @@ aws-learning-examples/
 - **Environment-specific** configuration management
 
 ## Update History
+- 2025-09-09: Frontend component structure expansion - detailed common components (toast system, headers, layouts), basket management (10+ components), comprehensive UI elements (15+ components)
 - 2025-09-08: Major PM system integration - 78+ new files in .claude/ directory, expanded options-strategy-platform with new Lambda functions and Step Function definitions
 - 2025-09-08: Complete documentation reorganization - centralized root docs, standardized module structure, eliminated duplicates, showcased revolutionary features

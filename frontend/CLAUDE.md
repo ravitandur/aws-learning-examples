@@ -98,7 +98,21 @@ const PageComponent: React.FC = () => {
 - **Warning**: `bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200`
 - **Info**: `bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200`
 
+#### Toast Notifications (New)
+- **Container Architecture**: Fixed positioning with container-managed stacking
+- **Usage Pattern**: `<ToastProvider maxToasts={10} position="bottom-right">`
+- **Individual Toasts**: Use `relative` positioning within container
+- **Proper Spacing**: `gap-2` for clean vertical stacking
+- **No Overlap**: Resolved positioning conflicts with architectural fix
+
 ## Recent Updates
+
+### Toast Notification System (2025-09-09)
+- ✅ Fixed overlapping toast notifications with improved positioning architecture
+- ✅ Changed from individual `fixed` positioning to container-managed `relative` positioning
+- ✅ Increased maxToasts limit from 5 to 10 for better user experience
+- ✅ Implemented proper gap spacing with `gap-2` for clean toast stacking
+- ✅ Maintained slide-in animations and auto-dismiss functionality
 
 ### Auth Pages Styling (2025-08-30)
 - ✅ Standardized all authentication forms with project design system
