@@ -8,6 +8,9 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { formatPhoneNumber } from '../utils/validation';
 import brokerService from '../services/brokerService';
+import StandardLayout from '../components/common/StandardLayout';
+import PageHeader from '../components/common/PageHeader';
+import Button from '../components/ui/Button';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -61,17 +64,23 @@ const Dashboard: React.FC = () => {
     return 'Good evening';
   };
 
+  const actions = (
+    <Button
+      onClick={() => window.location.href = '/brokers'}
+      leftIcon={<Plus className="h-4 w-4" />}
+      className="w-full sm:w-auto"
+    >
+      Connect Broker Account
+    </Button>
+  );
+
   return (
-    <div className="space-y-6">
-      {/* Welcome Section */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          {getWelcomeMessage()}, {user?.fullName?.split(' ')[0]}! 👋
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300">
-          Welcome to your algorithmic trading dashboard. Monitor your strategies, manage broker accounts, and track performance.
-        </p>
-      </div>
+    <StandardLayout>
+      <PageHeader 
+        title={`${getWelcomeMessage()}, ${user?.fullName?.split(' ')[0]}! 👋`}
+        description="Welcome to your algorithmic trading dashboard. Monitor your strategies, manage broker accounts, and track performance."
+        actions={actions}
+      />
 
       {/* User Profile Summary */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -159,17 +168,16 @@ const Dashboard: React.FC = () => {
             </li>
           </ol>
 
-          <button
-            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+          <Button
             onClick={() => window.location.href = '/brokers'}
+            leftIcon={<Plus className="h-4 w-4" />}
           >
-            <Plus className="w-4 h-4 mr-2" />
             Connect Broker Account
-          </button>
+          </Button>
         </div>
       </div>
-    </div>
+    </StandardLayout>
   );
 };
 
-export default Dashboard;
+export default Dashboard; 

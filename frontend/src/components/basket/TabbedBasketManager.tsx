@@ -3,10 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Badge from '../ui/Badge';
+import { useToast } from '../common/ToastContainer';
+import ConfirmDialog from '../common/ConfirmDialog';
 import { 
   Plus, Settings, Search, TrendingUp, 
-  Activity, BarChart3, AlertCircle, CheckCircle,
-  Edit, Trash2, Target, Zap, X
+  Activity, BarChart3, 
+  Edit, Trash2, Target, Zap
 } from 'lucide-react';
 import { Basket, Strategy, CreateBasket } from '../../types';
 import basketService from '../../services/basketService';
@@ -20,40 +22,40 @@ interface BasketWithStrategies extends Basket {
 }
 
 const TabbedBasketManager: React.FC = () => {
+  const { showSuccess, showError } = useToast();
   const [baskets, setBaskets] = useState<BasketWithStrategies[]>([]);
   const [selectedBasket, setSelectedBasket] = useState<BasketWithStrategies | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showStrategyWizard, setShowStrategyWizard] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'details' | 'performance'>('details');
+  const [deleteConfirmDialog, setDeleteConfirmDialog] = useState<{
+    isOpen: boolean;
+    basket: BasketWithStrategies | null;
+  }>({ isOpen: false, basket: null });
 
-  // Load baskets on component mount
+  // Load baskets on component mount 
   useEffect(() => {
     loadBaskets();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Listen for external create basket events
+  useEffect(() => {
+    const handleCreateBasketEvent = () => {
+      setShowCreateDialog(true);
+    };
+
+    window.addEventListener('openCreateBasketDialog', handleCreateBasketEvent);
+    
+    return () => {
+      window.removeEventListener('openCreateBasketDialog', handleCreateBasketEvent);
+    };
   }, []);
-
-  // Auto-clear error and success messages
-  useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => setError(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [error]);
-
-  useEffect(() => {
-    if (success) {
-      const timer = setTimeout(() => setSuccess(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [success]);
 
   const loadBaskets = async () => {
     try {
       setLoading(true);
-      setError(null);
       
       const basketsData = await basketService.getBaskets();
       
@@ -74,7 +76,7 @@ const TabbedBasketManager: React.FC = () => {
       
     } catch (error: any) {
       console.error('Failed to load baskets:', error);
-      setError('Failed to load baskets. Please try again.');
+      showError('Failed to load baskets. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -94,7 +96,7 @@ const TabbedBasketManager: React.FC = () => {
       setBaskets(prev => [newBasket, ...prev]);
       setSelectedBasket(newBasket);
       setShowCreateDialog(false);
-      setSuccess(`Basket "${createdBasket.basket_name || 'Unnamed'}" created successfully!`);
+      showSuccess(`Basket "${createdBasket.basket_name || 'Unnamed'}" created successfully!`);
       
     } catch (error: any) {
       console.error('Failed to create basket:', error);
@@ -103,33 +105,33 @@ const TabbedBasketManager: React.FC = () => {
     }
   };
 
-  const handleDeleteBasket = async (basket: BasketWithStrategies) => {
-    // Show confirmation dialog
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete the basket "${basket.basket_name}"?\n\n` +
-      `This action cannot be undone. All associated strategies and data will be removed.`
-    );
-    
-    if (!confirmDelete) {
-      return;
-    }
+  const handleDeleteBasket = (basket: BasketWithStrategies) => {
+    // Show modern confirmation dialog
+    setDeleteConfirmDialog({
+      isOpen: true,
+      basket: basket
+    });
+  };
+
+  const confirmDeleteBasket = async () => {
+    if (!deleteConfirmDialog.basket) return;
 
     try {
-      await basketService.deleteBasket(basket.basket_id);
+      await basketService.deleteBasket(deleteConfirmDialog.basket.basket_id);
       
       // Remove from local state
-      setBaskets(prev => prev.filter(b => b.basket_id !== basket.basket_id));
+      setBaskets(prev => prev.filter(b => b.basket_id !== deleteConfirmDialog.basket!.basket_id));
       
       // Clear selection if the deleted basket was selected
-      if (selectedBasket?.basket_id === basket.basket_id) {
+      if (selectedBasket?.basket_id === deleteConfirmDialog.basket.basket_id) {
         setSelectedBasket(null);
       }
       
-      setSuccess(`Basket "${basket.basket_name}" deleted successfully!`);
+      showSuccess(`Basket "${deleteConfirmDialog.basket.basket_name}" deleted successfully!`);
       
     } catch (error: any) {
       console.error('Failed to delete basket:', error);
-      setError(error.message || 'Failed to delete basket');
+      showError(error.message || 'Failed to delete basket');
     }
   };
 
@@ -159,11 +161,11 @@ const TabbedBasketManager: React.FC = () => {
       
       setSelectedBasket(updatedBasket);
       setShowStrategyWizard(false);
-      setSuccess(`Strategy "${strategyData.name}" added successfully!`);
+      showSuccess(`Strategy "${strategyData.name}" added successfully!`);
       
     } catch (error: any) {
       console.error('Failed to add strategy:', error);
-      setError(error.message || 'Failed to add strategy. Please try again.');
+      showError(error.message || 'Failed to add strategy. Please try again.');
     }
   };
 
@@ -193,44 +195,10 @@ const TabbedBasketManager: React.FC = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50 dark:bg-gray-900">
-      
-      {/* Success Message */}
-      {success && (
-        <div className="mx-6 mt-4">
-          <Card className="border-green-200 bg-green-50 dark:bg-green-900/20">
-            <CardContent className="py-3">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="h-5 w-5 text-green-600" />
-                <span className="text-green-800 dark:text-green-200 flex-1">{success}</span>
-                <Button variant="ghost" size="sm" onClick={() => setSuccess(null)} className="h-8 w-8 p-0">
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Error Message */}
-      {error && (
-        <div className="mx-6 mt-4">
-          <Card className="border-red-200 bg-red-50 dark:bg-red-900/20">
-            <CardContent className="py-3">
-              <div className="flex items-center gap-3">
-                <AlertCircle className="h-5 w-5 text-red-600" />
-                <span className="text-red-800 dark:text-red-200 flex-1">{error}</span>
-                <Button variant="ghost" size="sm" onClick={() => setError(null)} className="h-8 w-8 p-0">
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+    <>
+      {/* Main Content Card with Split Pane */}
+      <Card className="h-[calc(100vh-300px)] min-h-[600px]">
+        <div className="h-full flex overflow-hidden rounded-lg">
         
         {/* Left Panel - Simple Basket Name List */}
         <div className="w-1/4 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
@@ -279,17 +247,15 @@ const TabbedBasketManager: React.FC = () => {
                 {filteredBaskets.map(basket => (
                   <div
                     key={basket.basket_id}
-                    className={`group p-3 transition-all rounded-lg ${
+                    className={`group p-3 transition-all rounded-lg cursor-pointer ${
                       selectedBasket?.basket_id === basket.basket_id
                         ? 'bg-blue-100 dark:bg-blue-900/30 border-l-4 border-l-blue-500'
                         : 'hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
+                    onClick={() => setSelectedBasket(basket)}
                   >
                     <div className="flex items-center justify-between">
-                      <div 
-                        className="font-medium text-sm text-gray-900 dark:text-white cursor-pointer flex-1"
-                        onClick={() => setSelectedBasket(basket)}
-                      >
+                      <div className="font-medium text-sm text-gray-900 dark:text-white flex-1">
                         {basket.basket_name || 'Unnamed Basket'}
                       </div>
                       <div className="flex items-center gap-2">
@@ -321,31 +287,16 @@ const TabbedBasketManager: React.FC = () => {
           
           {/* Right Panel Header */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold">
-                  {selectedBasket ? (selectedBasket.basket_name || 'Unnamed Basket') : 'Basket Management'}
-                </h1>
-                <p className="text-gray-600 dark:text-gray-300">
-                  {selectedBasket 
-                    ? 'Manage strategies and monitor performance' 
-                    : 'Select a basket to view details or create a new one'
-                  }
-                </p>
-              </div>
-              <div className="flex space-x-3">
-                <Button
-                  variant="outline"
-                  onClick={() => loadBaskets()}
-                  leftIcon={loading ? <Activity className="h-4 w-4 animate-spin" /> : <Activity className="h-4 w-4" />}
-                  disabled={loading}
-                >
-                  {loading ? 'Refreshing...' : 'Refresh'}
-                </Button>
-                <Button onClick={() => setShowCreateDialog(true)} leftIcon={<Plus className="h-4 w-4" />}>
-                  Add Basket
-                </Button>
-              </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {selectedBasket ? (selectedBasket.basket_name || 'Unnamed Basket') : 'Select a Basket'}
+              </h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                {selectedBasket 
+                  ? 'Manage strategies and monitor performance' 
+                  : 'Choose a basket from the left panel to view details'
+                }
+              </p>
             </div>
             
             {/* Tab Navigation */}
@@ -457,7 +408,7 @@ const TabbedBasketManager: React.FC = () => {
                             Broker Allocations
                           </CardTitle>
                           <Button
-                            onClick={() => setSuccess('Broker allocation feature coming soon!')}
+                            onClick={() => showSuccess('Broker allocation feature coming soon!')}
                             leftIcon={<Plus className="h-4 w-4" />}
                             size="sm"
                             variant="outline"
@@ -638,7 +589,8 @@ const TabbedBasketManager: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
+        </div>
+      </Card>
 
       {/* Dialogs */}
       {showCreateDialog && (
@@ -655,7 +607,20 @@ const TabbedBasketManager: React.FC = () => {
           onSubmit={handleAddStrategy}
         />
       )}
-    </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirmDialog.isOpen}
+        onClose={() => setDeleteConfirmDialog({ isOpen: false, basket: null })}
+        onConfirm={confirmDeleteBasket}
+        title="Delete Basket"
+        message={`Are you sure you want to delete the basket "${deleteConfirmDialog.basket?.basket_name || 'this basket'}"? This action cannot be undone. All associated strategies and data will be permanently removed.`}
+        confirmText="Delete Basket"
+        cancelText="Keep Basket"
+        variant="danger"
+        icon={<Trash2 className="h-6 w-6 text-red-600" />}
+      />
+    </>
   );
 };
 

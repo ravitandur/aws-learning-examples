@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { OAuthProvider } from './context/OAuthContext';
+import { ToastProvider } from './components/common/ToastContainer';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import BrokersPage from './pages/BrokersPage';
@@ -74,7 +75,9 @@ const App: React.FC = () => {
   return (
     <AuthProvider>
       <OAuthProvider>
-        <AppContent />
+        <ToastProvider position="top-right">
+          <AppContent />
+        </ToastProvider>
       </OAuthProvider>
     </AuthProvider>
   );

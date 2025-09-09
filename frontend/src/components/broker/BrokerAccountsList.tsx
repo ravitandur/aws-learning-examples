@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, RefreshCw } from 'lucide-react';
 import { BrokerAccount, CreateBrokerAccount, UpdateBrokerAccount } from '../../types';
 import brokerService from '../../services/brokerService';
 import BrokerAccountCard from './BrokerAccountCard';
@@ -7,6 +7,7 @@ import AddBrokerAccountForm from './AddBrokerAccountForm';
 import EditBrokerAccountForm from './EditBrokerAccountForm';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ErrorAlert from '../common/ErrorAlert';
+import Button from '../ui/Button';
 
 const BrokerAccountsList: React.FC = () => {
   const [accounts, setAccounts] = useState<BrokerAccount[]>([]);
@@ -180,16 +181,23 @@ const BrokerAccountsList: React.FC = () => {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-          Broker Accounts
-        </h2>
-        <button
-          className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
-          onClick={() => setAddFormOpen(true)}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add Broker Account
-        </button>
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={fetchBrokerAccounts}
+            leftIcon={<RefreshCw className="h-4 w-4" />}
+            className="w-full sm:w-auto"
+          >
+            Refresh
+          </Button>
+          <Button
+            onClick={() => setAddFormOpen(true)}
+            leftIcon={<Plus className="h-4 w-4" />}
+            className="w-full sm:w-auto"
+          >
+            Add Broker Account
+          </Button>
+        </div>
       </div>
 
       {accounts.length === 0 ? (
@@ -201,13 +209,12 @@ const BrokerAccountsList: React.FC = () => {
             Connect your trading account to start executing algorithmic strategies.
             Your credentials will be stored securely and encrypted.
           </p>
-          <button
-            className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+          <Button
             onClick={() => setAddFormOpen(true)}
+            leftIcon={<Plus className="h-4 w-4" />}
           >
-            <Plus className="w-4 h-4 mr-2" />
             Add Your First Broker Account
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

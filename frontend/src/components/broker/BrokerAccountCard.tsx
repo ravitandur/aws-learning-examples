@@ -5,6 +5,7 @@ import { OAuthButton } from '../oauth/OAuthButton';
 import { OAuthStatusDisplay } from '../oauth/OAuthStatusDisplay';
 import { useOAuth } from '../../context/OAuthContext';
 import { supportsOAuth } from '../../config/brokerConfigs';
+import ConfirmDialog from '../common/ConfirmDialog';
 
 interface BrokerAccountCardProps {
   account: BrokerAccount;
@@ -302,55 +303,17 @@ const BrokerAccountCard: React.FC<BrokerAccountCardProps> = ({
       </div>
 
       {/* Delete Confirmation Dialog */}
-      {showDeleteDialog && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-dialog-title"
-          aria-describedby="delete-dialog-description"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowDeleteDialog(false);
-            }
-          }}
-        >
-          <div 
-            className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-red-100 dark:bg-red-900/20 rounded-full">
-                <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
-              </div>
-              <h3 id="delete-dialog-title" className="text-lg font-semibold text-gray-900 dark:text-white">
-                Delete Broker Account
-              </h3>
-            </div>
-            <p id="delete-dialog-description" className="text-gray-600 dark:text-gray-300 mb-6 leading-relaxed">
-              Are you sure you want to delete broker account <strong>"{account.client_id}"</strong>? This action cannot be undone and will permanently remove all associated data.
-            </p>
-            <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end">
-              <button
-                onClick={() => setShowDeleteDialog(false)}
-                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-                autoFocus
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  onDelete(account.client_id);
-                  setShowDeleteDialog(false);
-                }}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 focus:bg-red-700 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-              >
-                Delete Account
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={() => onDelete(account.client_id)}
+        title="Delete Broker Account"
+        message={`Are you sure you want to delete broker account "${account.client_id}"? This action cannot be undone and will permanently remove all associated data.`}
+        confirmText="Delete Account"
+        cancelText="Cancel"
+        variant="danger"
+        icon={<Trash2 className="h-6 w-6 text-red-600" />}
+      />
     </article>
   );
 };
