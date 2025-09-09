@@ -10,6 +10,7 @@ import { formatPhoneNumber } from '../utils/validation';
 import brokerService from '../services/brokerService';
 import StandardLayout from '../components/common/StandardLayout';
 import PageHeader from '../components/common/PageHeader';
+import { Home } from 'lucide-react';
 import Button from '../components/ui/Button';
 
 const Dashboard: React.FC = () => {
@@ -79,6 +80,12 @@ const Dashboard: React.FC = () => {
       <PageHeader 
         title={`${getWelcomeMessage()}, ${user?.fullName?.split(' ')[0]}! 👋`}
         description="Welcome to your algorithmic trading dashboard. Monitor your strategies, manage broker accounts, and track performance."
+        pageType="dashboard"
+        status="active"
+        statusText={`${brokerAccountCount} broker accounts connected`}
+        breadcrumbs={[
+          { label: 'Home', icon: <Home className="w-4 h-4" /> }
+        ]}
         actions={actions}
       />
 

@@ -3,7 +3,7 @@ import StandardLayout from '../components/common/StandardLayout';
 import PageHeader from '../components/common/PageHeader';
 import TabbedBasketManager from '../components/basket/TabbedBasketManager';
 import Button from '../components/ui/Button';
-import { Plus, RefreshCw } from 'lucide-react';
+import { Plus, RefreshCw, Home, Package } from 'lucide-react';
 
 const BasketsPage: React.FC = () => {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -42,6 +42,11 @@ const BasketsPage: React.FC = () => {
         title="Basket Management" 
         emoji="🧺"
         description="Create and manage your strategy baskets with revolutionary multi-broker allocation and performance tracking."
+        pageType="management"
+        breadcrumbs={[
+          { label: 'Home', href: '/', icon: <Home className="w-4 h-4" /> },
+          { label: 'Basket Management', icon: <Package className="w-4 h-4" /> }
+        ]}
         actions={actions}
       />
       <TabbedBasketManager key={refreshKey} />
