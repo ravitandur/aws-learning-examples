@@ -110,3 +110,58 @@ export const INDIAN_STATES = [
 ] as const;
 
 export type IndianState = typeof INDIAN_STATES[number];
+
+// Basket and Strategy Types for Options Platform
+export interface Strategy {
+  strategyId: string;
+  strategyName: string;
+  strategyType: string;
+  status: 'ACTIVE' | 'PAUSED' | 'COMPLETED';
+  legs: number;
+}
+
+export interface Basket {
+  basketId: string;
+  basketName: string;
+  description?: string;
+  strategies: Strategy[];
+  status: 'ACTIVE' | 'PAUSED' | 'INACTIVE';
+  createdAt: string;
+}
+
+export interface CreateBasket {
+  basketName: string;
+  description?: string;
+  strategies: string[];
+}
+
+export interface UpdateBasket {
+  basketName?: string;
+  description?: string;
+  strategies?: string[];
+  status?: 'ACTIVE' | 'PAUSED' | 'INACTIVE';
+}
+
+// Basket-Broker Allocation Types (New Separate System)
+export interface BasketBrokerAllocation {
+  basket_id: string;
+  broker_id: string;
+  client_id: string;
+  lot_multiplier: number;
+  status: 'ACTIVE' | 'INACTIVE';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateAllocation {
+  allocations: {
+    broker_id: string;
+    client_id: string;
+    lot_multiplier: number;
+  }[];
+}
+
+export interface UpdateAllocation {
+  lot_multiplier: number;
+  status?: 'ACTIVE' | 'INACTIVE';
+}

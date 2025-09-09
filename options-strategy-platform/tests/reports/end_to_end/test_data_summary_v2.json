@@ -1,0 +1,16 @@
+{
+  "test_user_id": "test-user-e2e-001",
+  "creation_timestamp": "2025-09-05T20:39:48.657415+00:00",
+  "created_items_count": 38,
+  "brokers": 5,
+  "baskets": 3,
+  "strategies": 4,
+  "legs": 10,
+  "schedules": 16,
+  "revolutionary_features": {
+    "gsi2_optimization": true,
+    "multi_broker_allocation": true,
+    "weekend_protection": true,
+    "timing_precision": true
+  }
+}

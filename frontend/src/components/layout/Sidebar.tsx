@@ -7,6 +7,7 @@ import {
   LineChart,
   PieChart,
   Settings,
+  ShoppingBasket,
   User,
   Turtle,
   X,
@@ -34,6 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const navItems: NavItem[] = [
     { name: 'Dashboard', path: '/', icon: <BarChart3 className="w-5 h-5" /> },
     { name: 'Brokers', path: '/brokers', icon: <Building2 className="w-5 h-5" /> },
+    { name: 'Baskets', path: '/baskets', icon: <ShoppingBasket className="w-5 h-5" /> },
     { name: 'Strategies', path: '/strategies', icon: <LineChart className="w-5 h-5" />, disabled: true },
     { name: 'Portfolio', path: '/portfolio', icon: <Briefcase className="w-5 h-5" />, disabled: true },
     { name: 'Analytics', path: '/analytics', icon: <PieChart className="w-5 h-5" />, disabled: true },

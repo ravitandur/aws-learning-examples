@@ -1,0 +1,119 @@
+{
+  "basket_name": "Weekend Test Basket",
+  "description": "Test basket with strategies scheduled on weekends - should be skipped by system",
+  "risk_profile": "TEST",
+  "purpose": "Validate weekend protection logic",
+  "strategies": [
+    {
+      "strategy_name": "Saturday Morning Strategy",
+      "underlying": "NIFTY",
+      "strategy_type": "LONG_STRADDLE",
+      "entry_time": "09:30",
+      "exit_time": "15:20", 
+      "entry_days": ["SATURDAY"],
+      "exit_days": ["SATURDAY"],
+      "expected_execution": false,
+      "test_purpose": "Validate Saturday skip logic",
+      "legs": [
+        {
+          "leg_id": "leg_1",
+          "option_type": "CE",
+          "strike_offset": 0,
+          "action": "BUY",
+          "quantity": 25,
+          "order_type": "MARKET"
+        },
+        {
+          "leg_id": "leg_2",
+          "option_type": "PE",
+          "strike_offset": 0,
+          "action": "BUY",
+          "quantity": 25,
+          "order_type": "MARKET"
+        }
+      ]
+    },
+    {
+      "strategy_name": "Sunday Evening Strategy",
+      "underlying": "BANKNIFTY",
+      "strategy_type": "SHORT_STRANGLE",
+      "entry_time": "18:00",
+      "exit_time": "20:00",
+      "entry_days": ["SUNDAY"],
+      "exit_days": ["SUNDAY"],
+      "expected_execution": false,
+      "test_purpose": "Validate Sunday skip logic",
+      "legs": [
+        {
+          "leg_id": "leg_1",
+          "option_type": "CE",
+          "strike_offset": 200,
+          "action": "SELL",
+          "quantity": 15,
+          "order_type": "MARKET"
+        },
+        {
+          "leg_id": "leg_2",
+          "option_type": "PE",
+          "strike_offset": -200,
+          "action": "SELL",
+          "quantity": 15,
+          "order_type": "MARKET"
+        }
+      ]
+    },
+    {
+      "strategy_name": "Mixed Weekday Weekend Strategy",
+      "underlying": "NIFTY",
+      "strategy_type": "IRON_CONDOR",
+      "entry_time": "14:30",
+      "exit_time": "15:10",
+      "entry_days": ["FRIDAY", "SATURDAY", "SUNDAY", "MONDAY"],
+      "exit_days": ["FRIDAY", "SATURDAY", "SUNDAY", "MONDAY"],
+      "expected_execution": "partial",
+      "test_purpose": "Validate mixed weekday/weekend filtering - should only execute on Friday and Monday",
+      "legs": [
+        {
+          "leg_id": "leg_1",
+          "option_type": "PE",
+          "strike_offset": -200,
+          "action": "BUY",
+          "quantity": 25,
+          "order_type": "MARKET"
+        },
+        {
+          "leg_id": "leg_2",
+          "option_type": "PE",
+          "strike_offset": -50,
+          "action": "SELL",
+          "quantity": 25,
+          "order_type": "MARKET"
+        },
+        {
+          "leg_id": "leg_3",
+          "option_type": "CE",
+          "strike_offset": 50,
+          "action": "SELL",
+          "quantity": 25,
+          "order_type": "MARKET"
+        },
+        {
+          "leg_id": "leg_4",
+          "option_type": "CE",
+          "strike_offset": 200,
+          "action": "BUY",
+          "quantity": 25,
+          "order_type": "MARKET"
+        }
+      ]
+    }
+  ],
+  "test_expectations": {
+    "total_strategies": 3,
+    "weekend_strategies": 2,
+    "weekday_strategies": 1,
+    "mixed_strategies": 1,
+    "expected_weekend_skips": 2,
+    "expected_executions": 1
+  }
+}

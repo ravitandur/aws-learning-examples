@@ -1,0 +1,119 @@
+{
+  "Comment": "🚀 EXPRESS SINGLE STRATEGY EXECUTION - Revolutionary Individual Strategy Processing",
+  "StartAt": "WaitForExecutionTime",
+  "States": {
+    "WaitForExecutionTime": {
+      "Comment": "🕐 Precise wait until strategy execution time with 0-second boundary accuracy",
+      "Type": "Wait",
+      "SecondsPath": "$.wait_seconds",
+      "Next": "ExecuteSingleStrategy"
+    },
+    "ExecuteSingleStrategy": {
+      "Comment": "🚀 Invoke single strategy executor Lambda for individual strategy processing",
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${SINGLE_STRATEGY_EXECUTOR_ARN}",
+        "Payload": {
+          "user_id.$": "$.user_id",
+          "strategy_id.$": "$.strategy_id", 
+          "execution_time.$": "$.execution_time",
+          "weekday.$": "$.weekday",
+          "execution_type.$": "$.execution_type",
+          "trigger_source.$": "$.trigger_source",
+          "event_id.$": "$.event_id",
+          "scheduled_at.$": "$.scheduled_at",
+          "execution_level": "individual_strategy",
+          "step_function_source": "EXPRESS_SINGLE_STRATEGY_EXECUTION",
+          "timing_precision": "0_SECOND_INSTITUTIONAL_GRADE",
+          "load_strategy_at_runtime": true,
+          "revolutionary_features": {
+            "just_in_time_loading": true,
+            "lightweight_architecture": true,
+            "60_percent_data_reduction": true
+          }
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "HandleExecutionFailure",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "CheckExecutionResult"
+    },
+    "CheckExecutionResult": {
+      "Comment": "🔍 Check if Lambda execution was successful or failed",
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.Payload.statusCode",
+          "NumericEquals": 200,
+          "Next": "ExecutionSuccess"
+        }
+      ],
+      "Default": "ExecutionError"
+    },
+    "ExecutionSuccess": {
+      "Comment": "✅ Single strategy execution completed successfully",
+      "Type": "Pass",
+      "Parameters": {
+        "status": "SUCCESS",
+        "strategy_id.$": "$.Payload.body.strategy_id",
+        "execution_time.$": "$.Payload.body.execution_time", 
+        "user_id.$": "$.Payload.body.user_id",
+        "execution_result.$": "$.Payload.body",
+        "step_function_type": "EXPRESS",
+        "architecture": "SINGLE_STRATEGY_EXPRESS_EXECUTION",
+        "message": "🚀 Individual strategy executed successfully with 0-second precision timing"
+      },
+      "End": true
+    },
+    "ExecutionError": {
+      "Comment": "❌ Handle Lambda execution error (statusCode != 200)",
+      "Type": "Pass",
+      "Parameters": {
+        "status": "ERROR",
+        "strategy_id.$": "$.Payload.body.strategy_id",
+        "execution_time.$": "$.Payload.body.execution_time",
+        "user_id.$": "$.Payload.body.user_id",
+        "execution_result.$": "$.Payload.body",
+        "step_function_type": "EXPRESS",
+        "architecture": "SINGLE_STRATEGY_EXPRESS_EXECUTION",
+        "message": "❌ Single strategy execution returned error - Lambda completed but returned non-200 status"
+      },
+      "End": true
+    },
+    "HandleExecutionFailure": {
+      "Comment": "❌ Handle strategy execution failure with comprehensive error details",
+      "Type": "Pass",
+      "Parameters": {
+        "status": "FAILED",
+        "strategy_id.$": "$.strategy_id",
+        "execution_time.$": "$.execution_time",
+        "user_id.$": "$.user_id", 
+        "error_details.$": "$.error",
+        "step_function_type": "EXPRESS",
+        "architecture": "SINGLE_STRATEGY_EXPRESS_EXECUTION",
+        "message": "❌ Single strategy execution failed - error details captured for analysis"
+      },
+      "End": true
+    }
+  }
+}

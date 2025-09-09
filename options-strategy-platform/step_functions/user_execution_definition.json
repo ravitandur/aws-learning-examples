@@ -1,0 +1,92 @@
+{
+  "Comment": "🚀 User-Specific Strategy Execution Step Function - Parallel Processing Architecture",
+  "StartAt": "ValidateUserEventPayload",
+  "States": {
+    "ValidateUserEventPayload": {
+      "Type": "Pass",
+      "Comment": "Validate incoming user-specific execution event payload",
+      "Parameters": {
+        "user_id.$": "$.user_id",
+        "execution_time.$": "$.execution_time",
+        "strategies.$": "$.strategies",
+        "strategy_count.$": "$.strategy_count",
+        "parallel_execution.$": "$.parallel_execution"
+      },
+      "Next": "CheckStrategiesCount"
+    },
+    "CheckStrategiesCount": {
+      "Type": "Choice",
+      "Comment": "Verify user has strategies to execute",
+      "Choices": [
+        {
+          "Variable": "$.strategy_count",
+          "NumericGreaterThan": 0,
+          "Next": "ExecuteUserStrategies"
+        }
+      ],
+      "Default": "NoStrategiesFound"
+    },
+    "NoStrategiesFound": {
+      "Type": "Succeed",
+      "Comment": "Successfully handled empty strategy list for user",
+      "Result": {
+        "status": "success",
+        "message": "No strategies found for user at specified time",
+        "execution_count": 0
+      }
+    },
+    "ExecuteUserStrategies": {
+      "Type": "Task",
+      "Comment": "🚀 Execute all strategies for specific user using preloaded data",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${UserStrategyExecutorLambdaArn}",
+        "Payload": {
+          "user_id.$": "$.user_id",
+          "execution_time.$": "$.execution_time",
+          "strategies.$": "$.strategies",
+          "strategy_count.$": "$.strategy_count",
+          "execution_source": "parallel_step_function",
+          "preloaded_data": true
+        }
+      },
+      "Retry": [
+        {
+          "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2.0
+        },
+        {
+          "ErrorEquals": ["States.TaskFailed"],
+          "IntervalSeconds": 1,
+          "MaxAttempts": 2,
+          "BackoffRate": 1.5
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "ExecutionFailed",
+          "ResultPath": "$.error"
+        }
+      ],
+      "Next": "ExecutionSucceeded"
+    },
+    "ExecutionSucceeded": {
+      "Type": "Succeed",
+      "Comment": "User strategy execution completed successfully",
+      "Result": {
+        "status": "success",
+        "message": "All user strategies executed successfully",
+        "parallel_execution": true
+      }
+    },
+    "ExecutionFailed": {
+      "Type": "Fail",
+      "Comment": "User strategy execution failed",
+      "Cause": "Lambda execution failed during user strategy processing",
+      "Error": "UserStrategyExecutionError"
+    }
+  }
+}

@@ -126,6 +126,18 @@ class UserAuthBrokerStack(Stack):
             removal_policy=self.get_removal_policy(),
             point_in_time_recovery=self.env_config['enable_point_in_time_recovery']
         )
+        
+        # GSI: Active Users Index for efficient active user queries
+        # Purpose: Query only active users without scanning entire table
+        # Query Pattern: status = "active" → gets only active users
+        # Performance: O(active_users) instead of O(all_users)
+        # Benefits: Unlimited scalability regardless of total user count
+        user_profiles_table.add_global_secondary_index(
+            index_name="ActiveUsersIndex",
+            partition_key=dynamodb.Attribute(name="status", type=dynamodb.AttributeType.STRING),
+            sort_key=dynamodb.Attribute(name="created_at", type=dynamodb.AttributeType.STRING),
+            projection_type=dynamodb.ProjectionType.KEYS_ONLY  # Only need user_id, status, created_at
+        )
 
         # DynamoDB table for broker accounts
         broker_accounts_table = dynamodb.Table(

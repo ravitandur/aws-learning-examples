@@ -1,0 +1,173 @@
+{
+  "test_scenario": "Overlap Prevention Testing",
+  "description": "Test strategies designed to validate the 18:20 overlap prevention fix",
+  "issue_description": "Previously, strategies at 18:20 were discovered by both 18:15-18:20 and 18:20-18:25 windows",
+  "solution": "Half-open intervals [start, end) - first window excludes 18:20, second window includes it",
+  "strategies": [
+    {
+      "strategy_name": "Window 1 Test Strategy - 18:19",
+      "underlying": "NIFTY",
+      "strategy_type": "BULL_CALL_SPREAD", 
+      "entry_time": "18:19",
+      "exit_time": "18:30",
+      "entry_days": ["THURSDAY"],
+      "exit_days": ["THURSDAY"],
+      "expected_discovery_window": "18:15-18:20",
+      "should_be_discovered_at_18_15": true,
+      "should_be_discovered_at_18_20": false,
+      "test_purpose": "Validate strategy in first window boundary",
+      "legs": [
+        {
+          "leg_id": "leg_1",
+          "option_type": "CE",
+          "strike_price": 19400,
+          "action": "BUY",
+          "quantity": 25,
+          "order_type": "MARKET"
+        },
+        {
+          "leg_id": "leg_2", 
+          "option_type": "CE",
+          "strike_price": 19600,
+          "action": "SELL",
+          "quantity": 25,
+          "order_type": "MARKET"
+        }
+      ]
+    },
+    {
+      "strategy_name": "Boundary Test Strategy - 18:20",
+      "underlying": "BANKNIFTY",
+      "strategy_type": "IRON_CONDOR",
+      "entry_time": "18:20",
+      "exit_time": "18:35",
+      "entry_days": ["THURSDAY"],
+      "exit_days": ["THURSDAY"], 
+      "expected_discovery_window": "18:20-18:25",
+      "should_be_discovered_at_18_15": false,
+      "should_be_discovered_at_18_20": true,
+      "test_purpose": "Validate 18:20 boundary - should only be in second window",
+      "legs": [
+        {
+          "leg_id": "leg_1",
+          "option_type": "PE",
+          "strike_price": 45000,
+          "action": "BUY",
+          "quantity": 15,
+          "order_type": "MARKET"
+        },
+        {
+          "leg_id": "leg_2",
+          "option_type": "PE", 
+          "strike_price": 45500,
+          "action": "SELL",
+          "quantity": 15,
+          "order_type": "MARKET"
+        },
+        {
+          "leg_id": "leg_3",
+          "option_type": "CE",
+          "strike_price": 46500,
+          "action": "SELL", 
+          "quantity": 15,
+          "order_type": "MARKET"
+        },
+        {
+          "leg_id": "leg_4",
+          "option_type": "CE",
+          "strike_price": 47000,
+          "action": "BUY",
+          "quantity": 15,
+          "order_type": "MARKET"
+        }
+      ]
+    },
+    {
+      "strategy_name": "Window 2 Test Strategy - 18:22",
+      "underlying": "FINNIFTY",
+      "strategy_type": "LONG_STRADDLE",
+      "entry_time": "18:22", 
+      "exit_time": "18:40",
+      "entry_days": ["THURSDAY"],
+      "exit_days": ["THURSDAY"],
+      "expected_discovery_window": "18:20-18:25",
+      "should_be_discovered_at_18_15": false,
+      "should_be_discovered_at_18_20": true,
+      "test_purpose": "Validate strategy in second window",
+      "legs": [
+        {
+          "leg_id": "leg_1",
+          "option_type": "CE",
+          "strike_price": 19800,
+          "action": "BUY",
+          "quantity": 25,
+          "order_type": "MARKET"
+        },
+        {
+          "leg_id": "leg_2",
+          "option_type": "PE",
+          "strike_price": 19800,
+          "action": "BUY",
+          "quantity": 25,
+          "order_type": "MARKET"
+        }
+      ]
+    },
+    {
+      "strategy_name": "Pre-Boundary Test Strategy - 18:14",
+      "underlying": "MIDCPNIFTY",
+      "strategy_type": "SHORT_STRANGLE",
+      "entry_time": "18:14",
+      "exit_time": "18:25", 
+      "entry_days": ["THURSDAY"],
+      "exit_days": ["THURSDAY"],
+      "expected_discovery_window": "18:10-18:15",
+      "should_be_discovered_at_18_10": true,
+      "should_be_discovered_at_18_15": false,
+      "should_be_discovered_at_18_20": false,
+      "test_purpose": "Validate strategy before the overlap boundary",
+      "legs": [
+        {
+          "leg_id": "leg_1",
+          "option_type": "CE",
+          "strike_price": 9000,
+          "action": "SELL",
+          "quantity": 75,
+          "order_type": "MARKET"
+        },
+        {
+          "leg_id": "leg_2",
+          "option_type": "PE", 
+          "strike_price": 8500,
+          "action": "SELL",
+          "quantity": 75,
+          "order_type": "MARKET"
+        }
+      ]
+    }
+  ],
+  "test_windows": [
+    {
+      "window_name": "Window 1",
+      "discovery_start": "2025-09-04T18:15:00.000000+05:30",
+      "discovery_end": "2025-09-04T18:20:00.000000+05:30",
+      "interval_type": "half_open_start_inclusive",
+      "expected_minutes": ["18:15", "18:16", "18:17", "18:18", "18:19"],
+      "should_include_18_20": false
+    },
+    {
+      "window_name": "Window 2", 
+      "discovery_start": "2025-09-04T18:20:00.000000+05:30",
+      "discovery_end": "2025-09-04T18:25:00.000000+05:30",
+      "interval_type": "half_open_start_inclusive",
+      "expected_minutes": ["18:20", "18:21", "18:22", "18:23", "18:24"],
+      "should_include_18_20": true
+    }
+  ],
+  "validation_criteria": {
+    "no_double_discovery": "Each strategy should be discovered by exactly one window",
+    "boundary_precision": "18:20 strategies should only appear in second window", 
+    "window_coverage": "All strategies in time range should be discovered exactly once",
+    "performance_impact": "Query efficiency should improve with precise time filtering"
+  }
+}

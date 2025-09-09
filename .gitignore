@@ -13,6 +13,8 @@
 **/.env
 **/pip-log.txt
 **/.venv/
+# Specific test environment
+options-strategy-platform/test-venv/
 
 # IDE and Editor files
 **/.idea/

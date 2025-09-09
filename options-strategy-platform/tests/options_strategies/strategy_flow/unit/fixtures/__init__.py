@@ -1,0 +1,1 @@
+# Test fixtures for 3-minute lookahead functionality

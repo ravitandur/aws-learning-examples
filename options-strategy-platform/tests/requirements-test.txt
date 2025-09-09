@@ -1,0 +1,52 @@
+# Testing dependencies for Options Strategy Platform - Basket Allocation Architecture
+# Install with: pip install -r requirements-test.txt
+
+# Core testing framework - ESSENTIAL
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.0  # Mocking utilities
+
+# AWS mocking and testing - CRITICAL for basket allocation tests
+moto[dynamodb]>=4.2.0  # AWS service mocking (DynamoDB GSI support)
+boto3>=1.28.0
+botocore>=1.31.0
+
+# Test utilities - CORE
+faker>=19.0.0  # Generate fake test data
+freezegun>=1.2.0  # Time mocking for scheduling tests
+mock>=5.1.0  # Additional mocking utilities
+
+# Performance testing - Critical for GSI optimization validation
+pytest-benchmark>=4.0.0  # Performance benchmarking
+
+# Test reporting
+pytest-html>=3.2.0  # HTML test reports
+pytest-json-report>=1.5.0  # JSON test reports
+
+# Options trading and financial calculations - REQUIRED
+numpy>=1.24.0  # Numerical calculations for Greeks
+pandas>=2.0.0  # Data analysis for test scenarios
+scipy>=1.11.0  # Advanced mathematical functions
+sympy>=1.11.0  # Mathematical operations
+
+# Date and time handling - Critical for scheduling tests
+python-dateutil>=2.8.2
+pytz>=2023.3
+
+# Data validation and serialization - ESSENTIAL
+pydantic>=2.0.0  # Data validation
+jsonschema>=4.19.0  # JSON schema validation
+
+# Development and debugging utilities
+colorama>=0.4.0  # Colored terminal output
+rich>=13.0.0  # Rich text and beautiful formatting
+
+# Logging - REQUIRED
+structlog>=23.1.0  # Structured logging
+
+# Network testing - REQUIRED
+requests>=2.28.0  # HTTP requests
+
+# Additional essential testing utilities
+unittest2>=1.1.0  # Enhanced unittest support
+pytest-timeout>=2.1.0  # Test timeout handling

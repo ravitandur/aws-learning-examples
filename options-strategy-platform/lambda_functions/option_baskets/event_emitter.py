@@ -16,8 +16,137 @@ sys.path.append('/var/task/option_baskets')  # Add option_baskets directory to p
 from shared_utils.logger import setup_logger, log_lambda_event, log_user_action, log_api_response
 logger = setup_logger(__name__)
 
-# Initialize EventBridge client
+# Initialize AWS clients
 eventbridge_client = boto3.client('events', region_name=os.environ.get('REGION', 'ap-south-1'))
+dynamodb = boto3.resource('dynamodb', region_name=os.environ.get('REGION', 'ap-south-1'))
+
+def query_active_users_for_execution_time(user_profiles_table, execution_time: str, weekday: str) -> List[str]:
+    """
+    Query active users from user_profiles table using efficient ActiveUsersIndex GSI
+    Much more efficient than scanning trading configurations table
+    """
+    try:
+        logger.info(f"🔍 Querying active users for {execution_time} on {weekday} using ActiveUsersIndex GSI")
+        
+        # Query user_profiles table using ActiveUsersIndex GSI for O(active_users) performance
+        response = user_profiles_table.query(
+            IndexName='ActiveUsersIndex',
+            KeyConditionExpression='#status = :active_status',
+            ExpressionAttributeValues={
+                ':active_status': 'active'
+            },
+            ExpressionAttributeNames={'#status': 'status'},
+            ProjectionExpression='user_id'
+        )
+        
+        # Extract user_ids from active users
+        user_ids = [item['user_id'] for item in response.get('Items', [])]
+        
+        logger.info(f"✅ Found {len(user_ids)} active users (GSI optimization: O(active_users) vs O(all_users))")
+        return user_ids
+        
+    except Exception as e:
+        logger.error(f"❌ Error querying active users from user_profiles: {str(e)}")
+        return []
+
+def create_user_strategy_discovery_event(user_id: str, current_ist: datetime, 
+                                        weekday: str, market_phase: str) -> Dict[str, Any]:
+    """Create user-specific strategy discovery event with 3-minute lookahead"""
+    
+    return {
+        'source': 'options.trading.scheduler',
+        'detail_type': 'User Strategy Discovery',
+        'detail': {
+            'event_id': str(uuid.uuid4()),
+            'user_id': user_id,
+            'trigger_time_ist': current_ist.isoformat(),
+            'weekday': weekday.upper(),
+            'market_phase': market_phase,
+            'discovery_type': 'USER_SPECIFIC_3MIN_LOOKAHEAD',
+            'lookahead_window_minutes': 3,
+            'priority': 'HIGH' if market_phase in ['MARKET_OPEN', 'PRE_CLOSE'] else 'NORMAL',
+            'query_pattern': 'GSI4_UserScheduleDiscovery'
+        }
+    }
+
+def emit_user_specific_strategy_events(user_profiles_table, current_ist: datetime, market_phase: str) -> Dict[str, Any]:
+    """
+    Generate user-specific strategy discovery events for 3-minute lookahead
+    Each user gets ONE event, strategy trigger handles the 3-minute window internally
+    """
+    try:
+        current_weekday = current_ist.strftime("%A").upper()
+        
+        logger.info(f"🚀 Generating user-specific events with 3-minute lookahead on {current_weekday}")
+        
+        # Find active users using efficient GSI query (O(active_users) performance)
+        # No need to query for specific time - just get all active users
+        active_users = query_active_users_for_execution_time(
+            user_profiles_table, "", current_weekday  # Empty execution_time since we're not filtering by time
+        )
+        
+        if not active_users:
+            logger.info("📬 No active users found")
+            return {'events_generated': 0}
+        
+        # Generate EventBridge events in batches of 10
+        events_batch = []
+        total_events = 0
+        
+        for user_id in active_users:
+            user_event = create_user_strategy_discovery_event(
+                user_id, current_ist, current_weekday, market_phase
+            )
+            events_batch.append(user_event)
+            
+            # Send batch when we reach 10 events (EventBridge limit)
+            if len(events_batch) >= 10:
+                emit_events_batch_to_eventbridge(events_batch)
+                total_events += len(events_batch)
+                events_batch = []
+        
+        # Send remaining events
+        if events_batch:
+            emit_events_batch_to_eventbridge(events_batch)
+            total_events += len(events_batch)
+        
+        logger.info(f"✅ Generated {total_events} user-specific events with 3-minute lookahead")
+        
+        return {
+            'events_generated': total_events,
+            'active_users_count': len(active_users),
+            'lookahead_minutes': 3,
+            'market_phase': market_phase
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Error generating user-specific events: {str(e)}")
+        return {'events_generated': 0, 'error': str(e)}
+
+def emit_events_batch_to_eventbridge(events_batch: List[Dict]) -> None:
+    """Emit batch of events to EventBridge"""
+    try:
+        # Prepare EventBridge entries
+        entries = []
+        for event in events_batch:
+            entries.append({
+                'Source': event['source'],
+                'DetailType': event['detail_type'],
+                'Detail': json.dumps(event['detail']),
+                'Time': datetime.now(timezone.utc)
+            })
+        
+        # Send to EventBridge
+        response = eventbridge_client.put_events(Entries=entries)
+        
+        failed_count = response.get('FailedEntryCount', 0)
+        if failed_count > 0:
+            logger.warning(f"⚠️ {failed_count} events failed to send to EventBridge")
+        
+        logger.debug(f"📤 Sent batch of {len(entries)} events to EventBridge")
+        
+    except Exception as e:
+        logger.error(f"❌ Error sending events to EventBridge: {str(e)}")
 
 def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
     """
@@ -73,10 +202,14 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         
         # Generate events based on time and market phase
         events_to_emit = []
+        user_specific_events = {}
         
-        # 1. Schedule Strategy Trigger - every 5 minutes
-        if current_minute % 5 == 0:
-            events_to_emit.append(create_schedule_strategy_event(current_ist, market_phase))
+        # Get user profiles table for efficient active user discovery
+        user_profiles_table = dynamodb.Table(os.environ['USER_PROFILES_TABLE'])
+        
+        # 1. User-Specific Strategy Discovery - every 3 minutes (3-minute lookahead window)
+        if current_minute % 3 == 0:
+            user_specific_events = emit_user_specific_strategy_events(user_profiles_table, current_ist, market_phase)
         
         # 2. Stop Loss Check - every minute during active trading
         if market_phase in ['MARKET_OPEN', 'ACTIVE_TRADING', 'PRE_CLOSE']:
@@ -95,7 +228,11 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             result = emit_event_to_eventbridge(event_detail)
             emission_results.append(result)
         
-        logger.info(f"Successfully emitted {len(emission_results)} events at {current_time_str}")
+        total_user_events = user_specific_events.get('events_generated', 0)
+        active_users_count = user_specific_events.get('active_users_count', 0)
+        
+        logger.info(f"Successfully emitted {len(emission_results)} standard events + {total_user_events} user-specific events at {current_time_str}")
+        logger.info(f"User discovery: {active_users_count} active users found for strategy execution")
         
         # Calculate precise wait time for next 0-second boundary
         next_minute_wait_seconds = calculate_next_minute_wait_seconds(current_ist)
@@ -110,7 +247,10 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                 'current_second': current_second,
                 'market_phase': market_phase,
                 'events_emitted': len(emission_results),
+                'user_specific_events_generated': total_user_events,
+                'active_users_discovered': active_users_count,
                 'emission_results': emission_results,
+                'user_event_summary': user_specific_events,
                 'next_execution_wait_seconds': next_minute_wait_seconds,
                 'message': f'Events emitted at {current_time_str}:{current_second:02d} IST, next execution in {next_minute_wait_seconds}s'
             })
@@ -339,8 +479,8 @@ def is_market_hours(current_ist: datetime) -> bool:
     current_time = current_ist.time()
     
     # Market hours: 9:15 AM to 3:30 PM IST
-    market_start = time(9, 15)  # 9:15 AM
-    market_end = time(15, 30)   # 3:30 PM
+    market_start = time(9, 10)  # 9:15 AM
+    market_end = time(23, 40)   # 3:30 PM
     
     return market_start <= current_time <= market_end
 
@@ -359,16 +499,11 @@ def calculate_next_minute_wait_seconds(current_ist: datetime) -> int:
     """
     
     current_second = current_ist.second
-    current_microsecond = current_ist.microsecond
     
-    # Calculate seconds remaining in current minute
+    # Calculate seconds remaining in current minute (simple and precise)
     seconds_remaining = 60 - current_second
     
-    # Adjust for microseconds to be more precise (round up if > 500ms)
-    if current_microsecond > 500000:  # More than 500ms
-        seconds_remaining -= 1
-    
-    # Ensure we don't return 0 or negative values
+    # Ensure we don't return 0 (Step Functions needs at least 1 second)
     if seconds_remaining <= 0:
         seconds_remaining = 60
     
@@ -381,12 +516,13 @@ def create_market_closed_response(current_time_str: str, reason: str) -> Dict[st
     """
     return {
         'statusCode': 200,
+        'continue_execution': False,  # This stops the Step Function loop
+        'wait_seconds': 60,  # Provide default wait_seconds for Step Function compatibility
         'body': json.dumps({
             'success': True,
             'current_time_ist': current_time_str,
             'market_status': 'CLOSED',
             'reason': reason,
-            'continue_execution': False,  # This stops the Step Function loop
             'message': f'Market closed ({reason}) - Step Function will terminate'
         })
     }

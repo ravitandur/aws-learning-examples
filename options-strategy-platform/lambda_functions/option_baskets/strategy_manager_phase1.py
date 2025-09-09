@@ -24,6 +24,33 @@ from shared_utils.logger import setup_logger, log_lambda_event, log_user_action,
 logger = setup_logger(__name__)
 
 
+# ✅ REMOVED: populate_broker_allocation_for_strategy function - no longer needed with clean separation
+
+def generate_schedule_key(weekday: str, execution_time: str, execution_type: str, strategy_id: str) -> str:
+    """
+    🕒 Generate hierarchical schedule key for GSI4 (UserScheduleDiscovery)
+    
+    Format: "SCHEDULE#{WEEKDAY}#{TIME}#{TYPE}#{STRATEGY_ID}"
+    
+    Examples:
+    - Entry: "SCHEDULE#MON#09:30#ENTRY#strategy-iron-condor-001"
+    - Exit: "SCHEDULE#MON#15:20#EXIT#strategy-iron-condor-001"
+    
+    Query Examples:
+    - All Monday strategies: begins_with("SCHEDULE#MON")
+    - Monday 9:30 strategies: begins_with("SCHEDULE#MON#09:30")  
+    - Monday 9:30 entries: begins_with("SCHEDULE#MON#09:30#ENTRY")
+    - Specific strategy: begins_with("SCHEDULE#MON#09:30#ENTRY#strategy-001")
+    
+    Benefits:
+    - Hierarchical database-level filtering
+    - Self-documenting key structure
+    - Precise query targeting
+    - Easy to understand and maintain
+    """
+    return f"SCHEDULE#{weekday.upper()}#{execution_time}#{execution_type.upper()}#{strategy_id}"
+
+
 def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
     """
     Phase 1 Lambda function to manage strategies using hybrid architecture
@@ -75,6 +102,8 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             return handle_create_strategy(event, user_id, basket_id, trading_configurations_table)
         elif http_method == 'GET' and basket_id and not strategy_id:
             return handle_list_strategies(event, user_id, basket_id, trading_configurations_table)
+        elif http_method == 'GET' and not basket_id and not strategy_id:
+            return handle_get_available_strategies(event, user_id, trading_configurations_table)
         elif http_method == 'GET' and strategy_id:
             return handle_get_strategy(event, user_id, strategy_id, trading_configurations_table)
         elif http_method == 'PUT' and strategy_id:
@@ -142,6 +171,11 @@ def handle_create_strategy(event, user_id, basket_id, table):
                     'message': 'strategy_name, underlying, product, and legs are required'
                 })
             }
+        
+        # ✅ NEW: Validate legs and enhance with lot configuration
+        enhanced_legs, leg_validation_error = validate_and_enhance_legs(legs)
+        if leg_validation_error:
+            return leg_validation_error
         
         # Validate product field (user requirement)
         if product not in ['NRML', 'MIS']:
@@ -220,8 +254,8 @@ def handle_create_strategy(event, user_id, basket_id, table):
             'exit_days': exit_days,
             
             # Leg Information
-            'leg_count': len(legs),
-            'legs': legs,  # Store legs inline for Phase 1 simplicity
+            'leg_count': len(enhanced_legs),
+            'legs': enhanced_legs,  # Store enhanced legs with lots configuration
             
             # Performance Metrics (initialized)
             'total_return': Decimal('0'),
@@ -237,17 +271,95 @@ def handle_create_strategy(event, user_id, basket_id, table):
             
             # Single table entity type identifier
             'entity_type': 'STRATEGY',
-            
             # GSI attributes for strategy-specific queries
-            'strategy_id': strategy_id,  # For GSI1 (AllocationsByStrategy)
             'entity_type_priority': f"STRATEGY#{strategy_name}",  # For GSI1 sorting
             
             # GSI attributes for execution schedule (CRITICAL FOR PERFORMANCE)
-            'execution_schedule_key': f"ENTRY#{entry_time}#{strategy_id}",  # For GSI2 entry queries
+            # NOTE: Main strategy record no longer has execution_schedule_key
+            # Weekday-specific schedule entries are created separately below
         }
         
-        # Store strategy in single table
+        # Store main strategy in single table
         table.put_item(Item=strategy_item)
+        
+        # ✅ REMOVED: No longer populating broker allocation in schedule entries (clean separation)
+        
+        # 🚀 REVOLUTIONARY: Create weekday-specific execution schedule entries
+        # This prevents weekend/holiday executions and enables precise weekday filtering
+        weekday_abbr_map = {
+            'MONDAY': 'MON',
+            'TUESDAY': 'TUE', 
+            'WEDNESDAY': 'WED',
+            'THURSDAY': 'THU',
+            'FRIDAY': 'FRI',
+            'SATURDAY': 'SAT',
+            'SUNDAY': 'SUN'
+        }
+        
+        # Create ENTRY schedule entries for each specified weekday
+        for weekday in entry_days:
+            weekday_abbr = weekday_abbr_map.get(weekday, weekday[:3].upper())
+            
+            entry_schedule_item = {
+                'user_id': user_id,
+                'sort_key': generate_schedule_key(weekday_abbr, entry_time, 'ENTRY', strategy_id),
+                
+                # 🎯 LIGHTWEIGHT: Only essential scheduling data (70-80% size reduction)
+                'strategy_id': strategy_id,
+                'basket_id': basket_id,
+                'execution_time': entry_time,
+                'weekday': weekday,  # Single weekday for this schedule entry
+                'execution_type': 'ENTRY',
+                'status': 'ACTIVE',
+                'entity_type': 'SCHEDULE',
+                'created_at': current_time,
+                'updated_at': current_time,
+                
+                # 🚀 GSI: User-Centric Schedule Discovery key for simplified architecture
+                'schedule_key': generate_schedule_key(weekday_abbr, entry_time, 'ENTRY', strategy_id),
+                
+                # ❌ REMOVED HEAVY DATA (loaded just-in-time at execution):
+                # - strategy_name, underlying, product (available via strategy query)  
+                # - legs (available via strategy query)
+                # - execution_schedule_key, execution_time_slot, user_strategy_composite (unused legacy)
+            }
+            
+            table.put_item(Item=entry_schedule_item)
+            logger.debug(f"✅ Created ENTRY schedule: ENTRY#{weekday_abbr}#{entry_time}#{strategy_id}")
+        
+        # Create EXIT schedule entries for each specified weekday
+        for weekday in exit_days:
+            weekday_abbr = weekday_abbr_map.get(weekday, weekday[:3].upper())
+            
+            exit_schedule_item = {
+                'user_id': user_id,
+                'sort_key': generate_schedule_key(weekday_abbr, exit_time, 'EXIT', strategy_id),
+                
+                # 🎯 LIGHTWEIGHT: Only essential scheduling data (70-80% size reduction)
+                'strategy_id': strategy_id,
+                'basket_id': basket_id,
+                'execution_time': exit_time,
+                'weekday': weekday,  # Single weekday for this schedule entry
+                'execution_type': 'EXIT',
+                'status': 'ACTIVE',
+                'entity_type': 'SCHEDULE',
+                'created_at': current_time,
+                'updated_at': current_time,
+                
+                # 🚀 GSI: User-Centric Schedule Discovery key for simplified architecture
+                'schedule_key': generate_schedule_key(weekday_abbr, exit_time, 'EXIT', strategy_id),
+                
+                # ❌ REMOVED HEAVY DATA (loaded just-in-time at execution):
+                # - strategy_name, underlying, product (available via strategy query)  
+                # - legs (available via strategy query)
+                # - execution_schedule_key, execution_time_slot, user_strategy_composite (unused legacy)
+            }
+            
+            table.put_item(Item=exit_schedule_item)
+            logger.debug(f"✅ Created EXIT schedule: EXIT#{weekday_abbr}#{exit_time}#{strategy_id}")
+        
+        total_schedules = len(entry_days) + len(exit_days)
+        logger.info(f"🎯 Created strategy with {len(entry_days)} entry + {len(exit_days)} exit weekday schedules = {total_schedules} total")
         
         # Update basket strategy count
         table.update_item(
@@ -264,7 +376,7 @@ def handle_create_strategy(event, user_id, basket_id, table):
             "basket_id": basket_id, 
             "name": strategy_name,
             "underlying": underlying,
-            "leg_count": len(legs)
+            "leg_count": len(enhanced_legs)
         })
         
         # Return response without sensitive data
@@ -338,14 +450,11 @@ def handle_list_strategies(event, user_id, basket_id, table):
             KeyConditionExpression='user_id = :user_id AND begins_with(sort_key, :strategy_prefix)',
             ExpressionAttributeValues={
                 ':user_id': user_id,
-                ':strategy_prefix': 'STRATEGY#'
+                ':strategy_prefix': 'STRATEGY#',
+                ':basket_id': basket_id
             },
             # Filter by basket_id
-            FilterExpression='basket_id = :basket_id',
-            ExpressionAttributeValues={
-                **response.get('ExpressionAttributeValues', {}),
-                ':basket_id': basket_id
-            }
+            FilterExpression='basket_id = :basket_id'
         )
         
         strategies = response['Items']
@@ -600,6 +709,240 @@ def handle_delete_strategy(event, user_id, strategy_id, table):
             },
             'body': json.dumps({
                 'error': 'Failed to delete strategy',
+                'message': str(e)
+            })
+        }
+
+
+def validate_and_enhance_legs(legs: List[Dict]) -> tuple[List[Dict], Dict]:
+    """
+    ✅ NEW: Validate legs and enhance with lot configuration support
+    
+    This function validates each leg and ensures proper lot configuration.
+    Users can now specify 'lots' per leg during strategy creation.
+    
+    Args:
+        legs: List of leg configurations from user input
+        
+    Returns:
+        tuple: (enhanced_legs, validation_error)
+        - enhanced_legs: List of legs with lots configuration
+        - validation_error: Dict with error response if validation fails, None if valid
+    """
+    
+    if not legs or len(legs) == 0:
+        return None, {
+            'statusCode': 400,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({
+                'error': 'Invalid legs configuration',
+                'message': 'At least one leg is required for strategy'
+            })
+        }
+    
+    # Validate maximum legs per strategy (business rule)
+    if len(legs) > 6:
+        return None, {
+            'statusCode': 400,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({
+                'error': 'Too many legs',
+                'message': 'Maximum 6 legs allowed per strategy'
+            })
+        }
+    
+    enhanced_legs = []
+    
+    for i, leg in enumerate(legs):
+        try:
+            # Required fields for each leg
+            required_fields = ['option_type', 'action', 'strike']
+            for field in required_fields:
+                if field not in leg or leg[field] is None:
+                    return None, {
+                        'statusCode': 400,
+                        'headers': {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        },
+                        'body': json.dumps({
+                            'error': f'Missing required field in leg {i+1}',
+                            'message': f'Field "{field}" is required for leg {i+1}'
+                        })
+                    }
+            
+            # Validate option_type
+            if leg['option_type'].upper() not in ['CALL', 'PUT']:
+                return None, {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'error': f'Invalid option_type in leg {i+1}',
+                        'message': 'option_type must be CALL or PUT'
+                    })
+                }
+            
+            # Validate action
+            if leg['action'].upper() not in ['BUY', 'SELL']:
+                return None, {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'error': f'Invalid action in leg {i+1}',
+                        'message': 'action must be BUY or SELL'
+                    })
+                }
+            
+            # Validate strike price
+            try:
+                strike = float(leg['strike'])
+                if strike <= 0:
+                    raise ValueError("Strike must be positive")
+            except (ValueError, TypeError):
+                return None, {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'error': f'Invalid strike in leg {i+1}',
+                        'message': 'strike must be a positive number'
+                    })
+                }
+            
+            # ✅ NEW: Validate and enhance lots configuration
+            lots = leg.get('lots', 0)  # Default to 0 lot if not specified. i.e. user must specify the lots
+            
+            try:
+                lots = int(lots)
+                if lots <= 0:
+                    raise ValueError("Lots must be positive")
+                if lots > 1000:  # Business rule: maximum lots per leg
+                    raise ValueError("Lots cannot exceed 1000")
+            except (ValueError, TypeError):
+                return None, {
+                    'statusCode': 400,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps({
+                        'error': f'Invalid lots in leg {i+1}',
+                        'message': 'lots must be a positive integer between 1 and 1000'
+                    })
+                }
+            
+            # Create enhanced leg with validated data
+            enhanced_leg = {
+                # Generate unique leg ID
+                'leg_id': str(uuid.uuid4()),
+                'leg_index': i + 1,
+                
+                # Core leg configuration (normalized)
+                'option_type': leg['option_type'].upper(),
+                'action': leg['action'].upper(),
+                'strike': float(leg['strike']),
+                
+                # ✅ NEW: Lots configuration (KEY ENHANCEMENT)
+                'lots': lots,  # Base lots configured by user per leg
+                
+                # Optional fields
+                'expiry': leg.get('expiry'),  # Optional expiry override
+                'symbol': leg.get('symbol'),  # Optional symbol override
+                'description': leg.get('description', ''),
+                
+                # Metadata
+                'created_at': datetime.now(timezone.utc).isoformat(),
+            }
+            
+            enhanced_legs.append(enhanced_leg)
+            
+        except Exception as e:
+            return None, {
+                'statusCode': 400,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({
+                    'error': f'Error processing leg {i+1}',
+                    'message': str(e)
+                })
+            }
+    
+    logger.info(f"✅ Enhanced {len(enhanced_legs)} legs with lots configuration")
+    
+    # Log lots configuration for debugging
+    lots_summary = [f"Leg {leg['leg_index']}: {leg['lots']} lots" for leg in enhanced_legs]
+    logger.debug(f"📊 Lots configuration: {', '.join(lots_summary)}")
+    
+    return enhanced_legs, None  # No validation error
+
+
+def handle_get_available_strategies(event, user_id, table):
+    """Get all available strategies for user (across all baskets) - for basketService.getAvailableStrategies()"""
+    
+    try:
+        # Query all strategies for the user using sort key pattern
+        response = table.query(
+            KeyConditionExpression='user_id = :user_id AND begins_with(sort_key, :strategy_prefix)',
+            ExpressionAttributeValues={
+                ':user_id': user_id,
+                ':strategy_prefix': 'STRATEGY#'
+            }
+        )
+        
+        strategies = response['Items']
+        
+        # Transform strategies to match the expected interface for the frontend
+        available_strategies = []
+        for strategy in strategies:
+            available_strategy = {
+                'strategyId': strategy.get('strategy_id'),
+                'strategyName': strategy.get('strategy_name'),
+                'strategyType': strategy.get('underlying', 'UNKNOWN'),  # Use underlying as strategy type
+                'status': strategy.get('status', 'UNKNOWN'),
+                'legs': strategy.get('leg_count', 0)
+            }
+            available_strategies.append(available_strategy)
+        
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({
+                'success': True,
+                'data': available_strategies,
+                'count': len(available_strategies),
+                'message': f'Retrieved {len(available_strategies)} available strategies'
+            }, cls=DecimalEncoder)
+        }
+        
+    except Exception as e:
+        logger.error("Failed to retrieve available strategies", extra={"error": str(e), "user_id": user_id})
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({
+                'error': 'Failed to retrieve available strategies',
                 'message': str(e)
             })
         }

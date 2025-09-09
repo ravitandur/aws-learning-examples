@@ -1,0 +1,123 @@
+{
+  "test_timestamp": "2025-09-05T20:41:53.815192+00:00",
+  "test_user_id": "test-user-e2e-001",
+  "overall_results": {
+    "total_tests": 5,
+    "passed_tests": 4,
+    "success_rate": 80.0
+  },
+  "detailed_results": {
+    "gsi2_performance": {
+      "total_queries": 3,
+      "total_time_ms": 183.63189697265625,
+      "queries": [
+        {
+          "query": "User Strategies (Main Table)",
+          "time_ms": 129.7590732574463,
+          "count": 4
+        },
+        {
+          "query": "Strategy Allocations (GSI1)",
+          "time_ms": 25.829792022705078,
+          "count": 3
+        },
+        {
+          "query": "Execution Schedule (GSI2)",
+          "time_ms": 28.043031692504883,
+          "count": 16
+        }
+      ],
+      "performance_grade": "GOOD"
+    },
+    "strategy_discovery": {
+      "active_strategies": 4,
+      "strategy_details": [
+        {
+          "strategy_id": "strategy-butterfly-001",
+          "strategy_name": "FINNIFTY Butterfly Spread",
+          "strategy_type": "BUTTERFLY_SPREAD",
+          "underlying": "FINNIFTY",
+          "leg_count": 3,
+          "broker_allocations": 3
+        },
+        {
+          "strategy_id": "strategy-covered-call-001",
+          "strategy_name": "BANKNIFTY Covered Call",
+          "strategy_type": "COVERED_CALL",
+          "underlying": "BANKNIFTY",
+          "leg_count": 1,
+          "broker_allocations": 1
+        },
+        {
+          "strategy_id": "strategy-iron-condor-001",
+          "strategy_name": "NIFTY Iron Condor Conservative",
+          "strategy_type": "IRON_CONDOR",
+          "underlying": "NIFTY",
+          "leg_count": 4,
+          "broker_allocations": 4
+        },
+        {
+          "strategy_id": "strategy-straddle-001",
+          "strategy_name": "NIFTY Long Straddle",
+          "strategy_type": "LONG_STRADDLE",
+          "underlying": "NIFTY",
+          "leg_count": 2,
+          "broker_allocations": 2
+        }
+      ],
+      "scheduled_executions": 16,
+      "weekend_protected": 16
+    },
+    "multi_broker_validation": {
+      "total_legs": 10,
+      "total_allocations": 10,
+      "unique_brokers": 1,
+      "broker_distribution": {
+        "Zerodha": {
+          "allocations": 10,
+          "total_lots": "32"
+        }
+      },
+      "revolutionary_feature_active": false
+    },
+    "weekend_protection": {
+      "total_schedules": 16,
+      "weekday_schedules": 16,
+      "weekend_schedules": 0,
+      "protected_schedules": 16,
+      "protection_percentage": 100.0,
+      "revolutionary_feature_active": true
+    },
+    "lambda_execution": {
+      "total_functions": 3,
+      "successful_functions": 3,
+      "function_results": [
+        {
+          "function_name": "ql-algo-trading-dev-options-strategy-manager",
+          "status_code": 200,
+          "invoke_time_ms": 532.6290130615234,
+          "success": true
+        },
+        {
+          "function_name": "ql-algo-trading-dev-options-schedule-strategy-trigger",
+          "status_code": 200,
+          "invoke_time_ms": 634.4161033630371,
+          "success": true
+        },
+        {
+          "function_name": "ql-algo-trading-dev-options-event-emitter",
+          "status_code": 200,
+          "invoke_time_ms": 679.8779964447021,
+          "success": true
+        }
+      ],
+      "success_rate": 100.0
+    }
+  },
+  "revolutionary_features_validation": {
+    "gsi2_optimization": "GOOD",
+    "multi_broker_allocation": false,
+    "weekend_protection": true,
+    "lambda_integration": true
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "Comment": "Batch Strategy Execution Step Function - SQS Integration with Timing Precision",
+  "StartAt": "DynamicWaitForExecution",
+  "States": {
+    "DynamicWaitForExecution": {
+      "Type": "Wait",
+      "Comment": "Revolutionary 0-second precision timing - preserves institutional-grade timing",
+      "SecondsPath": "$.wait_seconds",
+      "Next": "ValidateBatchData"
+    },
+    "ValidateBatchData": {
+      "Type": "Choice",
+      "Comment": "Validate batch has strategies to process",
+      "Choices": [
+        {
+          "Variable": "$.batch_size",
+          "NumericGreaterThan": 0,
+          "Next": "ProcessStrategiesBatch"
+        }
+      ],
+      "Default": "NoBatchStrategiesFound"
+    },
+    "NoBatchStrategiesFound": {
+      "Type": "Succeed",
+      "Comment": "Successfully handled empty batch"
+    },
+    "ProcessStrategiesBatch": {
+      "Type": "Map",
+      "Comment": "Process all strategies in batch with parallel execution",
+      "ItemsPath": "$.strategies",
+      "MaxConcurrency": 20,
+      "ResultPath": "$.batch_execution_results",
+      "Iterator": {
+        "StartAt": "ExecuteSingleStrategyFromBatch",
+        "States": {
+          "ExecuteSingleStrategyFromBatch": {
+            "Type": "Task",
+            "Comment": "Execute individual strategy from batch with zero queries",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "${SingleStrategyExecutorLambdaArn}",
+              "Payload": {
+                "user_id.$": "$.user_id",
+                "strategy_id.$": "$.strategy_id",
+                "strategy_name.$": "$.strategy_name", 
+                "execution_time.$": "$.execution_time",
+                "strategy.$": "$",
+                "execution_level": "batch_strategy",
+                "execution_source": "sqs_batch_step_function",
+                "preloaded_data": true,
+                "batch_processing": true,
+                "revolutionary_timing": true
+              }
+            },
+            "Retry": [
+              {
+                "ErrorEquals": ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"],
+                "IntervalSeconds": 1,
+                "MaxAttempts": 3,
+                "BackoffRate": 2.0
+              },
+              {
+                "ErrorEquals": ["States.TaskFailed"],
+                "IntervalSeconds": 1,
+                "MaxAttempts": 2,
+                "BackoffRate": 1.5
+              }
+            ],
+            "Catch": [
+              {
+                "ErrorEquals": ["States.ALL"],
+                "Next": "StrategyExecutionFailed",
+                "ResultPath": "$.strategy_error"
+              }
+            ],
+            "Next": "StrategyExecutionSucceeded"
+          },
+          "StrategyExecutionSucceeded": {
+            "Type": "Succeed",
+            "Comment": "Individual strategy execution completed successfully"
+          },
+          "StrategyExecutionFailed": {
+            "Type": "Succeed",
+            "Comment": "Individual strategy failed but batch continues"
+          }
+        }
+      },
+      "Next": "BatchExecutionComplete"
+    },
+    "BatchExecutionComplete": {
+      "Type": "Succeed",
+      "Comment": "Batch strategy execution completed with revolutionary SQS + Step Function architecture"
+    }
+  }
+}

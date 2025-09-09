@@ -1,0 +1,108 @@
+{
+  "basket_name": "Conservative Income Basket",
+  "description": "Low-risk income generation strategies suitable for conservative investors",
+  "risk_profile": "CONSERVATIVE",
+  "expected_monthly_return": "2-4%",
+  "max_drawdown": "5%",
+  "strategies": [
+    {
+      "strategy_name": "Weekly Iron Condor - NIFTY",
+      "underlying": "NIFTY",
+      "strategy_type": "IRON_CONDOR",
+      "entry_time": "09:30",
+      "exit_time": "15:20",
+      "entry_days": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+      "exit_days": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"],
+      "legs": [
+        {
+          "leg_id": "leg_1",
+          "option_type": "PE",
+          "strike_offset": -300,
+          "action": "BUY",
+          "quantity": 25,
+          "order_type": "MARKET"
+        },
+        {
+          "leg_id": "leg_2",
+          "option_type": "PE",
+          "strike_offset": -100,
+          "action": "SELL",
+          "quantity": 25,
+          "order_type": "MARKET"
+        },
+        {
+          "leg_id": "leg_3",
+          "option_type": "CE",
+          "strike_offset": 100,
+          "action": "SELL",
+          "quantity": 25,
+          "order_type": "MARKET"
+        },
+        {
+          "leg_id": "leg_4",
+          "option_type": "CE",
+          "strike_offset": 300,
+          "action": "BUY",
+          "quantity": 25,
+          "order_type": "MARKET"
+        }
+      ]
+    },
+    {
+      "strategy_name": "Conservative Put Spread - BANKNIFTY",
+      "underlying": "BANKNIFTY",
+      "strategy_type": "BEAR_PUT_SPREAD",
+      "entry_time": "10:00",
+      "exit_time": "15:15",
+      "entry_days": ["TUESDAY", "THURSDAY"],
+      "exit_days": ["TUESDAY", "THURSDAY"],
+      "legs": [
+        {
+          "leg_id": "leg_1",
+          "option_type": "PE",
+          "strike_offset": -100,
+          "action": "BUY",
+          "quantity": 15,
+          "order_type": "MARKET"
+        },
+        {
+          "leg_id": "leg_2",
+          "option_type": "PE",
+          "strike_offset": -300,
+          "action": "SELL",
+          "quantity": 15,
+          "order_type": "MARKET"
+        }
+      ]
+    },
+    {
+      "strategy_name": "Covered Call Strategy - FINNIFTY",
+      "underlying": "FINNIFTY",
+      "strategy_type": "COVERED_CALL",
+      "entry_time": "13:30",
+      "exit_time": "15:25",
+      "entry_days": ["WEDNESDAY", "FRIDAY"],
+      "exit_days": ["WEDNESDAY", "FRIDAY"],
+      "legs": [
+        {
+          "leg_id": "leg_1",
+          "option_type": "CE",
+          "strike_offset": 200,
+          "action": "SELL",
+          "quantity": 25,
+          "order_type": "MARKET"
+        }
+      ]
+    }
+  ],
+  "portfolio_allocation": {
+    "nifty_weight": 50,
+    "banknifty_weight": 30,
+    "finnifty_weight": 20
+  },
+  "risk_management": {
+    "max_loss_per_strategy": "2000",
+    "position_size_limit": "5%",
+    "correlation_limit": 0.7
+  }
+}

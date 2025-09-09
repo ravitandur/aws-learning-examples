@@ -46,6 +46,19 @@ This agent specializes in creating AWS CDK stack files that follow consistent na
 - **NO MIXED PATTERNS**: Never mix simple descriptive names with module-prefixed patterns within the same stack
 - **ENFORCEMENT**: Reject any stack that mixes patterns like `"UserRegistrationFunctionLogGroup"` with `"OptionsLambdaMarketDataLogGroupDev"`
 
+### 🚨 7. CRITICAL: Hardcoded Values in Lambda Functions
+- **NEVER ALLOW**: Hardcoded table names like `'ql-algo-trading-dev-table-name'` in Lambda function code
+- **ALWAYS REQUIRE**: Environment variables like `os.environ['TABLE_NAME']` for all resource references
+- **ENFORCEMENT**: All Lambda functions MUST use environment variables for DynamoDB table references
+- **REJECTION CRITERIA**: Any Lambda function with hardcoded resource names must be rejected immediately
+- **EXAMPLES**:
+  - ❌ **FORBIDDEN**: `EXECUTION_LOG_TABLE = 'ql-algo-trading-dev-execution-log'`
+  - ❌ **FORBIDDEN**: `table = dynamodb.Table('hardcoded-table-name')`
+  - ✅ **REQUIRED**: `table = dynamodb.Table(os.environ['EXECUTION_HISTORY_TABLE'])`
+  - ✅ **REQUIRED**: `bucket_name = os.environ['S3_BUCKET_NAME']`
+- **VALIDATION**: Verify CDK stack provides all required environment variables to Lambda functions
+- **CROSS-ENVIRONMENT**: Lambda code must work across dev/staging/production without hardcoded values
+
 ## Required Configuration Schema
 
 ```json
@@ -425,12 +438,19 @@ for function_name, description in lambda_configs:
 
 ## Common Mistakes to Avoid
 
-1. **Hardcoded Values**: Never hardcode company prefix, project name, or environment-specific values
-2. **Inconsistent Naming**: Always use `get_resource_name()` for resource names
-3. **Missing Environment Logic**: Always use environment-specific removal policies and configurations
-4. **Cross-Stack Issues**: Properly handle optional cross-stack dependencies
-5. **Security Gaps**: Always follow principle of least privilege for IAM permissions
-6. **Missing Exports**: Export all resources that might be needed by other stacks
+1. **🚨 CRITICAL: Hardcoded Values in Lambda Functions**: 
+   - **NEVER ALLOW**: Hardcoded table names like `'ql-algo-trading-dev-table-name'` in Lambda code
+   - **ALWAYS REQUIRE**: Environment variables like `os.environ['TABLE_NAME']`
+   - **ENFORCEMENT**: All Lambda functions must use environment variables for DynamoDB table references
+   - **VALIDATION**: Check that CDK provides all necessary environment variables to Lambda functions
+   - **REJECTION CRITERIA**: Any Lambda function with hardcoded resource names must be rejected
+
+2. **Hardcoded Values in CDK**: Never hardcode company prefix, project name, or environment-specific values
+3. **Inconsistent Naming**: Always use `get_resource_name()` for resource names
+4. **Missing Environment Logic**: Always use environment-specific removal policies and configurations
+5. **Cross-Stack Issues**: Properly handle optional cross-stack dependencies
+6. **Security Gaps**: Always follow principle of least privilege for IAM permissions
+7. **Missing Exports**: Export all resources that might be needed by other stacks
 7. **🚨 CRITICAL ERROR: Missing LogGroup for Lambda Functions**:
    - **NEVER CREATE**: Lambda functions without explicit LogGroup
    - **ALWAYS REQUIRE**: `log_group=log_group_variable` parameter in ALL Lambda functions
@@ -502,6 +522,25 @@ When creating CDK stacks, this agent will:
 
 Before approving any CDK stack, verify:
 
+### **🚨 CRITICAL: Lambda Environment Variables**
+- [ ] ✅ **All DynamoDB Tables**: Every DynamoDB table has corresponding environment variable in Lambda env
+- [ ] ✅ **Environment Variable Names**: Use descriptive names like `TRADING_CONFIGURATIONS_TABLE`, `EXECUTION_HISTORY_TABLE`
+- [ ] ✅ **Table Name References**: All Lambda environment variables use `self.table_name.table_name` pattern
+- [ ] ❌ **No Hardcoded Table Names**: No hardcoded table names like `'ql-algo-trading-dev-table'` in Lambda code
+- [ ] ✅ **Cross-Stack Variables**: Imported table names properly set as environment variables
+- [ ] ✅ **Lambda Code Compliance**: All Lambda functions use `os.environ['TABLE_NAME']` pattern
+
+### **🚨 CRITICAL: Lambda Code Anti-Hardcoding Validation**
+- [ ] ❌ **No Hardcoded Constants**: No constants like `EXECUTION_LOG_TABLE = 'ql-algo-trading-dev-execution-log'`
+- [ ] ❌ **No Direct Table References**: No `dynamodb.Table('hardcoded-table-name')` patterns
+- [ ] ❌ **No Environment-Specific Names**: No hardcoded `dev`, `staging`, `prod` in resource names
+- [ ] ❌ **No Company Prefixes**: No hardcoded company prefixes like `'ql-algo-trading'` in Lambda code
+- [ ] ✅ **Import OS Module**: All Lambda functions import `os` for environment variable access
+- [ ] ✅ **Dynamic Table Access**: Use `os.environ['EXECUTION_HISTORY_TABLE']` pattern exclusively
+- [ ] ✅ **Dynamic Resource Access**: All AWS resource references use environment variables
+- [ ] ✅ **Cross-Environment Compatibility**: Code works across dev/staging/production without changes
+
+### **CDK Stack Requirements**
 - [ ] ✅ **LogGroup Created**: Every Lambda function has explicit LogGroup construct
 - [ ] ✅ **LogGroup Parameter**: Every Lambda function uses `log_group=log_group_variable`
 - [ ] ✅ **Python 3.11 Runtime**: Every Lambda function uses `_lambda.Runtime.PYTHON_3_11`
