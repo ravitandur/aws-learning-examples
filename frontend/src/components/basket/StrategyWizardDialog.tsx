@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
+import { Card, CardContent, CardHeader } from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
-import { X, Plus, Trash2, Copy, ChevronDown, ChevronUp } from 'lucide-react';
+import { X, Plus, Trash2, Copy } from 'lucide-react';
 
 interface StrategyLeg {
   id: string;
@@ -14,6 +14,14 @@ interface StrategyLeg {
   totalLots: number;
   expiryType: 'weekly' | 'monthly';
   selectionMethod: 'ATM_POINT' | 'ATM_PERCENT' | 'CLOSEST_PREMIUM' | 'CLOSEST_STRADDLE_PREMIUM';
+  
+  // Premium selection fields for CLOSEST_PREMIUM method
+  premiumOperator?: 'CP_EQUAL' | 'CP_GREATER_EQUAL' | 'CP_LESS_EQUAL';
+  premiumValue?: number;
+  
+  // Straddle premium fields for CLOSEST_STRADDLE_PREMIUM method
+  straddlePremiumOperator?: 'CP_EQUAL' | 'CP_GREATER_EQUAL' | 'CP_LESS_EQUAL';
+  straddlePremiumPercentage?: number;
   
   // Risk Management Fields
   stopLoss: {
@@ -75,9 +83,7 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
     rangeBreakout: false,
     rangeBreakoutTimeHour: '09',
     rangeBreakoutTimeMinute: '30',
-    waitAndTrade: false,
     moveSlToCost: false,
-    reEntryReExecute: false,
     targetProfit: {
       type: 'TOTAL_MTM', // 'TOTAL_MTM' | 'COMBINED_PREMIUM_PERCENT'
       value: 0
@@ -91,7 +97,6 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
   const [legs, setLegs] = useState<StrategyLeg[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [expandedRiskSections, setExpandedRiskSections] = useState<Record<string, boolean>>({});
 
   // Focus management for accessibility
   useEffect(() => {
@@ -164,12 +169,15 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
     }
   };
 
-  // Optimized leg update function with useCallback
-  const updateLeg = useCallback((legId: string, updates: Partial<StrategyLeg>) => {
-    setLegs(prev => prev.map(leg => 
-      leg.id === legId ? { ...leg, ...updates } : leg
-    ));
-  }, []);
+  // Generate straddle premium percentage options (5% to 60% in steps of 5%)
+  const generateStraddlePremiumPercentageOptions = (): { value: string; label: string }[] => {
+    const options = [];
+    for (let i = 5; i <= 60; i += 5) {
+      options.push({ value: i.toString(), label: `${i}%` });
+    }
+    return options;
+  };
+
 
   // Optimized add position with stable IDs
   const addPosition = useCallback(() => {
@@ -182,6 +190,14 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
       totalLots: 1,
       expiryType: 'weekly',
       selectionMethod: 'ATM_POINT',
+      
+      // Default premium selection values
+      premiumOperator: 'CP_EQUAL',
+      premiumValue: 0,
+      
+      // Default straddle premium values
+      straddlePremiumOperator: 'CP_EQUAL',
+      straddlePremiumPercentage: 5,
       
       // Default risk management values
       stopLoss: {
@@ -272,6 +288,10 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
           totalLots: leg.totalLots,
           expiryType: leg.expiryType,
           selectionMethod: leg.selectionMethod,
+          premiumOperator: leg.premiumOperator,
+          premiumValue: leg.premiumValue,
+          straddlePremiumOperator: leg.straddlePremiumOperator,
+          straddlePremiumPercentage: leg.straddlePremiumPercentage,
           stopLoss: leg.stopLoss,
           targetProfit: leg.targetProfit,
           trailingStopLoss: leg.trailingStopLoss,
@@ -462,23 +482,115 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                             />
                           </div>
 
-                          {/* Strike Selection */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                              Strike Price
-                            </label>
-                            <Select
-                              value={leg.strikePrice}
-                              onChange={(e) => {
-                                const newStrikePrice = e.target.value;
-                                setLegs(prev => prev.map(l => 
-                                  l.id === leg.id ? { ...l, strikePrice: newStrikePrice } : l
-                                ));
-                              }}
-                              options={generatePositionStrikeOptions(leg.selectionMethod)}
-                              className="h-9 text-sm"
-                            />
-                          </div>
+                          {/* Strike Selection, Premium Selection, or Straddle Premium Selection */}
+                          {leg.selectionMethod === 'CLOSEST_PREMIUM' ? (
+                            // Premium Selection UI
+                            <div className="col-span-2 grid grid-cols-2 gap-2">
+                              {/* Premium Operator */}
+                              <div>
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                  Premium Operator
+                                </label>
+                                <Select
+                                  value={leg.premiumOperator || 'CP_EQUAL'}
+                                  onChange={(e) => {
+                                    const newOperator = e.target.value as 'CP_EQUAL' | 'CP_GREATER_EQUAL' | 'CP_LESS_EQUAL';
+                                    setLegs(prev => prev.map(l => 
+                                      l.id === leg.id ? { ...l, premiumOperator: newOperator } : l
+                                    ));
+                                  }}
+                                  options={[
+                                    { value: 'CP_EQUAL', label: 'CP ~' },
+                                    { value: 'CP_GREATER_EQUAL', label: 'CP >=' },
+                                    { value: 'CP_LESS_EQUAL', label: 'CP <=' }
+                                  ]}
+                                  className="h-9 text-sm"
+                                />
+                              </div>
+                              
+                              {/* Premium Value */}
+                              <div>
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                  Premium Value
+                                </label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  step="0.1"
+                                  value={leg.premiumValue || 0}
+                                  onChange={(e) => {
+                                    const newValue = parseFloat(e.target.value) || 0;
+                                    setLegs(prev => prev.map(l => 
+                                      l.id === leg.id ? { ...l, premiumValue: newValue } : l
+                                    ));
+                                  }}
+                                  placeholder="Enter premium"
+                                  className="h-9 text-sm"
+                                />
+                              </div>
+                            </div>
+                          ) : leg.selectionMethod === 'CLOSEST_STRADDLE_PREMIUM' ? (
+                            // Straddle Premium Selection UI
+                            <div className="col-span-2 grid grid-cols-2 gap-2">
+                              {/* Straddle Premium Operator */}
+                              <div>
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                  Premium Operator
+                                </label>
+                                <Select
+                                  value={leg.straddlePremiumOperator || 'CP_EQUAL'}
+                                  onChange={(e) => {
+                                    const newOperator = e.target.value as 'CP_EQUAL' | 'CP_GREATER_EQUAL' | 'CP_LESS_EQUAL';
+                                    setLegs(prev => prev.map(l => 
+                                      l.id === leg.id ? { ...l, straddlePremiumOperator: newOperator } : l
+                                    ));
+                                  }}
+                                  options={[
+                                    { value: 'CP_EQUAL', label: 'CP ~' },
+                                    { value: 'CP_GREATER_EQUAL', label: 'CP >=' },
+                                    { value: 'CP_LESS_EQUAL', label: 'CP <=' }
+                                  ]}
+                                  className="h-9 text-sm"
+                                />
+                              </div>
+                              
+                              {/* Straddle Premium Percentage */}
+                              <div>
+                                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                  Premium %
+                                </label>
+                                <Select
+                                  value={(leg.straddlePremiumPercentage || 5).toString()}
+                                  onChange={(e) => {
+                                    const newPercentage = parseInt(e.target.value);
+                                    setLegs(prev => prev.map(l => 
+                                      l.id === leg.id ? { ...l, straddlePremiumPercentage: newPercentage } : l
+                                    ));
+                                  }}
+                                  options={generateStraddlePremiumPercentageOptions()}
+                                  className="h-9 text-sm"
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            // Regular Strike Price Selection
+                            <div>
+                              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                                Strike Price
+                              </label>
+                              <Select
+                                value={leg.strikePrice}
+                                onChange={(e) => {
+                                  const newStrikePrice = e.target.value;
+                                  setLegs(prev => prev.map(l => 
+                                    l.id === leg.id ? { ...l, strikePrice: newStrikePrice } : l
+                                  ));
+                                }}
+                                options={generatePositionStrikeOptions(leg.selectionMethod)}
+                                className="h-9 text-sm"
+                              />
+                            </div>
+                          )}
 
                           {/* Option Type Toggle */}
                           <div>
