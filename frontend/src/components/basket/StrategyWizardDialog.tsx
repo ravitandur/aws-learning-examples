@@ -14,6 +14,23 @@ interface StrategyLeg {
   totalLots: number;
   expiryType: 'weekly' | 'monthly';
   selectionMethod: 'ATM_POINT' | 'ATM_PERCENT' | 'CLOSEST_PREMIUM' | 'CLOSEST_STRADDLE_PREMIUM';
+  
+  // Risk Management Fields
+  stopLoss: {
+    enabled: boolean;
+    type: 'POINTS' | 'PERCENTAGE' | 'RANGE';
+    value: number;
+  };
+  targetProfit: {
+    enabled: boolean;
+    type: 'POINTS' | 'PERCENTAGE';
+    value: number;
+  };
+  trailingStopLoss: {
+    enabled: boolean;
+    instrumentMovePercentage: number;
+    stopLossMovePercentage: number;
+  };
 }
 
 interface StrategyWizardDialogProps {
@@ -127,7 +144,24 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
       strikePrice: atmStrike,
       totalLots: 1,
       expiryType: 'weekly',
-      selectionMethod: 'ATM_POINT'
+      selectionMethod: 'ATM_POINT',
+      
+      // Default risk management values
+      stopLoss: {
+        enabled: false,
+        type: 'POINTS',
+        value: 0
+      },
+      targetProfit: {
+        enabled: false,
+        type: 'POINTS',
+        value: 0
+      },
+      trailingStopLoss: {
+        enabled: false,
+        instrumentMovePercentage: 0,
+        stopLossMovePercentage: 0
+      }
     };
     setLegs(prev => [...prev, newLeg]);
     setError(null);
@@ -494,6 +528,202 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                               ]}
                               className="h-9 text-sm"
                             />
+                          </div>
+                        </div>
+
+                        {/* Risk Management Section */}
+                        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                          <h5 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Risk Management</h5>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            
+                            {/* Stop Loss Configuration */}
+                            <div className="space-y-3">
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id={`stopLoss-${leg.id}`}
+                                  checked={leg.stopLoss.enabled}
+                                  onChange={(e) => {
+                                    setLegs(prev => prev.map(l => 
+                                      l.id === leg.id ? { 
+                                        ...l, 
+                                        stopLoss: { ...l.stopLoss, enabled: e.target.checked },
+                                        // Disable trailing stop loss if stop loss is disabled
+                                        trailingStopLoss: e.target.checked ? l.trailingStopLoss : { ...l.trailingStopLoss, enabled: false }
+                                      } : l
+                                    ));
+                                  }}
+                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor={`stopLoss-${leg.id}`} className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                                  Stop Loss
+                                </label>
+                              </div>
+                              
+                              {leg.stopLoss.enabled && (
+                                <div className="space-y-2">
+                                  <Select
+                                    value={leg.stopLoss.type}
+                                    onChange={(e) => {
+                                      setLegs(prev => prev.map(l => 
+                                        l.id === leg.id ? { 
+                                          ...l, 
+                                          stopLoss: { ...l.stopLoss, type: e.target.value as 'POINTS' | 'PERCENTAGE' | 'RANGE' }
+                                        } : l
+                                      ));
+                                    }}
+                                    options={[
+                                      { value: 'POINTS', label: 'Points' },
+                                      { value: 'PERCENTAGE', label: 'Percentage' },
+                                      { value: 'RANGE', label: 'Range' }
+                                    ]}
+                                    className="h-8 text-sm"
+                                  />
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    value={leg.stopLoss.value}
+                                    onChange={(e) => {
+                                      const value = parseFloat(e.target.value) || 0;
+                                      setLegs(prev => prev.map(l => 
+                                        l.id === leg.id ? { 
+                                          ...l, 
+                                          stopLoss: { ...l.stopLoss, value }
+                                        } : l
+                                      ));
+                                    }}
+                                    placeholder="Stop loss value"
+                                    className="h-8 text-sm"
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Target Profit Configuration */}
+                            <div className="space-y-3">
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id={`targetProfit-${leg.id}`}
+                                  checked={leg.targetProfit.enabled}
+                                  onChange={(e) => {
+                                    setLegs(prev => prev.map(l => 
+                                      l.id === leg.id ? { 
+                                        ...l, 
+                                        targetProfit: { ...l.targetProfit, enabled: e.target.checked }
+                                      } : l
+                                    ));
+                                  }}
+                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor={`targetProfit-${leg.id}`} className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                                  Target Profit
+                                </label>
+                              </div>
+                              
+                              {leg.targetProfit.enabled && (
+                                <div className="space-y-2">
+                                  <Select
+                                    value={leg.targetProfit.type}
+                                    onChange={(e) => {
+                                      setLegs(prev => prev.map(l => 
+                                        l.id === leg.id ? { 
+                                          ...l, 
+                                          targetProfit: { ...l.targetProfit, type: e.target.value as 'POINTS' | 'PERCENTAGE' }
+                                        } : l
+                                      ));
+                                    }}
+                                    options={[
+                                      { value: 'POINTS', label: 'Points' },
+                                      { value: 'PERCENTAGE', label: 'Percentage' }
+                                    ]}
+                                    className="h-8 text-sm"
+                                  />
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    value={leg.targetProfit.value}
+                                    onChange={(e) => {
+                                      const value = parseFloat(e.target.value) || 0;
+                                      setLegs(prev => prev.map(l => 
+                                        l.id === leg.id ? { 
+                                          ...l, 
+                                          targetProfit: { ...l.targetProfit, value }
+                                        } : l
+                                      ));
+                                    }}
+                                    placeholder="Target profit value"
+                                    className="h-8 text-sm"
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Trailing Stop Loss Configuration */}
+                            <div className="space-y-3">
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id={`trailingStopLoss-${leg.id}`}
+                                  checked={leg.trailingStopLoss.enabled}
+                                  disabled={!leg.stopLoss.enabled}
+                                  onChange={(e) => {
+                                    setLegs(prev => prev.map(l => 
+                                      l.id === leg.id ? { 
+                                        ...l, 
+                                        trailingStopLoss: { ...l.trailingStopLoss, enabled: e.target.checked }
+                                      } : l
+                                    ));
+                                  }}
+                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+                                />
+                                <label htmlFor={`trailingStopLoss-${leg.id}`} className={`text-sm font-medium ${!leg.stopLoss.enabled ? 'text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
+                                  Trailing Stop Loss
+                                </label>
+                              </div>
+                              
+                              {leg.trailingStopLoss.enabled && leg.stopLoss.enabled && (
+                                <div className="space-y-2">
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    value={leg.trailingStopLoss.instrumentMovePercentage}
+                                    onChange={(e) => {
+                                      const value = parseFloat(e.target.value) || 0;
+                                      setLegs(prev => prev.map(l => 
+                                        l.id === leg.id ? { 
+                                          ...l, 
+                                          trailingStopLoss: { ...l.trailingStopLoss, instrumentMovePercentage: value }
+                                        } : l
+                                      ));
+                                    }}
+                                    placeholder="Instrument move %"
+                                    className="h-8 text-sm"
+                                  />
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    value={leg.trailingStopLoss.stopLossMovePercentage}
+                                    onChange={(e) => {
+                                      const value = parseFloat(e.target.value) || 0;
+                                      setLegs(prev => prev.map(l => 
+                                        l.id === leg.id ? { 
+                                          ...l, 
+                                          trailingStopLoss: { ...l.trailingStopLoss, stopLossMovePercentage: value }
+                                        } : l
+                                      ));
+                                    }}
+                                    placeholder="Stop loss move %"
+                                    className="h-8 text-sm"
+                                  />
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
