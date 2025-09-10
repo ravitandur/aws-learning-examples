@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
-import { X, Plus, Trash2, Copy } from 'lucide-react';
+import { X, Plus, Trash2, Copy, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface StrategyLeg {
   id: string;
   index: string;
   optionType: 'CE' | 'PE';
   actionType: 'BUY' | 'SELL';
-  strikePrice: number;
+  strikePrice: string;
   totalLots: number;
   expiryType: 'weekly' | 'monthly';
   selectionMethod: 'ATM_POINT' | 'ATM_PERCENT' | 'CLOSEST_PREMIUM' | 'CLOSEST_STRADDLE_PREMIUM';
@@ -28,8 +28,24 @@ interface StrategyLeg {
   };
   trailingStopLoss: {
     enabled: boolean;
-    instrumentMovePercentage: number;
-    stopLossMovePercentage: number;
+    type: 'POINTS' | 'PERCENTAGE';
+    instrumentMoveValue: number;
+    stopLossMoveValue: number;
+  };
+  waitAndTrade: {
+    enabled: boolean;
+    type: 'POINTS' | 'PERCENTAGE';
+    value: number;
+  };
+  reEntry: {
+    enabled: boolean;
+    type: 'SL_REENTRY' | 'SL_RECOST' | 'SL_REEXEC';
+    count: number; // 1 to 5
+  };
+  reExecute: {
+    enabled: boolean;
+    type: 'TP_REEXEC';
+    count: number; // 1 to 5
   };
 }
 
@@ -39,12 +55,16 @@ interface StrategyWizardDialogProps {
   onSubmit: (strategyData: any) => void;
 }
 
+// Stable ID counter for better performance
+let legIdCounter = 0;
+const generateStableId = () => `leg-${++legIdCounter}-${Date.now()}`;
+
 const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({ 
   basketId, 
   onClose, 
   onSubmit 
 }) => {
-  
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [strategyName, setStrategyName] = useState('');
   const [strategyIndex, setStrategyIndex] = useState('NIFTY');
   const [strategyConfig, setStrategyConfig] = useState({
@@ -57,91 +77,108 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
     rangeBreakoutTimeMinute: '30',
     waitAndTrade: false,
     moveSlToCost: false,
-    reEntryReExecute: false
+    reEntryReExecute: false,
+    targetProfit: {
+      type: 'TOTAL_MTM', // 'TOTAL_MTM' | 'COMBINED_PREMIUM_PERCENT'
+      value: 0
+    },
+    mtmStopLoss: {
+      type: 'TOTAL_MTM', // 'TOTAL_MTM' | 'COMBINED_PREMIUM_PERCENT'  
+      value: 0
+    }
   });
 
   const [legs, setLegs] = useState<StrategyLeg[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [expandedRiskSections, setExpandedRiskSections] = useState<Record<string, boolean>>({});
 
-  // ATM strike price calculation
-  const getATMStrike = (index: string): number => {
-    const atmValues = {
-      'NIFTY': 21000,
-      'BANKNIFTY': 45000,
-      'FINNIFTY': 19500
+  // Focus management for accessibility
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
     };
-    return atmValues[index as keyof typeof atmValues] || 21000;
-  };
+
+    document.addEventListener('keydown', handleKeyDown);
+    if (dialogRef.current) {
+      dialogRef.current.focus();
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
 
   // Generate default strike price options (using ATM Point method)
-  const generateStrikeOptions = (index: string): { value: string; label: string }[] => {
-    const atmStrike = getATMStrike(index);
+  const generateStrikeOptions = (): { value: string; label: string }[] => {
     const options = [];
     
     // ITM options (10 below ATM)
     for (let i = 10; i >= 1; i--) {
-      const strike = atmStrike - (i * 50);
-      options.push({ value: strike.toString(), label: `ITM${i} (${strike})` });
+      options.push({ value: `ITM${i}`, label: `ITM${i}` });
     }
     
     // ATM option
-    options.push({ value: atmStrike.toString(), label: `ATM (${atmStrike})` });
+    options.push({ value: 'ATM', label: 'ATM' });
     
     // OTM options (10 above ATM)
     for (let i = 1; i <= 10; i++) {
-      const strike = atmStrike + (i * 50);
-      options.push({ value: strike.toString(), label: `OTM${i} (${strike})` });
+      options.push({ value: `OTM${i}`, label: `OTM${i}` });
     }
     
     return options;
   };
 
   // Generate ATM percentage-based options
-  const generatePercentageOptions = (index: string): { value: string; label: string }[] => {
-    const atmStrike = getATMStrike(index);
+  const generatePercentageOptions = (): { value: string; label: string }[] => {
     const options = [];
     
     // Negative percentages (below ATM)
     for (let i = -10; i < 0; i += 0.25) {
       const percentage = i.toFixed(2);
-      const strike = Math.round(atmStrike * (1 + i / 100));
-      options.push({ value: strike.toString(), label: `ATM${percentage}% (${strike})` });
+      options.push({ value: `ATM${percentage}%`, label: `ATM${percentage}%` });
     }
     
     // ATM (0%)
-    options.push({ value: atmStrike.toString(), label: `ATM (${atmStrike})` });
+    options.push({ value: 'ATM', label: 'ATM' });
     
     // Positive percentages (above ATM)
     for (let i = 0.25; i <= 10; i += 0.25) {
       const percentage = i.toFixed(2);
-      const strike = Math.round(atmStrike * (1 + i / 100));
-      options.push({ value: strike.toString(), label: `ATM+${percentage}% (${strike})` });
+      options.push({ value: `ATM+${percentage}%`, label: `ATM+${percentage}%` });
     }
     
     return options;
   };
 
   // Generate strike options based on selection method for a specific position
-  const generatePositionStrikeOptions = (index: string, selectionMethod: string): { value: string; label: string }[] => {
+  const generatePositionStrikeOptions = (selectionMethod: string): { value: string; label: string }[] => {
     switch (selectionMethod) {
       case 'ATM_PERCENT':
-        return generatePercentageOptions(index);
+        return generatePercentageOptions();
       case 'ATM_POINT':
       default:
-        return generateStrikeOptions(index);
+        return generateStrikeOptions();
     }
   };
 
-  // Add new position with default values
-  const addPosition = () => {
-    const atmStrike = getATMStrike(strategyIndex);
+  // Optimized leg update function with useCallback
+  const updateLeg = useCallback((legId: string, updates: Partial<StrategyLeg>) => {
+    setLegs(prev => prev.map(leg => 
+      leg.id === legId ? { ...leg, ...updates } : leg
+    ));
+  }, []);
+
+  // Optimized add position with stable IDs
+  const addPosition = useCallback(() => {
     const newLeg: StrategyLeg = {
-      id: `leg-${Date.now()}`,
+      id: generateStableId(),
       index: strategyIndex,
       optionType: 'CE',
       actionType: 'BUY',
-      strikePrice: atmStrike,
+      strikePrice: 'ATM',
       totalLots: 1,
       expiryType: 'weekly',
       selectionMethod: 'ATM_POINT',
@@ -159,13 +196,29 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
       },
       trailingStopLoss: {
         enabled: false,
-        instrumentMovePercentage: 0,
-        stopLossMovePercentage: 0
+        type: 'POINTS',
+        instrumentMoveValue: 0,
+        stopLossMoveValue: 0
+      },
+      waitAndTrade: {
+        enabled: false,
+        type: 'POINTS',
+        value: 0
+      },
+      reEntry: {
+        enabled: false,
+        type: 'SL_REENTRY',
+        count: 1
+      },
+      reExecute: {
+        enabled: false,
+        type: 'TP_REEXEC',
+        count: 1
       }
     };
     setLegs(prev => [...prev, newLeg]);
     setError(null);
-  };
+  }, [strategyIndex]);
 
   // Remove position
   const removePosition = (legId: string) => {
@@ -221,7 +274,10 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
           selectionMethod: leg.selectionMethod,
           stopLoss: leg.stopLoss,
           targetProfit: leg.targetProfit,
-          trailingStopLoss: leg.trailingStopLoss
+          trailingStopLoss: leg.trailingStopLoss,
+          waitAndTrade: leg.waitAndTrade,
+          reEntry: leg.reEntry,
+          reExecute: leg.reExecute
         }))
       };
 
@@ -234,17 +290,33 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="w-full max-w-6xl">
-        <Card className="h-[85vh] flex flex-col">
-          <CardHeader className="flex-shrink-0 flex flex-row items-center justify-end pb-4 border-b">
+    <div 
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="strategy-dialog-title"
+    >
+      <div 
+        ref={dialogRef}
+        tabIndex={-1}
+        className="w-full max-w-5xl"
+      >
+        <Card className="h-[90vh] flex flex-col bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-white/20 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden">
+          <CardHeader className="flex-shrink-0 flex flex-row items-center justify-between pb-4 border-b border-gray-200/50 dark:border-gray-700/50">
+            <h2 
+              id="strategy-dialog-title"
+              className="text-xl font-semibold text-gray-900 dark:text-white tracking-tight"
+            >
+              Strategy Creator
+            </h2>
             <Button
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="h-8 w-8 p-0"
+              className="h-10 w-10 p-0 rounded-xl hover:bg-gray-100/80 dark:hover:bg-gray-700/80 transition-all duration-200"
+              aria-label="Close dialog"
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5" />
             </Button>
           </CardHeader>
 
@@ -297,12 +369,10 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                         value={strategyIndex}
                         onChange={(e) => {
                           setStrategyIndex(e.target.value);
-                          // Update all existing legs to use new index and recalculate strikes
-                          const atmStrike = getATMStrike(e.target.value);
+                          // Update all existing legs to use new index
                           setLegs(prev => prev.map(leg => ({ 
                             ...leg, 
-                            index: e.target.value,
-                            strikePrice: atmStrike
+                            index: e.target.value
                           })));
                         }}
                         options={[
@@ -319,31 +389,11 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
-                          checked={strategyConfig.waitAndTrade}
-                          onChange={(e) => setStrategyConfig(prev => ({ ...prev, waitAndTrade: e.target.checked }))}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Wait & Trade</span>
-                      </label>
-                      
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
                           checked={strategyConfig.moveSlToCost}
                           onChange={(e) => setStrategyConfig(prev => ({ ...prev, moveSlToCost: e.target.checked }))}
                           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Move SL to Cost</span>
-                      </label>
-                      
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={strategyConfig.reEntryReExecute}
-                          onChange={(e) => setStrategyConfig(prev => ({ ...prev, reEntryReExecute: e.target.checked }))}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Re Entry/Re Execute</span>
                       </label>
                     </div>
                   </div>
@@ -394,12 +444,11 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                               value={leg.selectionMethod}
                               onChange={(e) => {
                                 const newMethod = e.target.value as StrategyLeg['selectionMethod'];
-                                const atmStrike = getATMStrike(leg.index);
                                 setLegs(prev => prev.map(l => 
                                   l.id === leg.id ? { 
                                     ...l, 
                                     selectionMethod: newMethod,
-                                    strikePrice: atmStrike // Reset to ATM when method changes
+                                    strikePrice: 'ATM' // Reset to ATM when method changes
                                   } : l
                                 ));
                               }}
@@ -419,14 +468,14 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                               Strike Price
                             </label>
                             <Select
-                              value={leg.strikePrice.toString()}
+                              value={leg.strikePrice}
                               onChange={(e) => {
-                                const newStrikePrice = parseInt(e.target.value);
+                                const newStrikePrice = e.target.value;
                                 setLegs(prev => prev.map(l => 
                                   l.id === leg.id ? { ...l, strikePrice: newStrikePrice } : l
                                 ));
                               }}
-                              options={generatePositionStrikeOptions(leg.index, leg.selectionMethod)}
+                              options={generatePositionStrikeOptions(leg.selectionMethod)}
                               className="h-9 text-sm"
                             />
                           </div>
@@ -518,7 +567,7 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                         <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
                           <h5 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Risk Management</h5>
                           
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                             
                             {/* Stop Loss Configuration */}
                             <div className="space-y-3">
@@ -549,10 +598,11 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                                   <Select
                                     value={leg.stopLoss.type}
                                     onChange={(e) => {
+                                      const newType = e.target.value as 'POINTS' | 'PERCENTAGE' | 'RANGE';
                                       setLegs(prev => prev.map(l => 
                                         l.id === leg.id ? { 
                                           ...l, 
-                                          stopLoss: { ...l.stopLoss, type: e.target.value as 'POINTS' | 'PERCENTAGE' | 'RANGE' }
+                                          stopLoss: { ...l.stopLoss, type: newType, value: 0 }
                                         } : l
                                       ));
                                     }}
@@ -611,10 +661,11 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                                   <Select
                                     value={leg.targetProfit.type}
                                     onChange={(e) => {
+                                      const newType = e.target.value as 'POINTS' | 'PERCENTAGE';
                                       setLegs(prev => prev.map(l => 
                                         l.id === leg.id ? { 
                                           ...l, 
-                                          targetProfit: { ...l.targetProfit, type: e.target.value as 'POINTS' | 'PERCENTAGE' }
+                                          targetProfit: { ...l.targetProfit, type: newType, value: 0 }
                                         } : l
                                       ));
                                     }}
@@ -670,38 +721,255 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                               
                               {leg.trailingStopLoss.enabled && leg.stopLoss.enabled && (
                                 <div className="space-y-2">
+                                  {/* Row 1: Type Selection */}
+                                  <Select
+                                    value={leg.trailingStopLoss.type}
+                                    onChange={(e) => {
+                                      const newType = e.target.value as 'POINTS' | 'PERCENTAGE';
+                                      setLegs(prev => prev.map(l => 
+                                        l.id === leg.id ? { 
+                                          ...l, 
+                                          trailingStopLoss: { 
+                                            ...l.trailingStopLoss, 
+                                            type: newType,
+                                            instrumentMoveValue: 0,
+                                            stopLossMoveValue: 0
+                                          }
+                                        } : l
+                                      ));
+                                    }}
+                                    options={[
+                                      { value: 'POINTS', label: 'Points' },
+                                      { value: 'PERCENTAGE', label: 'Percentage' }
+                                    ]}
+                                    className="h-8 text-sm"
+                                  />
+                                  
+                                  {/* Row 2: Instrument Move Value */}
                                   <Input
                                     type="number"
                                     min="0"
                                     step="0.1"
-                                    value={leg.trailingStopLoss.instrumentMovePercentage}
+                                    value={leg.trailingStopLoss.instrumentMoveValue}
                                     onChange={(e) => {
                                       const value = parseFloat(e.target.value) || 0;
                                       setLegs(prev => prev.map(l => 
                                         l.id === leg.id ? { 
                                           ...l, 
-                                          trailingStopLoss: { ...l.trailingStopLoss, instrumentMovePercentage: value }
+                                          trailingStopLoss: { ...l.trailingStopLoss, instrumentMoveValue: value }
                                         } : l
                                       ));
                                     }}
-                                    placeholder="Instrument move %"
+                                    placeholder="Instrument Move by"
+                                    className="h-8 text-sm"
+                                  />
+                                  
+                                  {/* Row 3: Stop Loss Move Value */}
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.1"
+                                    value={leg.trailingStopLoss.stopLossMoveValue}
+                                    onChange={(e) => {
+                                      const value = parseFloat(e.target.value) || 0;
+                                      setLegs(prev => prev.map(l => 
+                                        l.id === leg.id ? { 
+                                          ...l, 
+                                          trailingStopLoss: { ...l.trailingStopLoss, stopLossMoveValue: value }
+                                        } : l
+                                      ));
+                                    }}
+                                    placeholder="Move StopLoss by"
+                                    className="h-8 text-sm"
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Wait & Trade Configuration */}
+                            <div className="space-y-3">
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id={`waitAndTrade-${leg.id}`}
+                                  checked={leg.waitAndTrade.enabled}
+                                  onChange={(e) => {
+                                    setLegs(prev => prev.map(l => 
+                                      l.id === leg.id ? { 
+                                        ...l, 
+                                        waitAndTrade: { ...l.waitAndTrade, enabled: e.target.checked }
+                                      } : l
+                                    ));
+                                  }}
+                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor={`waitAndTrade-${leg.id}`} className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                                  Wait & Trade
+                                </label>
+                              </div>
+                              
+                              {leg.waitAndTrade.enabled && (
+                                <div className="space-y-2">
+                                  <Select
+                                    value={leg.waitAndTrade.type}
+                                    onChange={(e) => {
+                                      const newType = e.target.value as 'POINTS' | 'PERCENTAGE';
+                                      setLegs(prev => prev.map(l => 
+                                        l.id === leg.id ? { 
+                                          ...l, 
+                                          waitAndTrade: { ...l.waitAndTrade, type: newType, value: 0 }
+                                        } : l
+                                      ));
+                                    }}
+                                    options={[
+                                      { value: 'POINTS', label: 'Points' },
+                                      { value: 'PERCENTAGE', label: 'Percentage' }
+                                    ]}
                                     className="h-8 text-sm"
                                   />
                                   <Input
                                     type="number"
                                     min="0"
                                     step="0.1"
-                                    value={leg.trailingStopLoss.stopLossMovePercentage}
+                                    value={leg.waitAndTrade.value}
                                     onChange={(e) => {
                                       const value = parseFloat(e.target.value) || 0;
                                       setLegs(prev => prev.map(l => 
                                         l.id === leg.id ? { 
                                           ...l, 
-                                          trailingStopLoss: { ...l.trailingStopLoss, stopLossMovePercentage: value }
+                                          waitAndTrade: { ...l.waitAndTrade, value }
                                         } : l
                                       ));
                                     }}
-                                    placeholder="Stop loss move %"
+                                    placeholder="Wait & trade value"
+                                    className="h-8 text-sm"
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Re Entry Configuration */}
+                            <div className="space-y-3">
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id={`reEntry-${leg.id}`}
+                                  checked={leg.reEntry.enabled}
+                                  onChange={(e) => {
+                                    setLegs(prev => prev.map(l => 
+                                      l.id === leg.id ? { 
+                                        ...l, 
+                                        reEntry: { ...l.reEntry, enabled: e.target.checked }
+                                      } : l
+                                    ));
+                                  }}
+                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor={`reEntry-${leg.id}`} className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                                  Re Entry [SL]
+                                </label>
+                              </div>
+                              
+                              {leg.reEntry.enabled && (
+                                <div className="space-y-2">
+                                  <Select
+                                    value={leg.reEntry.type}
+                                    onChange={(e) => {
+                                      setLegs(prev => prev.map(l => 
+                                        l.id === leg.id ? { 
+                                          ...l, 
+                                          reEntry: { ...l.reEntry, type: e.target.value as 'SL_REENTRY' | 'SL_RECOST' | 'SL_REEXEC' }
+                                        } : l
+                                      ));
+                                    }}
+                                    options={[
+                                      { value: 'SL_REENTRY', label: 'SL ReEntry' },
+                                      { value: 'SL_RECOST', label: 'SL ReCost' },
+                                      { value: 'SL_REEXEC', label: 'SL ReExec' }
+                                    ]}
+                                    className="h-8 text-sm"
+                                  />
+                                  <Select
+                                    value={leg.reEntry.count.toString()}
+                                    onChange={(e) => {
+                                      const count = parseInt(e.target.value);
+                                      setLegs(prev => prev.map(l => 
+                                        l.id === leg.id ? { 
+                                          ...l, 
+                                          reEntry: { ...l.reEntry, count }
+                                        } : l
+                                      ));
+                                    }}
+                                    options={[
+                                      { value: '1', label: '1' },
+                                      { value: '2', label: '2' },
+                                      { value: '3', label: '3' },
+                                      { value: '4', label: '4' },
+                                      { value: '5', label: '5' }
+                                    ]}
+                                    className="h-8 text-sm"
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Re Execute Configuration */}
+                            <div className="space-y-3">
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id={`reExecute-${leg.id}`}
+                                  checked={leg.reExecute.enabled}
+                                  onChange={(e) => {
+                                    setLegs(prev => prev.map(l => 
+                                      l.id === leg.id ? { 
+                                        ...l, 
+                                        reExecute: { ...l.reExecute, enabled: e.target.checked }
+                                      } : l
+                                    ));
+                                  }}
+                                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor={`reExecute-${leg.id}`} className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                                  Re Execute [TP]
+                                </label>
+                              </div>
+                              
+                              {leg.reExecute.enabled && (
+                                <div className="space-y-2">
+                                  <Select
+                                    value={leg.reExecute.type}
+                                    onChange={(e) => {
+                                      setLegs(prev => prev.map(l => 
+                                        l.id === leg.id ? { 
+                                          ...l, 
+                                          reExecute: { ...l.reExecute, type: e.target.value as 'TP_REEXEC' }
+                                        } : l
+                                      ));
+                                    }}
+                                    options={[
+                                      { value: 'TP_REEXEC', label: 'TP ReExec' }
+                                    ]}
+                                    className="h-8 text-sm"
+                                  />
+                                  <Select
+                                    value={leg.reExecute.count.toString()}
+                                    onChange={(e) => {
+                                      const count = parseInt(e.target.value);
+                                      setLegs(prev => prev.map(l => 
+                                        l.id === leg.id ? { 
+                                          ...l, 
+                                          reExecute: { ...l.reExecute, count }
+                                        } : l
+                                      ));
+                                    }}
+                                    options={[
+                                      { value: '1', label: '1' },
+                                      { value: '2', label: '2' },
+                                      { value: '3', label: '3' },
+                                      { value: '4', label: '4' },
+                                      { value: '5', label: '5' }
+                                    ]}
                                     className="h-8 text-sm"
                                   />
                                 </div>
@@ -718,8 +986,8 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
 
               {/* Footer Section - Strategy Configuration (Only show after first position) */}
               {legs.length > 0 && (
-                <div className="bg-gray-50 dark:bg-gray-700/50 px-4 py-4 border-t border-gray-200 dark:border-gray-600">
-                  <div className="space-y-4">
+                <div className="bg-gradient-to-r from-gray-50/80 to-gray-100/80 dark:from-gray-800/50 dark:to-gray-700/50 px-6 py-6 border-t border-gray-200/30 dark:border-gray-600/30">
+                  <div className="space-y-6">
                     {/* Range Breakout Checkbox */}
                     <div>
                       <label className="flex items-center gap-2 cursor-pointer">
@@ -727,66 +995,84 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                           type="checkbox"
                           checked={strategyConfig.rangeBreakout}
                           onChange={(e) => setStrategyConfig(prev => ({ ...prev, rangeBreakout: e.target.checked }))}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2"
                         />
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Range Breakout</span>
                       </label>
                     </div>
 
-                    {/* Entry Time and Exit Time in same row with card effect */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Time Configuration Cards */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       {/* Entry Time Card */}
-                      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-4">
-                        <div className="space-y-3">
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                            Entry Time
-                          </label>
-                          <div className="grid grid-cols-2 gap-2">
-                            <Select
-                              value={strategyConfig.entryTimeHour}
-                              onChange={(e) => setStrategyConfig(prev => ({ ...prev, entryTimeHour: e.target.value }))}
-                              options={Array.from({ length: 24 }, (_, i) => ({ 
-                                value: i.toString().padStart(2, '0'), 
-                                label: i.toString().padStart(2, '0') 
-                              }))}
-                              className="text-sm"
-                            />
-                            <Select
-                              value={strategyConfig.entryTimeMinute}
-                              onChange={(e) => setStrategyConfig(prev => ({ ...prev, entryTimeMinute: e.target.value }))}
-                              options={Array.from({ length: 60 }, (_, i) => ({ 
-                                value: i.toString().padStart(2, '0'), 
-                                label: i.toString().padStart(2, '0') 
-                              }))}
-                              className="text-sm"
-                            />
+                      <div className="bg-white/90 dark:bg-gray-800/90 rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-600/50 p-5">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200">
+                              Entry Time
+                            </label>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Hour</label>
+                              <Select
+                                value={strategyConfig.entryTimeHour}
+                                onChange={(e) => setStrategyConfig(prev => ({ ...prev, entryTimeHour: e.target.value }))}
+                                options={Array.from({ length: 24 }, (_, i) => ({ 
+                                  value: i.toString().padStart(2, '0'), 
+                                  label: i.toString().padStart(2, '0') 
+                                }))}
+                                className="h-10 text-sm rounded-lg"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Minute</label>
+                              <Select
+                                value={strategyConfig.entryTimeMinute}
+                                onChange={(e) => setStrategyConfig(prev => ({ ...prev, entryTimeMinute: e.target.value }))}
+                                options={Array.from({ length: 60 }, (_, i) => ({ 
+                                  value: i.toString().padStart(2, '0'), 
+                                  label: i.toString().padStart(2, '0') 
+                                }))}
+                                className="h-10 text-sm rounded-lg"
+                              />
+                            </div>
                           </div>
                           
                           {/* Range Breakout Time - Show below entry time when checkbox is selected */}
                           {strategyConfig.rangeBreakout && (
-                            <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
-                              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
-                                Range Exit Time
-                              </label>
-                              <div className="grid grid-cols-2 gap-2">
-                                <Select
-                                  value={strategyConfig.rangeBreakoutTimeHour}
-                                  onChange={(e) => setStrategyConfig(prev => ({ ...prev, rangeBreakoutTimeHour: e.target.value }))}
-                                  options={Array.from({ length: 24 }, (_, i) => ({ 
-                                    value: i.toString().padStart(2, '0'), 
-                                    label: i.toString().padStart(2, '0') 
-                                  }))}
-                                  className="text-sm"
-                                />
-                                <Select
-                                  value={strategyConfig.rangeBreakoutTimeMinute}
-                                  onChange={(e) => setStrategyConfig(prev => ({ ...prev, rangeBreakoutTimeMinute: e.target.value }))}
-                                  options={Array.from({ length: 60 }, (_, i) => ({ 
-                                    value: i.toString().padStart(2, '0'), 
-                                    label: i.toString().padStart(2, '0') 
-                                  }))}
-                                  className="text-sm"
-                                />
+                            <div className="pt-4 border-t border-gray-200/50 dark:border-gray-600/50">
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                                <label className="block text-xs font-semibold text-gray-600 dark:text-gray-300">
+                                  Range Exit Time
+                                </label>
+                              </div>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Hour</label>
+                                  <Select
+                                    value={strategyConfig.rangeBreakoutTimeHour}
+                                    onChange={(e) => setStrategyConfig(prev => ({ ...prev, rangeBreakoutTimeHour: e.target.value }))}
+                                    options={Array.from({ length: 24 }, (_, i) => ({ 
+                                      value: i.toString().padStart(2, '0'), 
+                                      label: i.toString().padStart(2, '0') 
+                                    }))}
+                                    className="h-9 text-sm rounded-lg"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Minute</label>
+                                  <Select
+                                    value={strategyConfig.rangeBreakoutTimeMinute}
+                                    onChange={(e) => setStrategyConfig(prev => ({ ...prev, rangeBreakoutTimeMinute: e.target.value }))}
+                                    options={Array.from({ length: 60 }, (_, i) => ({ 
+                                      value: i.toString().padStart(2, '0'), 
+                                      label: i.toString().padStart(2, '0') 
+                                    }))}
+                                    className="h-9 text-sm rounded-lg"
+                                  />
+                                </div>
                               </div>
                             </div>
                           )}
@@ -794,30 +1080,130 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                       </div>
 
                       {/* Exit Time Card */}
-                      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-4">
-                        <div className="space-y-3">
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                            Exit Time
-                          </label>
-                          <div className="grid grid-cols-2 gap-2">
-                            <Select
-                              value={strategyConfig.exitTimeHour}
-                              onChange={(e) => setStrategyConfig(prev => ({ ...prev, exitTimeHour: e.target.value }))}
-                              options={Array.from({ length: 24 }, (_, i) => ({ 
-                                value: i.toString().padStart(2, '0'), 
-                                label: i.toString().padStart(2, '0') 
-                              }))}
-                              className="text-sm"
-                            />
-                            <Select
-                              value={strategyConfig.exitTimeMinute}
-                              onChange={(e) => setStrategyConfig(prev => ({ ...prev, exitTimeMinute: e.target.value }))}
-                              options={Array.from({ length: 60 }, (_, i) => ({ 
-                                value: i.toString().padStart(2, '0'), 
-                                label: i.toString().padStart(2, '0') 
-                              }))}
-                              className="text-sm"
-                            />
+                      <div className="bg-white/90 dark:bg-gray-800/90 rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-600/50 p-5">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200">
+                              Exit Time
+                            </label>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Hour</label>
+                              <Select
+                                value={strategyConfig.exitTimeHour}
+                                onChange={(e) => setStrategyConfig(prev => ({ ...prev, exitTimeHour: e.target.value }))}
+                                options={Array.from({ length: 24 }, (_, i) => ({ 
+                                  value: i.toString().padStart(2, '0'), 
+                                  label: i.toString().padStart(2, '0') 
+                                }))}
+                                className="h-10 text-sm rounded-lg"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Minute</label>
+                              <Select
+                                value={strategyConfig.exitTimeMinute}
+                                onChange={(e) => setStrategyConfig(prev => ({ ...prev, exitTimeMinute: e.target.value }))}
+                                options={Array.from({ length: 60 }, (_, i) => ({ 
+                                  value: i.toString().padStart(2, '0'), 
+                                  label: i.toString().padStart(2, '0') 
+                                }))}
+                                className="h-10 text-sm rounded-lg"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Risk Management Cards */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {/* Target Profit Card */}
+                      <div className="bg-white/90 dark:bg-gray-800/90 rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-600/50 p-5">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200">
+                              Target Profit
+                            </label>
+                          </div>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Type</label>
+                              <Select
+                                value={strategyConfig.targetProfit.type}
+                                onChange={(e) => setStrategyConfig(prev => ({ 
+                                  ...prev, 
+                                  targetProfit: { ...prev.targetProfit, type: e.target.value as 'TOTAL_MTM' | 'COMBINED_PREMIUM_PERCENT' }
+                                }))}
+                                options={[
+                                  { value: 'TOTAL_MTM', label: 'Total MTM' },
+                                  { value: 'COMBINED_PREMIUM_PERCENT', label: 'Combined Premium %' }
+                                ]}
+                                className="h-10 text-sm rounded-lg"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Value</label>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                value={strategyConfig.targetProfit.value}
+                                onChange={(e) => setStrategyConfig(prev => ({ 
+                                  ...prev, 
+                                  targetProfit: { ...prev.targetProfit, value: parseFloat(e.target.value) || 0 }
+                                }))}
+                                placeholder={strategyConfig.targetProfit.type === 'TOTAL_MTM' ? 'Enter amount' : 'Enter percentage'}
+                                className="h-10 text-sm rounded-lg"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* MTM Stop Loss Card */}
+                      <div className="bg-white/90 dark:bg-gray-800/90 rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-600/50 p-5">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-red-600 rounded-full"></div>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200">
+                              MTM Stop Loss
+                            </label>
+                          </div>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Type</label>
+                              <Select
+                                value={strategyConfig.mtmStopLoss.type}
+                                onChange={(e) => setStrategyConfig(prev => ({ 
+                                  ...prev, 
+                                  mtmStopLoss: { ...prev.mtmStopLoss, type: e.target.value as 'TOTAL_MTM' | 'COMBINED_PREMIUM_PERCENT' }
+                                }))}
+                                options={[
+                                  { value: 'TOTAL_MTM', label: 'Total MTM' },
+                                  { value: 'COMBINED_PREMIUM_PERCENT', label: 'Combined Premium %' }
+                                ]}
+                                className="h-10 text-sm rounded-lg"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Value</label>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                value={strategyConfig.mtmStopLoss.value}
+                                onChange={(e) => setStrategyConfig(prev => ({ 
+                                  ...prev, 
+                                  mtmStopLoss: { ...prev.mtmStopLoss, value: parseFloat(e.target.value) || 0 }
+                                }))}
+                                placeholder={strategyConfig.mtmStopLoss.type === 'TOTAL_MTM' ? 'Enter amount' : 'Enter percentage'}
+                                className="h-10 text-sm rounded-lg"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
