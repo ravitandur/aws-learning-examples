@@ -389,7 +389,6 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
             {/* Strategy Name and Add Position Button - Always Visible */}
             <div className="flex-shrink-0 bg-gray-50 dark:bg-gray-700/50 px-4 py-4 border-b border-gray-200 dark:border-gray-600">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
-                  {/* Strategy Name - Column 1 */}
                   <div>
                     <Input
                       type="text"
@@ -399,8 +398,6 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                       className="h-9"
                     />
                   </div>
-
-                  {/* Add Position Button - Column 2 */}
                   <div>
                     <Button
                       onClick={addPosition}
@@ -409,18 +406,13 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                     >
                       Add Position
                     </Button>
-                    {legs.length > 0 && (
-                      <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
-                        {legs.length} position{legs.length !== 1 ? 's' : ''} added
-                      </span>
-                    )}
                   </div>
                 </div>
               </div>
 
               {/* Header Section - Index and Checkboxes (Show only after first position) */}
               {legs.length > 0 && (
-                <div className="bg-gray-50 dark:bg-gray-700/50 px-4 py-4 border-b border-gray-200 dark:border-gray-600">
+                <div className="flex-shrink-0 bg-white dark:bg-gray-800 mx-4 my-4 rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-600/50 p-5">
                   {/* Index and Checkboxes Row */}
                   <div className="flex items-end justify-between gap-4">
                     {/* Index Selection - Left Side */}
@@ -447,6 +439,13 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                       />
                     </div>
 
+                    {/* Positions Counter - Middle */}
+                    <div className="flex-1 text-center">
+                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                        <span className="font-bold text-blue-600 dark:text-blue-400">{legs.length}</span> position{legs.length !== 1 ? 's' : ''} added
+                      </span>
+                    </div>
+
                     {/* Trading Checkboxes - Right Side */}
                     <div className="flex items-end gap-4">
                       <label className="flex items-center gap-2 cursor-pointer">
@@ -463,13 +462,13 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                 </div>
               )}
 
-            {/* Scrollable Content Area */}
+            {/* Scrollable Content Area - Positions Only */}
             <div className="flex-1 overflow-y-auto">
               {/* Positions Content */}
               {legs.length > 0 && (
-                <div className="p-4 pb-0 space-y-4">
+                <div className="mx-4 mb-6 space-y-4">
                     {legs.map((leg, index) => (
-                    <div key={leg.id} className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-4">
+                    <div key={leg.id} className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-600/50 p-6">
                       <div className="space-y-4">
                         {/* Position Header with Actions */}
                         <div className="flex items-center justify-between">
@@ -1141,7 +1140,7 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
 
               {/* Footer Section - Strategy Configuration (Only show after first position) */}
               {legs.length > 0 && (
-                <div className="bg-gradient-to-r from-gray-50/80 to-gray-100/80 dark:from-gray-800/50 dark:to-gray-700/50 px-6 py-6 border-t border-gray-200/30 dark:border-gray-600/30">
+                <div className="flex-shrink-0 bg-white dark:bg-gray-800 mx-4 mb-4 rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-600/50 p-6">
                   <div className="space-y-6">
                     {/* Range Breakout Checkbox */}
                     <div>
@@ -1449,7 +1448,7 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                               Target Profit
                             </label>
                           </div>
-                          <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-3">
                             <div>
                               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Type</label>
                               <Select
@@ -1499,7 +1498,7 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                               MTM Stop Loss
                             </label>
                           </div>
-                          <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-3">
                             <div>
                               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Type</label>
                               <Select
