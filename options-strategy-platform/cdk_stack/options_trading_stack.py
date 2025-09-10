@@ -471,6 +471,23 @@ class OptionsTradeStack(Stack):
                                     authorizer=authorizer
                                     )
 
+        # Basket strategy endpoints - Basket-specific strategy management
+        basket_strategies_resource = basket_id_resource.add_resource("strategies")
+        
+        # GET /options/baskets/{basket_id}/strategies - List strategies for specific basket
+        basket_strategies_resource.add_method("GET",
+                                            apigateway.LambdaIntegration(self.lambda_functions['strategy-manager']),
+                                            authorization_type=apigateway.AuthorizationType.COGNITO,
+                                            authorizer=authorizer
+                                            )
+        
+        # POST /options/baskets/{basket_id}/strategies - Create strategy in specific basket
+        basket_strategies_resource.add_method("POST",
+                                            apigateway.LambdaIntegration(self.lambda_functions['strategy-manager']),
+                                            authorization_type=apigateway.AuthorizationType.COGNITO,
+                                            authorizer=authorizer
+                                            )
+
         # Strategy endpoints (secured with Cognito authorizer)
         strategies_resource = options_resource.add_resource("strategies")
         strategies_resource.add_method("GET",
