@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/Table';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
@@ -28,16 +27,20 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
   onClose, 
   onSubmit 
 }) => {
-  const [selectionMethod, setSelectionMethod] = useState<'ATM_POINT' | 'ATM_PERCENT' | 'CLOSEST_PREMIUM' | 'CLOSEST_STRADDLE_PREMIUM'>('ATM_POINT');
   
   const [strategyName, setStrategyName] = useState('');
-  const [formData, setFormData] = useState({
-    index: 'NIFTY',
-    optionType: 'CE' as 'CE' | 'PE',
-    actionType: 'BUY' as 'BUY' | 'SELL',
-    strikePrice: '',
-    totalLots: '1',
-    expiryType: 'weekly' as 'weekly' | 'monthly'
+  const [strategyIndex, setStrategyIndex] = useState('NIFTY');
+  const [strategyConfig, setStrategyConfig] = useState({
+    entryTimeHour: '09',
+    entryTimeMinute: '15',
+    exitTimeHour: '15',
+    exitTimeMinute: '30',
+    rangeBreakout: false,
+    rangeBreakoutTimeHour: '09',
+    rangeBreakoutTimeMinute: '30',
+    waitAndTrade: false,
+    moveSlToCost: false,
+    reEntryReExecute: false
   });
 
   const [legs, setLegs] = useState<StrategyLeg[]>([]);
@@ -54,172 +57,114 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
     return atmValues[index as keyof typeof atmValues] || 21000;
   };
 
-  // Generate strike price options for new positions (based on selection method)
+  // Generate default strike price options (using ATM Point method)
   const generateStrikeOptions = (index: string): { value: string; label: string }[] => {
     const atmStrike = getATMStrike(index);
     const options = [];
     
-    if (selectionMethod === 'ATM_PERCENT') {
-      // ATM Percent method: ATM + 0.25% to 10% on top, ATM - 0.25% to -10% on bottom
-      // Add positive percentages (above ATM) - +10% to +0.25%
-      for (let i = 10; i >= 0.25; i -= 0.25) {
-        const strike = Math.round(atmStrike * (1 + i / 100));
-        options.push({ value: strike.toString(), label: `ATM+${i}%` });
-      }
-      
-      // Add ATM (middle)
-      options.push({ value: atmStrike.toString(), label: 'ATM' });
-      
-      // Add negative percentages (below ATM) - -0.25% to -10%
-      for (let i = 0.25; i <= 10; i += 0.25) {
-        const strike = Math.round(atmStrike * (1 - i / 100));
-        options.push({ value: strike.toString(), label: `ATM-${i}%` });
-      }
-    } else {
-      // Default ATM Point method: OTM/ITM labels
-      const strikeInterval = index === 'BANKNIFTY' ? 100 : 50;
-      
-      // Add OTM options (above ATM) - OTM10 to OTM1
-      for (let i = 10; i >= 1; i--) {
-        const strike = atmStrike + (i * strikeInterval);
-        options.push({ value: strike.toString(), label: `OTM${i}` });
-      }
-      
-      // Add ATM (middle)
-      options.push({ value: atmStrike.toString(), label: 'ATM' });
-      
-      // Add ITM options (below ATM) - ITM1 to ITM10
-      for (let i = 1; i <= 10; i++) {
-        const strike = atmStrike - (i * strikeInterval);
-        options.push({ value: strike.toString(), label: `ITM${i}` });
-      }
+    // ITM options (10 below ATM)
+    for (let i = 10; i >= 1; i--) {
+      const strike = atmStrike - (i * 50);
+      options.push({ value: strike.toString(), label: `ITM${i} (${strike})` });
+    }
+    
+    // ATM option
+    options.push({ value: atmStrike.toString(), label: `ATM (${atmStrike})` });
+    
+    // OTM options (10 above ATM)
+    for (let i = 1; i <= 10; i++) {
+      const strike = atmStrike + (i * 50);
+      options.push({ value: strike.toString(), label: `OTM${i} (${strike})` });
     }
     
     return options;
   };
 
-  // Generate strike price options for individual positions based on their selection method
-  const generatePositionStrikeOptions = (index: string, positionSelectionMethod: 'ATM_POINT' | 'ATM_PERCENT' | 'CLOSEST_PREMIUM' | 'CLOSEST_STRADDLE_PREMIUM'): { value: string; label: string }[] => {
+  // Generate ATM percentage-based options
+  const generatePercentageOptions = (index: string): { value: string; label: string }[] => {
     const atmStrike = getATMStrike(index);
     const options = [];
     
-    if (positionSelectionMethod === 'ATM_PERCENT') {
-      // ATM Percent method: ATM + 0.25% to 10% on top, ATM - 0.25% to -10% on bottom
-      // Add positive percentages (above ATM) - +10% to +0.25%
-      for (let i = 10; i >= 0.25; i -= 0.25) {
-        const strike = Math.round(atmStrike * (1 + i / 100));
-        options.push({ value: strike.toString(), label: `ATM+${i}%` });
-      }
-      
-      // Add ATM (middle)
-      options.push({ value: atmStrike.toString(), label: 'ATM' });
-      
-      // Add negative percentages (below ATM) - -0.25% to -10%
-      for (let i = 0.25; i <= 10; i += 0.25) {
-        const strike = Math.round(atmStrike * (1 - i / 100));
-        options.push({ value: strike.toString(), label: `ATM-${i}%` });
-      }
-    } else {
-      // Default ATM Point method: OTM/ITM labels
-      const strikeInterval = index === 'BANKNIFTY' ? 100 : 50;
-      
-      // Add OTM options (above ATM) - OTM10 to OTM1
-      for (let i = 10; i >= 1; i--) {
-        const strike = atmStrike + (i * strikeInterval);
-        options.push({ value: strike.toString(), label: `OTM${i}` });
-      }
-      
-      // Add ATM (middle)
-      options.push({ value: atmStrike.toString(), label: 'ATM' });
-      
-      // Add ITM options (below ATM) - ITM1 to ITM10
-      for (let i = 1; i <= 10; i++) {
-        const strike = atmStrike - (i * strikeInterval);
-        options.push({ value: strike.toString(), label: `ITM${i}` });
-      }
+    // Negative percentages (below ATM)
+    for (let i = -10; i < 0; i += 0.25) {
+      const percentage = i.toFixed(2);
+      const strike = Math.round(atmStrike * (1 + i / 100));
+      options.push({ value: strike.toString(), label: `ATM${percentage}% (${strike})` });
+    }
+    
+    // ATM (0%)
+    options.push({ value: atmStrike.toString(), label: `ATM (${atmStrike})` });
+    
+    // Positive percentages (above ATM)
+    for (let i = 0.25; i <= 10; i += 0.25) {
+      const percentage = i.toFixed(2);
+      const strike = Math.round(atmStrike * (1 + i / 100));
+      options.push({ value: strike.toString(), label: `ATM+${percentage}% (${strike})` });
     }
     
     return options;
   };
 
-  // Initialize strike price when index changes
-  React.useEffect(() => {
-    if (!formData.strikePrice) {
-      setFormData(prev => ({ ...prev, strikePrice: getATMStrike(prev.index).toString() }));
+  // Generate strike options based on selection method for a specific position
+  const generatePositionStrikeOptions = (index: string, selectionMethod: string): { value: string; label: string }[] => {
+    switch (selectionMethod) {
+      case 'ATM_PERCENT':
+        return generatePercentageOptions(index);
+      case 'ATM_POINT':
+      default:
+        return generateStrikeOptions(index);
     }
-  }, [formData.index]);
+  };
 
-  // Reset strike price when selection method changes
-  React.useEffect(() => {
-    setFormData(prev => ({ ...prev, strikePrice: getATMStrike(prev.index).toString() }));
-  }, [selectionMethod, formData.index]);
+  // Add new position with default values
+  const addPosition = () => {
+    const atmStrike = getATMStrike(strategyIndex);
+    const newLeg: StrategyLeg = {
+      id: `leg-${Date.now()}`,
+      index: strategyIndex,
+      optionType: 'CE',
+      actionType: 'BUY',
+      strikePrice: atmStrike,
+      totalLots: 1,
+      expiryType: 'weekly',
+      selectionMethod: 'ATM_POINT'
+    };
+    setLegs(prev => [...prev, newLeg]);
+    setError(null);
+  };
 
+  // Remove position
+  const removePosition = (legId: string) => {
+    setLegs(prev => prev.filter(leg => leg.id !== legId));
+  };
+
+  // Copy position
+  const copyPosition = (legId: string) => {
+    const legToCopy = legs.find(leg => leg.id === legId);
+    if (legToCopy) {
+      const newLeg = { ...legToCopy, id: `leg-${Date.now()}` };
+      setLegs(prev => [...prev, newLeg]);
+    }
+  };
+
+  // Validation
   const validateInputs = (): string | null => {
-    if (!formData.index || !formData.optionType || !formData.actionType) {
-      return 'Please select all required fields';
+    if (!strategyName.trim()) {
+      return 'Please enter a strategy name';
     }
     
-    if (!formData.strikePrice) {
-      return 'Please select a strike price';
+    if (legs.length === 0) {
+      return 'Please add at least one position';
     }
-    
-    if (parseInt(formData.totalLots) < 1) {
-      return 'Total lots must be at least 1';
-    }
-    
+
     return null;
   };
 
-  const addPosition = () => {
+  // Submit handler
+  const handleSubmit = async () => {
     const validationError = validateInputs();
     if (validationError) {
       setError(validationError);
-      return;
-    }
-
-    const newLeg: StrategyLeg = {
-      id: `leg-${Date.now()}`,
-      index: formData.index,
-      optionType: formData.optionType,
-      actionType: formData.actionType,
-      strikePrice: parseInt(formData.strikePrice),
-      totalLots: parseInt(formData.totalLots),
-      expiryType: formData.expiryType,
-      selectionMethod: selectionMethod
-    };
-
-    setLegs(prev => [...prev, newLeg]);
-    setError(null);
-    
-    // Reset form for next leg
-    setFormData(prev => ({
-      ...prev,
-      optionType: 'CE',
-      actionType: 'BUY',
-      totalLots: '1'
-    }));
-  };
-
-  const removeLeg = (id: string) => {
-    setLegs(prev => prev.filter(leg => leg.id !== id));
-  };
-
-  const copyLeg = (leg: StrategyLeg) => {
-    const copiedLeg: StrategyLeg = {
-      ...leg,
-      id: `leg-${Date.now()}`
-    };
-    setLegs(prev => [...prev, copiedLeg]);
-  };
-
-  const handleSubmit = async () => {
-    if (!strategyName.trim()) {
-      setError('Please enter a strategy name');
-      return;
-    }
-
-    if (legs.length === 0) {
-      setError('Please add at least one position');
       return;
     }
 
@@ -228,284 +173,287 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
 
     try {
       const strategyData = {
-        name: strategyName.trim(),
-        basketId,
-        selectionMethod,
+        name: strategyName,
+        index: strategyIndex,
+        config: strategyConfig,
         legs: legs.map(leg => ({
           index: leg.index,
           optionType: leg.optionType,
           actionType: leg.actionType,
           strikePrice: leg.strikePrice,
           totalLots: leg.totalLots,
-          expiryType: leg.expiryType
+          expiryType: leg.expiryType,
+          selectionMethod: leg.selectionMethod
         }))
       };
 
       await onSubmit(strategyData);
-      
     } catch (error: any) {
-      console.error('Failed to create strategy:', error);
       setError(error.message || 'Failed to create strategy. Please try again.');
+    } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-5xl h-[85vh] flex flex-col">
-        <Card className="border-0 shadow-none h-full flex flex-col">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl font-bold">Add Strategy</CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                disabled={isSubmitting}
-                className="h-8 w-8 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="w-full max-w-6xl">
+        <Card className="h-[85vh] flex flex-col">
+          <CardHeader className="flex-shrink-0 flex flex-row items-center justify-between pb-4 border-b">
+            <CardTitle className="text-xl font-semibold">Strategy Creator</CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="h-8 w-8 p-0"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </CardHeader>
 
-          <CardContent className="flex-1 overflow-y-auto space-y-6 px-6 py-6">
-            
-            {/* Strategy Name Input */}
-            <div>
-              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-200">
-                Strategy Name *
-              </label>
-              <Input
-                value={strategyName}
-                onChange={(e) => setStrategyName(e.target.value)}
-                placeholder="e.g., NIFTY Iron Condor Weekly"
-                className="w-full"
-                autoFocus
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Enter a descriptive name for your strategy
-              </p>
-            </div>
-
-            {/* Selection Method Radio Buttons */}
-            <div>
-              <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-200">
-                Selection Method
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {[
-                  { value: 'ATM_POINT', label: 'ATM Point' },
-                  { value: 'ATM_PERCENT', label: 'ATM Percent' },
-                  { value: 'CLOSEST_PREMIUM', label: 'Closest Premium' },
-                  { value: 'CLOSEST_STRADDLE_PREMIUM', label: 'Closest Straddle Premium' }
-                ].map((method) => (
-                  <label key={method.value} className="flex items-center gap-2 cursor-pointer p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                    <input
-                      type="radio"
-                      name="selectionMethod"
-                      value={method.value}
-                      checked={selectionMethod === method.value}
-                      onChange={(e) => setSelectionMethod(e.target.value as any)}
-                      className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                    />
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{method.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Position Configuration Form */}
-            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <CardContent className="flex-1 overflow-hidden p-0">
+            <div className="h-full flex flex-col">
+              
+              {/* Initial Layout - Strategy Name and Add Position Button */}
+              <div className="bg-gray-50 dark:bg-gray-700/50 px-4 py-4 border-b border-gray-200 dark:border-gray-600">
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Strategy Creator</h4>
                 
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-200">
-                    Index Selection
-                  </label>
-                  <Select
-                    value={formData.index}
-                    onChange={(e) => {
-                      const newIndex = e.target.value;
-                      setFormData(prev => ({
-                        ...prev,
-                        index: newIndex,
-                        strikePrice: getATMStrike(newIndex).toString()
-                      }));
-                    }}
-                    options={[
-                      { value: 'NIFTY', label: 'NIFTY' },
-                      { value: 'BANKNIFTY', label: 'BANKNIFTY' },
-                      { value: 'FINNIFTY', label: 'FINNIFTY' }
-                    ]}
-                  />
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                  {/* Strategy Name - Column 1 */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                      Strategy Name
+                    </label>
+                    <Input
+                      type="text"
+                      value={strategyName}
+                      onChange={(e) => setStrategyName(e.target.value)}
+                      placeholder="Enter strategy name"
+                      className="h-9"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-200">
-                    Option Type
-                  </label>
-                  <Select
-                    value={formData.optionType}
-                    onChange={(e) => setFormData(prev => ({ ...prev, optionType: e.target.value as 'CE' | 'PE' }))}
-                    options={[
-                      { value: 'CE', label: 'CE' },
-                      { value: 'PE', label: 'PE' }
-                    ]}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-200">
-                    Action Type
-                  </label>
-                  <Select
-                    value={formData.actionType}
-                    onChange={(e) => setFormData(prev => ({ ...prev, actionType: e.target.value as 'BUY' | 'SELL' }))}
-                    options={[
-                      { value: 'BUY', label: 'BUY' },
-                      { value: 'SELL', label: 'SELL' }
-                    ]}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-200">
-                    Strike Price
-                  </label>
-                  <Select
-                    value={formData.strikePrice}
-                    onChange={(e) => setFormData(prev => ({ ...prev, strikePrice: e.target.value }))}
-                    options={generateStrikeOptions(formData.index)}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-200">
-                    Total Lots
-                  </label>
-                  <Input
-                    type="number"
-                    min="1"
-                    value={formData.totalLots}
-                    onChange={(e) => setFormData(prev => ({ ...prev, totalLots: e.target.value }))}
-                    placeholder="1"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-200">
-                    Expiry Type
-                  </label>
-                  <Select
-                    value={formData.expiryType}
-                    onChange={(e) => setFormData(prev => ({ ...prev, expiryType: e.target.value as 'weekly' | 'monthly' }))}
-                    options={[
-                      { value: 'weekly', label: 'Weekly' },
-                      { value: 'monthly', label: 'Monthly' }
-                    ]}
-                  />
+                  {/* Add Position Button - Column 2 */}
+                  <div>
+                    <Button
+                      onClick={addPosition}
+                      leftIcon={<Plus className="h-4 w-4" />}
+                      className="bg-blue-600 hover:bg-blue-700 text-white h-9"
+                    >
+                      Add Position
+                    </Button>
+                    {legs.length > 0 && (
+                      <span className="ml-3 text-sm text-gray-600 dark:text-gray-400">
+                        {legs.length} position{legs.length !== 1 ? 's' : ''} added
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
+
+              {/* Header Section - Index and Checkboxes (Show only after first position) */}
+              {legs.length > 0 && (
+                <div className="bg-gray-50 dark:bg-gray-700/50 px-4 py-4 border-b border-gray-200 dark:border-gray-600">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Strategy Settings</h4>
+                  
+                  {/* Index and Checkboxes Row */}
+                  <div className="flex items-end justify-between gap-4">
+                    {/* Index Selection - Left Side */}
+                    <div className="flex-shrink-0">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                        Index (applies to all positions)
+                      </label>
+                      <Select
+                        value={strategyIndex}
+                        onChange={(e) => {
+                          setStrategyIndex(e.target.value);
+                          // Update all existing legs to use new index and recalculate strikes
+                          const atmStrike = getATMStrike(e.target.value);
+                          setLegs(prev => prev.map(leg => ({ 
+                            ...leg, 
+                            index: e.target.value,
+                            strikePrice: atmStrike
+                          })));
+                        }}
+                        options={[
+                          { value: 'NIFTY', label: 'NIFTY' },
+                          { value: 'BANKNIFTY', label: 'BANKNIFTY' },
+                          { value: 'FINNIFTY', label: 'FINNIFTY' }
+                        ]}
+                        className="h-9 w-40"
+                      />
+                    </div>
+
+                    {/* Trading Options Checkboxes - Right Side */}
+                    <div className="flex items-center gap-6">
+                      {/* Wait & Trade */}
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={strategyConfig.waitAndTrade}
+                          onChange={(e) => setStrategyConfig(prev => ({ ...prev, waitAndTrade: e.target.checked }))}
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                        />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Wait & Trade</span>
+                      </label>
+
+                      {/* Move SL to Cost */}
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={strategyConfig.moveSlToCost}
+                          onChange={(e) => setStrategyConfig(prev => ({ ...prev, moveSlToCost: e.target.checked }))}
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                        />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Move SL to Cost</span>
+                      </label>
+
+                      {/* Re Entry/Re Execute */}
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={strategyConfig.reEntryReExecute}
+                          onChange={(e) => setStrategyConfig(prev => ({ ...prev, reEntryReExecute: e.target.checked }))}
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                        />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Re Entry/Re Execute</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Error Message */}
               {error && (
-                <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 mx-4 mt-4 rounded-lg">
                   <span className="text-sm text-red-800 dark:text-red-200">{error}</span>
                 </div>
               )}
 
-              {/* Add Position Button */}
-              <div className="mt-6">
-                <Button onClick={addPosition} className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Position
-                </Button>
-              </div>
-            </div>
-
-            {/* Strategy Positions - Row Wizard Format */}
-            {legs.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                  Strategy Positions ({legs.length})
-                </h3>
-                <div className="space-y-3">
-                  {legs.map((leg, index) => (
+              {/* Positions List */}
+              {legs.length > 0 && (
+                <div className="flex-1 overflow-y-auto px-4 py-4">
+                  <div className="space-y-4">
+                    {legs.map((leg, index) => (
                     <div
                       key={leg.id}
-                      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                          Position {index + 1}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyLeg(leg)}
-                            className="h-8 w-8 p-0 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                            title="Copy position"
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeLeg(leg.id)}
-                            className="h-8 w-8 p-0 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                            title="Delete position"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="space-y-4">
-                        {/* Selection Method Radio Buttons */}
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
-                            Selection Method
-                          </label>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            {[
-                              { value: 'ATM_POINT', label: 'ATM Point' },
-                              { value: 'ATM_PERCENT', label: 'ATM Percent' },
-                              { value: 'CLOSEST_PREMIUM', label: 'Closest Premium' },
-                              { value: 'CLOSEST_STRADDLE_PREMIUM', label: 'Closest Straddle Premium' }
-                            ].map((method) => (
-                              <label key={method.value} className="flex items-center gap-1 cursor-pointer p-2 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-xs">
-                                <input
-                                  type="radio"
-                                  name={`selectionMethod-${leg.id}`}
-                                  value={method.value}
-                                  checked={leg.selectionMethod === method.value}
-                                  onChange={(e) => {
-                                    const newSelectionMethod = e.target.value as 'ATM_POINT' | 'ATM_PERCENT' | 'CLOSEST_PREMIUM' | 'CLOSEST_STRADDLE_PREMIUM';
-                                    setLegs(prev => prev.map(l => 
-                                      l.id === leg.id ? { ...l, selectionMethod: newSelectionMethod } : l
-                                    ));
-                                  }}
-                                  className="h-3 w-3 text-blue-600 border-gray-300 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
-                                />
-                                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{method.label}</span>
-                              </label>
-                            ))}
+                      <div className="p-4">
+                        {/* Position Header */}
+                        <div className="flex items-center justify-between mb-4">
+                          <h5 className="text-sm font-medium text-gray-900 dark:text-white">
+                            Position {index + 1}
+                          </h5>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyPosition(leg.id)}
+                              className="h-7 w-7 p-0"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removePosition(leg.id)}
+                              className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
                           </div>
                         </div>
 
-                        {/* Other fields in grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                        {/* Position Configuration Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
                           
-                          {/* Index Display */}
+                          {/* Selection Method */}
                           <div>
                             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                              Index
+                              Selection Method
                             </label>
-                            <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-md text-sm font-medium">
-                              {leg.index}
-                            </div>
+                            <Select
+                              value={leg.selectionMethod}
+                              onChange={(e) => {
+                                const newMethod = e.target.value as StrategyLeg['selectionMethod'];
+                                const atmStrike = getATMStrike(leg.index);
+                                setLegs(prev => prev.map(l => 
+                                  l.id === leg.id ? { 
+                                    ...l, 
+                                    selectionMethod: newMethod,
+                                    strikePrice: atmStrike // Reset to ATM when method changes
+                                  } : l
+                                ));
+                              }}
+                              options={[
+                                { value: 'ATM_POINT', label: 'ATM Point' },
+                                { value: 'ATM_PERCENT', label: 'ATM Percent' },
+                                { value: 'CLOSEST_PREMIUM', label: 'Closest Premium' },
+                                { value: 'CLOSEST_STRADDLE_PREMIUM', label: 'Closest Straddle' }
+                              ]}
+                              className="h-9 text-sm"
+                            />
+                          </div>
+
+                          {/* Strike Selection */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                              Strike Price
+                            </label>
+                            <Select
+                              value={leg.strikePrice.toString()}
+                              onChange={(e) => {
+                                const newStrikePrice = parseInt(e.target.value);
+                                setLegs(prev => prev.map(l => 
+                                  l.id === leg.id ? { ...l, strikePrice: newStrikePrice } : l
+                                ));
+                              }}
+                              options={generatePositionStrikeOptions(leg.index, leg.selectionMethod)}
+                              className="h-9 text-sm"
+                            />
+                          </div>
+
+                          {/* Option Type Toggle */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                              Option Type
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newOptionType = leg.optionType === 'CE' ? 'PE' : 'CE';
+                                setLegs(prev => prev.map(l => 
+                                  l.id === leg.id ? { ...l, optionType: newOptionType } : l
+                                ));
+                              }}
+                              className="w-full px-3 py-2 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors shadow-sm"
+                            >
+                              {leg.optionType}
+                            </button>
+                          </div>
+
+                          {/* Action Type Toggle */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                              Action
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newActionType = leg.actionType === 'BUY' ? 'SELL' : 'BUY';
+                                setLegs(prev => prev.map(l => 
+                                  l.id === leg.id ? { ...l, actionType: newActionType } : l
+                                ));
+                              }}
+                              className={`w-full px-3 py-2 text-sm font-medium rounded-md hover:opacity-90 transition-all shadow-sm ${
+                                leg.actionType === 'BUY' 
+                                  ? 'bg-green-600 text-white hover:bg-green-700' 
+                                  : 'bg-red-600 text-white hover:bg-red-700'
+                              }`}
+                            >
+                              {leg.actionType}
+                            </button>
                           </div>
 
                           {/* Editable Total Lots */}
@@ -523,66 +471,6 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                                   l.id === leg.id ? { ...l, totalLots: newLots } : l
                                 ));
                               }}
-                              className="h-9 text-sm"
-                            />
-                          </div>
-
-                          {/* Switchable Transaction Type */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                              Transaction
-                            </label>
-                            <Select
-                              value={leg.actionType}
-                              onChange={(e) => {
-                                const newActionType = e.target.value as 'BUY' | 'SELL';
-                                setLegs(prev => prev.map(l => 
-                                  l.id === leg.id ? { ...l, actionType: newActionType } : l
-                                ));
-                              }}
-                              options={[
-                                { value: 'BUY', label: 'BUY' },
-                                { value: 'SELL', label: 'SELL' }
-                              ]}
-                              className="h-9 text-sm"
-                            />
-                          </div>
-
-                          {/* Strike Selection */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                              Strike
-                            </label>
-                            <Select
-                              value={leg.strikePrice.toString()}
-                              onChange={(e) => {
-                                const newStrikePrice = parseInt(e.target.value);
-                                setLegs(prev => prev.map(l => 
-                                  l.id === leg.id ? { ...l, strikePrice: newStrikePrice } : l
-                                ));
-                              }}
-                              options={generatePositionStrikeOptions(leg.index, leg.selectionMethod)}
-                              className="h-9 text-sm"
-                            />
-                          </div>
-
-                          {/* Switchable Call Type */}
-                          <div>
-                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                              Option Type
-                            </label>
-                            <Select
-                              value={leg.optionType}
-                              onChange={(e) => {
-                                const newOptionType = e.target.value as 'CE' | 'PE';
-                                setLegs(prev => prev.map(l => 
-                                  l.id === leg.id ? { ...l, optionType: newOptionType } : l
-                                ));
-                              }}
-                              options={[
-                                { value: 'CE', label: 'CE' },
-                                { value: 'PE', label: 'PE' }
-                              ]}
                               className="h-9 text-sm"
                             />
                           </div>
@@ -609,34 +497,120 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                           </div>
                         </div>
                       </div>
+                    </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-                      {/* Position Summary */}
-                      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-600">
-                        <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
-                          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                            leg.actionType === 'BUY'
-                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
-                              : 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400'
-                          }`}>
-                            {leg.actionType}
-                          </span>
-                          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                            leg.optionType === 'CE' 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                              : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                          }`}>
-                            {leg.optionType}
-                          </span>
-                          <span className="font-mono font-medium">{leg.strikePrice}</span>
-                          <span>{leg.totalLots} lot{leg.totalLots !== 1 ? 's' : ''}</span>
-                          <span className="capitalize">{leg.expiryType}</span>
+              {/* Footer Section - Strategy Configuration (Only show after first position) */}
+              {legs.length > 0 && (
+                <div className="bg-gray-50 dark:bg-gray-700/50 px-4 py-4 border-t border-gray-200 dark:border-gray-600">
+                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Strategy Configuration</h4>
+                  
+                  <div className="space-y-4">
+                    {/* Range Breakout Checkbox */}
+                    <div>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={strategyConfig.rangeBreakout}
+                          onChange={(e) => setStrategyConfig(prev => ({ ...prev, rangeBreakout: e.target.checked }))}
+                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                        />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Range Breakout</span>
+                      </label>
+                    </div>
+
+                    {/* Entry Time and Exit Time in same row */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Entry Time */}
+                      <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                          Entry Time
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Select
+                            value={strategyConfig.entryTimeHour}
+                            onChange={(e) => setStrategyConfig(prev => ({ ...prev, entryTimeHour: e.target.value }))}
+                            options={Array.from({ length: 24 }, (_, i) => ({ 
+                              value: i.toString().padStart(2, '0'), 
+                              label: i.toString().padStart(2, '0') 
+                            }))}
+                            className="text-sm"
+                          />
+                          <Select
+                            value={strategyConfig.entryTimeMinute}
+                            onChange={(e) => setStrategyConfig(prev => ({ ...prev, entryTimeMinute: e.target.value }))}
+                            options={Array.from({ length: 60 }, (_, i) => ({ 
+                              value: i.toString().padStart(2, '0'), 
+                              label: i.toString().padStart(2, '0') 
+                            }))}
+                            className="text-sm"
+                          />
+                        </div>
+                        
+                        {/* Range Breakout Time - Show below entry time when checkbox is selected */}
+                        {strategyConfig.rangeBreakout && (
+                          <div className="mt-2">
+                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                              Range Exit Time
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                              <Select
+                                value={strategyConfig.rangeBreakoutTimeHour}
+                                onChange={(e) => setStrategyConfig(prev => ({ ...prev, rangeBreakoutTimeHour: e.target.value }))}
+                                options={Array.from({ length: 24 }, (_, i) => ({ 
+                                  value: i.toString().padStart(2, '0'), 
+                                  label: i.toString().padStart(2, '0') 
+                                }))}
+                                className="text-sm"
+                              />
+                              <Select
+                                value={strategyConfig.rangeBreakoutTimeMinute}
+                                onChange={(e) => setStrategyConfig(prev => ({ ...prev, rangeBreakoutTimeMinute: e.target.value }))}
+                                options={Array.from({ length: 60 }, (_, i) => ({ 
+                                  value: i.toString().padStart(2, '0'), 
+                                  label: i.toString().padStart(2, '0') 
+                                }))}
+                                className="text-sm"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Exit Time */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                          Exit Time
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Select
+                            value={strategyConfig.exitTimeHour}
+                            onChange={(e) => setStrategyConfig(prev => ({ ...prev, exitTimeHour: e.target.value }))}
+                            options={Array.from({ length: 24 }, (_, i) => ({ 
+                              value: i.toString().padStart(2, '0'), 
+                              label: i.toString().padStart(2, '0') 
+                            }))}
+                            className="text-sm"
+                          />
+                          <Select
+                            value={strategyConfig.exitTimeMinute}
+                            onChange={(e) => setStrategyConfig(prev => ({ ...prev, exitTimeMinute: e.target.value }))}
+                            options={Array.from({ length: 60 }, (_, i) => ({ 
+                              value: i.toString().padStart(2, '0'), 
+                              label: i.toString().padStart(2, '0') 
+                            }))}
+                            className="text-sm"
+                          />
                         </div>
                       </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </CardContent>
 
           {/* Action Buttons - Fixed at Bottom */}
