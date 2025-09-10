@@ -202,12 +202,13 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
       return;
     }
 
-    setIsSubmitting(true);
-    setError(null);
-
     try {
+      setIsSubmitting(true);
+      setError(null);
+
       const strategyData = {
-        name: strategyName,
+        basketId,
+        strategyName: strategyName.trim(),
         index: strategyIndex,
         config: strategyConfig,
         legs: legs.map(leg => ({
@@ -217,7 +218,10 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
           strikePrice: leg.strikePrice,
           totalLots: leg.totalLots,
           expiryType: leg.expiryType,
-          selectionMethod: leg.selectionMethod
+          selectionMethod: leg.selectionMethod,
+          stopLoss: leg.stopLoss,
+          targetProfit: leg.targetProfit,
+          trailingStopLoss: leg.trailingStopLoss
         }))
       };
 
@@ -233,8 +237,7 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="w-full max-w-6xl">
         <Card className="h-[85vh] flex flex-col">
-          <CardHeader className="flex-shrink-0 flex flex-row items-center justify-between pb-4 border-b">
-            <CardTitle className="text-xl font-semibold">Strategy Creator</CardTitle>
+          <CardHeader className="flex-shrink-0 flex flex-row items-center justify-end pb-4 border-b">
             <Button
               variant="ghost"
               size="sm"
@@ -250,14 +253,9 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
               
               {/* Initial Layout - Strategy Name and Add Position Button */}
               <div className="bg-gray-50 dark:bg-gray-700/50 px-4 py-4 border-b border-gray-200 dark:border-gray-600">
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Strategy Creator</h4>
-                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                   {/* Strategy Name - Column 1 */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                      Strategy Name
-                    </label>
                     <Input
                       type="text"
                       value={strategyName}
@@ -277,7 +275,7 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                       Add Position
                     </Button>
                     {legs.length > 0 && (
-                      <span className="ml-3 text-sm text-gray-600 dark:text-gray-400">
+                      <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
                         {legs.length} position{legs.length !== 1 ? 's' : ''} added
                       </span>
                     )}
@@ -288,8 +286,6 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
               {/* Header Section - Index and Checkboxes (Show only after first position) */}
               {legs.length > 0 && (
                 <div className="bg-gray-50 dark:bg-gray-700/50 px-4 py-4 border-b border-gray-200 dark:border-gray-600">
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Strategy Settings</h4>
-                  
                   {/* Index and Checkboxes Row */}
                   <div className="flex items-end justify-between gap-4">
                     {/* Index Selection - Left Side */}
@@ -314,41 +310,38 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                           { value: 'BANKNIFTY', label: 'BANKNIFTY' },
                           { value: 'FINNIFTY', label: 'FINNIFTY' }
                         ]}
-                        className="h-9 w-40"
+                        className="min-w-[120px]"
                       />
                     </div>
 
-                    {/* Trading Options Checkboxes - Right Side */}
-                    <div className="flex items-center gap-6">
-                      {/* Wait & Trade */}
+                    {/* Trading Checkboxes - Right Side */}
+                    <div className="flex items-end gap-4">
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={strategyConfig.waitAndTrade}
                           onChange={(e) => setStrategyConfig(prev => ({ ...prev, waitAndTrade: e.target.checked }))}
-                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Wait & Trade</span>
                       </label>
-
-                      {/* Move SL to Cost */}
+                      
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={strategyConfig.moveSlToCost}
                           onChange={(e) => setStrategyConfig(prev => ({ ...prev, moveSlToCost: e.target.checked }))}
-                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Move SL to Cost</span>
                       </label>
-
-                      {/* Re Entry/Re Execute */}
+                      
                       <label className="flex items-center gap-2 cursor-pointer">
                         <input
                           type="checkbox"
                           checked={strategyConfig.reEntryReExecute}
                           onChange={(e) => setStrategyConfig(prev => ({ ...prev, reEntryReExecute: e.target.checked }))}
-                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Re Entry/Re Execute</span>
                       </label>
@@ -357,26 +350,16 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                 </div>
               )}
 
-              {/* Error Message */}
-              {error && (
-                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3 mx-4 mt-4 rounded-lg">
-                  <span className="text-sm text-red-800 dark:text-red-200">{error}</span>
-                </div>
-              )}
-
-              {/* Positions List */}
+              {/* Scrollable Positions Content */}
               {legs.length > 0 && (
-                <div className="flex-1 overflow-y-auto px-4 py-4">
-                  <div className="space-y-4">
+                <div className="flex-1 overflow-y-auto">
+                  <div className="p-4 space-y-4">
                     {legs.map((leg, index) => (
-                    <div
-                      key={leg.id}
-                      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden hover:shadow-md transition-shadow"
-                    >
-                      <div className="p-4">
-                        {/* Position Header */}
-                        <div className="flex items-center justify-between mb-4">
-                          <h5 className="text-sm font-medium text-gray-900 dark:text-white">
+                    <div key={leg.id} className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-4">
+                      <div className="space-y-4">
+                        {/* Position Header with Actions */}
+                        <div className="flex items-center justify-between">
+                          <h5 className="text-sm font-semibold text-gray-900 dark:text-white">
                             Position {index + 1}
                           </h5>
                           <div className="flex items-center gap-2">
@@ -384,17 +367,17 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                               variant="ghost"
                               size="sm"
                               onClick={() => copyPosition(leg.id)}
-                              className="h-7 w-7 p-0"
+                              className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
                             >
-                              <Copy className="h-3 w-3" />
+                              <Copy className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => removePosition(leg.id)}
-                              className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                              className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
                             >
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>
@@ -736,8 +719,6 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
               {/* Footer Section - Strategy Configuration (Only show after first position) */}
               {legs.length > 0 && (
                 <div className="bg-gray-50 dark:bg-gray-700/50 px-4 py-4 border-t border-gray-200 dark:border-gray-600">
-                  <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Strategy Configuration</h4>
-                  
                   <div className="space-y-4">
                     {/* Range Breakout Checkbox */}
                     <div>
@@ -746,94 +727,98 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                           type="checkbox"
                           checked={strategyConfig.rangeBreakout}
                           onChange={(e) => setStrategyConfig(prev => ({ ...prev, rangeBreakout: e.target.checked }))}
-                          className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                         />
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Range Breakout</span>
                       </label>
                     </div>
 
-                    {/* Entry Time and Exit Time in same row */}
+                    {/* Entry Time and Exit Time in same row with card effect */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Entry Time */}
-                      <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
-                          Entry Time
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Select
-                            value={strategyConfig.entryTimeHour}
-                            onChange={(e) => setStrategyConfig(prev => ({ ...prev, entryTimeHour: e.target.value }))}
-                            options={Array.from({ length: 24 }, (_, i) => ({ 
-                              value: i.toString().padStart(2, '0'), 
-                              label: i.toString().padStart(2, '0') 
-                            }))}
-                            className="text-sm"
-                          />
-                          <Select
-                            value={strategyConfig.entryTimeMinute}
-                            onChange={(e) => setStrategyConfig(prev => ({ ...prev, entryTimeMinute: e.target.value }))}
-                            options={Array.from({ length: 60 }, (_, i) => ({ 
-                              value: i.toString().padStart(2, '0'), 
-                              label: i.toString().padStart(2, '0') 
-                            }))}
-                            className="text-sm"
-                          />
-                        </div>
-                        
-                        {/* Range Breakout Time - Show below entry time when checkbox is selected */}
-                        {strategyConfig.rangeBreakout && (
-                          <div className="mt-2">
-                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                              Range Exit Time
-                            </label>
-                            <div className="grid grid-cols-2 gap-2">
-                              <Select
-                                value={strategyConfig.rangeBreakoutTimeHour}
-                                onChange={(e) => setStrategyConfig(prev => ({ ...prev, rangeBreakoutTimeHour: e.target.value }))}
-                                options={Array.from({ length: 24 }, (_, i) => ({ 
-                                  value: i.toString().padStart(2, '0'), 
-                                  label: i.toString().padStart(2, '0') 
-                                }))}
-                                className="text-sm"
-                              />
-                              <Select
-                                value={strategyConfig.rangeBreakoutTimeMinute}
-                                onChange={(e) => setStrategyConfig(prev => ({ ...prev, rangeBreakoutTimeMinute: e.target.value }))}
-                                options={Array.from({ length: 60 }, (_, i) => ({ 
-                                  value: i.toString().padStart(2, '0'), 
-                                  label: i.toString().padStart(2, '0') 
-                                }))}
-                                className="text-sm"
-                              />
-                            </div>
+                      {/* Entry Time Card */}
+                      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-4">
+                        <div className="space-y-3">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                            Entry Time
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Select
+                              value={strategyConfig.entryTimeHour}
+                              onChange={(e) => setStrategyConfig(prev => ({ ...prev, entryTimeHour: e.target.value }))}
+                              options={Array.from({ length: 24 }, (_, i) => ({ 
+                                value: i.toString().padStart(2, '0'), 
+                                label: i.toString().padStart(2, '0') 
+                              }))}
+                              className="text-sm"
+                            />
+                            <Select
+                              value={strategyConfig.entryTimeMinute}
+                              onChange={(e) => setStrategyConfig(prev => ({ ...prev, entryTimeMinute: e.target.value }))}
+                              options={Array.from({ length: 60 }, (_, i) => ({ 
+                                value: i.toString().padStart(2, '0'), 
+                                label: i.toString().padStart(2, '0') 
+                              }))}
+                              className="text-sm"
+                            />
                           </div>
-                        )}
+                          
+                          {/* Range Breakout Time - Show below entry time when checkbox is selected */}
+                          {strategyConfig.rangeBreakout && (
+                            <div className="pt-3 border-t border-gray-200 dark:border-gray-600">
+                              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+                                Range Exit Time
+                              </label>
+                              <div className="grid grid-cols-2 gap-2">
+                                <Select
+                                  value={strategyConfig.rangeBreakoutTimeHour}
+                                  onChange={(e) => setStrategyConfig(prev => ({ ...prev, rangeBreakoutTimeHour: e.target.value }))}
+                                  options={Array.from({ length: 24 }, (_, i) => ({ 
+                                    value: i.toString().padStart(2, '0'), 
+                                    label: i.toString().padStart(2, '0') 
+                                  }))}
+                                  className="text-sm"
+                                />
+                                <Select
+                                  value={strategyConfig.rangeBreakoutTimeMinute}
+                                  onChange={(e) => setStrategyConfig(prev => ({ ...prev, rangeBreakoutTimeMinute: e.target.value }))}
+                                  options={Array.from({ length: 60 }, (_, i) => ({ 
+                                    value: i.toString().padStart(2, '0'), 
+                                    label: i.toString().padStart(2, '0') 
+                                  }))}
+                                  className="text-sm"
+                                />
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      {/* Exit Time */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                          Exit Time
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Select
-                            value={strategyConfig.exitTimeHour}
-                            onChange={(e) => setStrategyConfig(prev => ({ ...prev, exitTimeHour: e.target.value }))}
-                            options={Array.from({ length: 24 }, (_, i) => ({ 
-                              value: i.toString().padStart(2, '0'), 
-                              label: i.toString().padStart(2, '0') 
-                            }))}
-                            className="text-sm"
-                          />
-                          <Select
-                            value={strategyConfig.exitTimeMinute}
-                            onChange={(e) => setStrategyConfig(prev => ({ ...prev, exitTimeMinute: e.target.value }))}
-                            options={Array.from({ length: 60 }, (_, i) => ({ 
-                              value: i.toString().padStart(2, '0'), 
-                              label: i.toString().padStart(2, '0') 
-                            }))}
-                            className="text-sm"
-                          />
+                      {/* Exit Time Card */}
+                      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-4">
+                        <div className="space-y-3">
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200">
+                            Exit Time
+                          </label>
+                          <div className="grid grid-cols-2 gap-2">
+                            <Select
+                              value={strategyConfig.exitTimeHour}
+                              onChange={(e) => setStrategyConfig(prev => ({ ...prev, exitTimeHour: e.target.value }))}
+                              options={Array.from({ length: 24 }, (_, i) => ({ 
+                                value: i.toString().padStart(2, '0'), 
+                                label: i.toString().padStart(2, '0') 
+                              }))}
+                              className="text-sm"
+                            />
+                            <Select
+                              value={strategyConfig.exitTimeMinute}
+                              onChange={(e) => setStrategyConfig(prev => ({ ...prev, exitTimeMinute: e.target.value }))}
+                              options={Array.from({ length: 60 }, (_, i) => ({ 
+                                value: i.toString().padStart(2, '0'), 
+                                label: i.toString().padStart(2, '0') 
+                              }))}
+                              className="text-sm"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -843,23 +828,29 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
             </div>
           </CardContent>
 
-          {/* Action Buttons - Fixed at Bottom */}
-          <div className="flex items-center gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={legs.length === 0 || isSubmitting}
-              className="flex-1 disabled:opacity-50"
-            >
-              {isSubmitting ? 'Adding Strategy...' : `Create Strategy (${legs.length} position${legs.length !== 1 ? 's' : ''})`}
-            </Button>
+          {/* Footer Actions */}
+          <div className="flex-shrink-0 flex items-center justify-between gap-3 p-4 border-t bg-gray-50 dark:bg-gray-700/50">
+            {error && (
+              <div className="flex-1 text-sm text-red-600 dark:text-red-400">
+                {error}
+              </div>
+            )}
+            <div className={`flex items-center gap-3 ${error ? '' : 'ml-auto'}`}>
+              <Button
+                variant="outline"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={isSubmitting || legs.length === 0}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {isSubmitting ? 'Creating...' : 'Create Strategy'}
+              </Button>
+            </div>
           </div>
         </Card>
       </div>
