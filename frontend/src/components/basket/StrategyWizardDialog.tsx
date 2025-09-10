@@ -1,22 +1,20 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/Table';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
-import Badge from '../ui/Badge';
-import { 
-  X, Zap, Plus, Minus, Target, AlertCircle, 
-  TrendingUp, TrendingDown, Activity, Calendar,
-  Eye, Settings
-} from 'lucide-react';
+import Select from '../ui/Select';
+import { X, Plus, Trash2, Copy } from 'lucide-react';
 
 interface StrategyLeg {
   id: string;
-  instrument: 'CALL' | 'PUT';
-  action: 'BUY' | 'SELL';
-  strike: number;
-  expiry: string;
-  quantity: number;
-  premium?: number;
+  index: string;
+  optionType: 'CE' | 'PE';
+  actionType: 'BUY' | 'SELL';
+  strikePrice: number;
+  totalLots: number;
+  expiryType: 'weekly' | 'monthly';
+  selectionMethod: 'ATM_POINT' | 'ATM_PERCENT' | 'CLOSEST_PREMIUM' | 'CLOSEST_STRADDLE_PREMIUM';
 }
 
 interface StrategyWizardDialogProps {
@@ -30,109 +28,198 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
   onClose, 
   onSubmit 
 }) => {
-  const [currentStep, setCurrentStep] = useState<'basic' | 'legs' | 'preview'>('basic');
+  const [selectionMethod, setSelectionMethod] = useState<'ATM_POINT' | 'ATM_PERCENT' | 'CLOSEST_PREMIUM' | 'CLOSEST_STRADDLE_PREMIUM'>('ATM_POINT');
+  
   const [strategyName, setStrategyName] = useState('');
-  const [strategyType, setStrategyType] = useState('CUSTOM');
-  const [legs, setLegs] = useState<StrategyLeg[]>([
-    {
-      id: '1',
-      instrument: 'CALL',
-      action: 'BUY',
-      strike: 0,
-      expiry: '',
-      quantity: 1
-    }
-  ]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    index: 'NIFTY',
+    optionType: 'CE' as 'CE' | 'PE',
+    actionType: 'BUY' as 'BUY' | 'SELL',
+    strikePrice: '',
+    totalLots: '1',
+    expiryType: 'weekly' as 'weekly' | 'monthly'
+  });
+
+  const [legs, setLegs] = useState<StrategyLeg[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Strategy templates
-  const strategyTemplates = [
-    {
-      type: 'IRON_CONDOR',
-      name: 'Iron Condor',
-      description: '4-leg strategy with limited risk and reward',
-      legs: [
-        { instrument: 'PUT' as const, action: 'SELL' as const, strike: 18000, quantity: 1 },
-        { instrument: 'PUT' as const, action: 'BUY' as const, strike: 17800, quantity: 1 },
-        { instrument: 'CALL' as const, action: 'SELL' as const, strike: 18200, quantity: 1 },
-        { instrument: 'CALL' as const, action: 'BUY' as const, strike: 18400, quantity: 1 }
-      ]
-    },
-    {
-      type: 'BULL_CALL_SPREAD',
-      name: 'Bull Call Spread',
-      description: '2-leg bullish strategy',
-      legs: [
-        { instrument: 'CALL' as const, action: 'BUY' as const, strike: 18000, quantity: 1 },
-        { instrument: 'CALL' as const, action: 'SELL' as const, strike: 18100, quantity: 1 }
-      ]
-    },
-    {
-      type: 'STRADDLE',
-      name: 'Straddle',
-      description: '2-leg volatility strategy',
-      legs: [
-        { instrument: 'CALL' as const, action: 'BUY' as const, strike: 18000, quantity: 1 },
-        { instrument: 'PUT' as const, action: 'BUY' as const, strike: 18000, quantity: 1 }
-      ]
-    }
-  ];
-
-  const addLeg = () => {
-    const newLeg: StrategyLeg = {
-      id: String(legs.length + 1),
-      instrument: 'CALL',
-      action: 'BUY',
-      strike: 0,
-      expiry: '',
-      quantity: 1
+  // ATM strike price calculation
+  const getATMStrike = (index: string): number => {
+    const atmValues = {
+      'NIFTY': 21000,
+      'BANKNIFTY': 45000,
+      'FINNIFTY': 19500
     };
-    setLegs(prev => [...prev, newLeg]);
+    return atmValues[index as keyof typeof atmValues] || 21000;
   };
 
-  const removeLeg = (legId: string) => {
-    if (legs.length > 1) {
-      setLegs(prev => prev.filter(leg => leg.id !== legId));
+  // Generate strike price options for new positions (based on selection method)
+  const generateStrikeOptions = (index: string): { value: string; label: string }[] => {
+    const atmStrike = getATMStrike(index);
+    const options = [];
+    
+    if (selectionMethod === 'ATM_PERCENT') {
+      // ATM Percent method: ATM + 0.25% to 10% on top, ATM - 0.25% to -10% on bottom
+      // Add positive percentages (above ATM) - +10% to +0.25%
+      for (let i = 10; i >= 0.25; i -= 0.25) {
+        const strike = Math.round(atmStrike * (1 + i / 100));
+        options.push({ value: strike.toString(), label: `ATM+${i}%` });
+      }
+      
+      // Add ATM (middle)
+      options.push({ value: atmStrike.toString(), label: 'ATM' });
+      
+      // Add negative percentages (below ATM) - -0.25% to -10%
+      for (let i = 0.25; i <= 10; i += 0.25) {
+        const strike = Math.round(atmStrike * (1 - i / 100));
+        options.push({ value: strike.toString(), label: `ATM-${i}%` });
+      }
+    } else {
+      // Default ATM Point method: OTM/ITM labels
+      const strikeInterval = index === 'BANKNIFTY' ? 100 : 50;
+      
+      // Add OTM options (above ATM) - OTM10 to OTM1
+      for (let i = 10; i >= 1; i--) {
+        const strike = atmStrike + (i * strikeInterval);
+        options.push({ value: strike.toString(), label: `OTM${i}` });
+      }
+      
+      // Add ATM (middle)
+      options.push({ value: atmStrike.toString(), label: 'ATM' });
+      
+      // Add ITM options (below ATM) - ITM1 to ITM10
+      for (let i = 1; i <= 10; i++) {
+        const strike = atmStrike - (i * strikeInterval);
+        options.push({ value: strike.toString(), label: `ITM${i}` });
+      }
     }
+    
+    return options;
   };
 
-  const updateLeg = (legId: string, field: keyof StrategyLeg, value: any) => {
-    setLegs(prev => 
-      prev.map(leg => 
-        leg.id === legId ? { ...leg, [field]: value } : leg
-      )
-    );
+  // Generate strike price options for individual positions based on their selection method
+  const generatePositionStrikeOptions = (index: string, positionSelectionMethod: 'ATM_POINT' | 'ATM_PERCENT' | 'CLOSEST_PREMIUM' | 'CLOSEST_STRADDLE_PREMIUM'): { value: string; label: string }[] => {
+    const atmStrike = getATMStrike(index);
+    const options = [];
+    
+    if (positionSelectionMethod === 'ATM_PERCENT') {
+      // ATM Percent method: ATM + 0.25% to 10% on top, ATM - 0.25% to -10% on bottom
+      // Add positive percentages (above ATM) - +10% to +0.25%
+      for (let i = 10; i >= 0.25; i -= 0.25) {
+        const strike = Math.round(atmStrike * (1 + i / 100));
+        options.push({ value: strike.toString(), label: `ATM+${i}%` });
+      }
+      
+      // Add ATM (middle)
+      options.push({ value: atmStrike.toString(), label: 'ATM' });
+      
+      // Add negative percentages (below ATM) - -0.25% to -10%
+      for (let i = 0.25; i <= 10; i += 0.25) {
+        const strike = Math.round(atmStrike * (1 - i / 100));
+        options.push({ value: strike.toString(), label: `ATM-${i}%` });
+      }
+    } else {
+      // Default ATM Point method: OTM/ITM labels
+      const strikeInterval = index === 'BANKNIFTY' ? 100 : 50;
+      
+      // Add OTM options (above ATM) - OTM10 to OTM1
+      for (let i = 10; i >= 1; i--) {
+        const strike = atmStrike + (i * strikeInterval);
+        options.push({ value: strike.toString(), label: `OTM${i}` });
+      }
+      
+      // Add ATM (middle)
+      options.push({ value: atmStrike.toString(), label: 'ATM' });
+      
+      // Add ITM options (below ATM) - ITM1 to ITM10
+      for (let i = 1; i <= 10; i++) {
+        const strike = atmStrike - (i * strikeInterval);
+        options.push({ value: strike.toString(), label: `ITM${i}` });
+      }
+    }
+    
+    return options;
   };
 
-  const applyTemplate = (template: typeof strategyTemplates[0]) => {
-    setStrategyType(template.type);
-    setStrategyName(template.name);
-    setLegs(template.legs.map((leg, index) => ({
-      id: String(index + 1),
-      instrument: leg.instrument,
-      action: leg.action,
-      strike: leg.strike,
-      expiry: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 1 week from now
-      quantity: leg.quantity
-    })));
+  // Initialize strike price when index changes
+  React.useEffect(() => {
+    if (!formData.strikePrice) {
+      setFormData(prev => ({ ...prev, strikePrice: getATMStrike(prev.index).toString() }));
+    }
+  }, [formData.index]);
+
+  // Reset strike price when selection method changes
+  React.useEffect(() => {
+    setFormData(prev => ({ ...prev, strikePrice: getATMStrike(prev.index).toString() }));
+  }, [selectionMethod, formData.index]);
+
+  const validateInputs = (): string | null => {
+    if (!formData.index || !formData.optionType || !formData.actionType) {
+      return 'Please select all required fields';
+    }
+    
+    if (!formData.strikePrice) {
+      return 'Please select a strike price';
+    }
+    
+    if (parseInt(formData.totalLots) < 1) {
+      return 'Total lots must be at least 1';
+    }
+    
+    return null;
   };
 
-  const validateBasicInfo = () => {
-    return strategyName.trim().length > 0;
+  const addPosition = () => {
+    const validationError = validateInputs();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    const newLeg: StrategyLeg = {
+      id: `leg-${Date.now()}`,
+      index: formData.index,
+      optionType: formData.optionType,
+      actionType: formData.actionType,
+      strikePrice: parseInt(formData.strikePrice),
+      totalLots: parseInt(formData.totalLots),
+      expiryType: formData.expiryType,
+      selectionMethod: selectionMethod
+    };
+
+    setLegs(prev => [...prev, newLeg]);
+    setError(null);
+    
+    // Reset form for next leg
+    setFormData(prev => ({
+      ...prev,
+      optionType: 'CE',
+      actionType: 'BUY',
+      totalLots: '1'
+    }));
   };
 
-  const validateLegs = () => {
-    return legs.every(leg => 
-      leg.strike > 0 && 
-      leg.expiry !== '' && 
-      leg.quantity > 0
-    );
+  const removeLeg = (id: string) => {
+    setLegs(prev => prev.filter(leg => leg.id !== id));
+  };
+
+  const copyLeg = (leg: StrategyLeg) => {
+    const copiedLeg: StrategyLeg = {
+      ...leg,
+      id: `leg-${Date.now()}`
+    };
+    setLegs(prev => [...prev, copiedLeg]);
   };
 
   const handleSubmit = async () => {
-    if (!validateBasicInfo() || !validateLegs()) {
-      setError('Please fill in all required fields');
+    if (!strategyName.trim()) {
+      setError('Please enter a strategy name');
+      return;
+    }
+
+    if (legs.length === 0) {
+      setError('Please add at least one position');
       return;
     }
 
@@ -142,14 +229,15 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
     try {
       const strategyData = {
         name: strategyName.trim(),
-        type: strategyType,
+        basketId,
+        selectionMethod,
         legs: legs.map(leg => ({
-          instrument: leg.instrument,
-          action: leg.action,
-          strike: leg.strike,
-          expiry: leg.expiry,
-          quantity: leg.quantity,
-          premium: leg.premium
+          index: leg.index,
+          optionType: leg.optionType,
+          actionType: leg.actionType,
+          strikePrice: leg.strikePrice,
+          totalLots: leg.totalLots,
+          expiryType: leg.expiryType
         }))
       };
 
@@ -162,309 +250,13 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
     }
   };
 
-  const getActionColor = (action: string) => {
-    return action === 'BUY' ? 'text-green-600' : 'text-red-600';
-  };
-
-  const getInstrumentIcon = (instrument: string) => {
-    return instrument === 'CALL' ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />;
-  };
-
-  const calculateNetPremium = () => {
-    return legs.reduce((total, leg) => {
-      const premium = leg.premium || 0;
-      const multiplier = leg.action === 'BUY' ? -1 : 1;
-      return total + (premium * leg.quantity * multiplier);
-    }, 0);
-  };
-
-  const renderBasicStep = () => (
-    <div className="space-y-6">
-      
-      {/* Strategy Name */}
-      <div>
-        <label className="block text-sm font-medium mb-2">
-          Strategy Name *
-        </label>
-        <Input
-          value={strategyName}
-          onChange={(e) => setStrategyName(e.target.value)}
-          placeholder="e.g., NIFTY Iron Condor Weekly"
-          className="w-full"
-          autoFocus
-        />
-      </div>
-
-      {/* Strategy Type */}
-      <div>
-        <label className="block text-sm font-medium mb-2">
-          Strategy Type
-        </label>
-        <select
-          value={strategyType}
-          onChange={(e) => setStrategyType(e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700"
-        >
-          <option value="CUSTOM">Custom Strategy</option>
-          <option value="IRON_CONDOR">Iron Condor</option>
-          <option value="BULL_CALL_SPREAD">Bull Call Spread</option>
-          <option value="BEAR_PUT_SPREAD">Bear Put Spread</option>
-          <option value="STRADDLE">Straddle</option>
-          <option value="STRANGLE">Strangle</option>
-          <option value="BUTTERFLY">Butterfly</option>
-        </select>
-      </div>
-
-      {/* Templates */}
-      <div>
-        <label className="block text-sm font-medium mb-3">
-          Quick Templates
-        </label>
-        <div className="grid grid-cols-1 gap-3">
-          {strategyTemplates.map(template => (
-            <Card 
-              key={template.type}
-              className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              onClick={() => applyTemplate(template)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">{template.name}</h4>
-                    <p className="text-sm text-gray-600">{template.description}</p>
-                  </div>
-                  <Badge variant="info" size="sm">
-                    {template.legs.length} legs
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderLegsStep = () => (
-    <div className="space-y-6">
-      
-      {/* Legs Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium">Strategy Legs ({legs.length})</h3>
-        <Button
-          onClick={addLeg}
-          leftIcon={<Plus className="h-4 w-4" />}
-          size="sm"
-        >
-          Add Leg
-        </Button>
-      </div>
-
-      {/* Legs List */}
-      <div className="space-y-4">
-        {legs.map((leg, index) => (
-          <Card key={leg.id} className="border-l-4 border-l-blue-500">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">Leg {index + 1}</span>
-                  {getInstrumentIcon(leg.instrument)}
-                  <Badge 
-                    variant={leg.action === 'BUY' ? 'success' : 'danger'} 
-                    size="sm"
-                  >
-                    {leg.action}
-                  </Badge>
-                  <Badge variant="default" size="sm">
-                    {leg.instrument}
-                  </Badge>
-                </div>
-                {legs.length > 1 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => removeLeg(leg.id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                
-                {/* Instrument */}
-                <div>
-                  <label className="block text-xs font-medium mb-1">Instrument</label>
-                  <select
-                    value={leg.instrument}
-                    onChange={(e) => updateLeg(leg.id, 'instrument', e.target.value)}
-                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
-                  >
-                    <option value="CALL">Call</option>
-                    <option value="PUT">Put</option>
-                  </select>
-                </div>
-
-                {/* Action */}
-                <div>
-                  <label className="block text-xs font-medium mb-1">Action</label>
-                  <select
-                    value={leg.action}
-                    onChange={(e) => updateLeg(leg.id, 'action', e.target.value)}
-                    className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700"
-                  >
-                    <option value="BUY">Buy</option>
-                    <option value="SELL">Sell</option>
-                  </select>
-                </div>
-
-                {/* Strike */}
-                <div>
-                  <label className="block text-xs font-medium mb-1">Strike</label>
-                  <Input
-                    type="number"
-                    value={leg.strike || ''}
-                    onChange={(e) => updateLeg(leg.id, 'strike', parseInt(e.target.value) || 0)}
-                    placeholder="18000"
-                    className="text-sm"
-                  />
-                </div>
-
-                {/* Expiry */}
-                <div>
-                  <label className="block text-xs font-medium mb-1">Expiry</label>
-                  <Input
-                    type="date"
-                    value={leg.expiry}
-                    onChange={(e) => updateLeg(leg.id, 'expiry', e.target.value)}
-                    className="text-sm"
-                  />
-                </div>
-
-                {/* Quantity */}
-                <div>
-                  <label className="block text-xs font-medium mb-1">Quantity</label>
-                  <Input
-                    type="number"
-                    value={leg.quantity || ''}
-                    onChange={(e) => updateLeg(leg.id, 'quantity', parseInt(e.target.value) || 1)}
-                    min="1"
-                    className="text-sm"
-                  />
-                </div>
-              </div>
-
-              {/* Optional Premium */}
-              <div className="mt-3">
-                <label className="block text-xs font-medium mb-1">Premium (Optional)</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={leg.premium || ''}
-                  onChange={(e) => updateLeg(leg.id, 'premium', parseFloat(e.target.value) || undefined)}
-                  placeholder="0.00"
-                  className="w-32 text-sm"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderPreviewStep = () => (
-    <div className="space-y-6">
-      
-      {/* Strategy Summary */}
-      <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <Target className="h-6 w-6 text-blue-600" />
-            <div>
-              <h3 className="text-lg font-medium">{strategyName}</h3>
-              <Badge variant="info">{strategyType}</Badge>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-bold text-blue-600">{legs.length}</div>
-              <div className="text-sm text-gray-600">Legs</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-green-600">
-                ₹{calculateNetPremium().toFixed(2)}
-              </div>
-              <div className="text-sm text-gray-600">Net Premium</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-purple-600">
-                {legs.reduce((sum, leg) => sum + leg.quantity, 0)}
-              </div>
-              <div className="text-sm text-gray-600">Total Qty</div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Legs Summary */}
-      <div>
-        <h4 className="font-medium mb-3">Strategy Breakdown</h4>
-        <div className="space-y-2">
-          {legs.map((leg, index) => (
-            <div 
-              key={leg.id}
-              className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium">Leg {index + 1}</span>
-                <div className="flex items-center gap-2">
-                  <span className={`font-medium ${getActionColor(leg.action)}`}>
-                    {leg.action}
-                  </span>
-                  <span>{leg.quantity}x</span>
-                  <span className="font-medium">{leg.instrument}</span>
-                  <span>@ {leg.strike}</span>
-                </div>
-              </div>
-              <div className="text-sm text-gray-600">
-                Exp: {new Date(leg.expiry).toLocaleDateString()}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Risk Disclaimer */}
-      <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
-        <div className="flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-          <div>
-            <h4 className="font-medium text-yellow-800 dark:text-yellow-200">
-              Risk Disclaimer
-            </h4>
-            <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-              Options trading involves substantial risk. Please ensure you understand 
-              the risks before executing this strategy. Past performance is not indicative 
-              of future results.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] flex flex-col">
-        <Card className="border-0 shadow-none flex-1 flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-5xl h-[85vh] flex flex-col">
+        <Card className="border-0 shadow-none h-full flex flex-col">
           <CardHeader className="pb-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5" />
-                Strategy Wizard
-              </CardTitle>
+              <CardTitle className="text-2xl font-bold">Add Strategy</CardTitle>
               <Button
                 variant="ghost"
                 size="sm"
@@ -475,115 +267,395 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            
-            {/* Step Indicator */}
-            <div className="flex items-center gap-4 mt-4">
-              {[
-                { key: 'basic', label: 'Basic Info', icon: Settings },
-                { key: 'legs', label: 'Configure Legs', icon: Activity },
-                { key: 'preview', label: 'Preview', icon: Eye }
-              ].map((step, index) => {
-                const Icon = step.icon;
-                const isCurrent = currentStep === step.key;
-                const isCompleted = 
-                  (step.key === 'basic' && (currentStep === 'legs' || currentStep === 'preview')) ||
-                  (step.key === 'legs' && currentStep === 'preview');
-                
-                return (
-                  <div key={step.key} className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      isCurrent ? 'bg-blue-600 text-white' :
-                      isCompleted ? 'bg-green-600 text-white' :
-                      'bg-gray-200 dark:bg-gray-700 text-gray-500'
-                    }`}>
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <span className={`text-sm ${
-                      isCurrent ? 'font-medium text-blue-600' :
-                      isCompleted ? 'text-green-600' :
-                      'text-gray-500'
-                    }`}>
-                      {step.label}
-                    </span>
-                    {index < 2 && (
-                      <div className={`w-8 h-0.5 ${
-                        isCompleted ? 'bg-green-600' : 'bg-gray-300 dark:bg-gray-600'
-                      }`} />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
           </CardHeader>
 
-          <CardContent className="flex-1 overflow-y-auto">
+          <CardContent className="flex-1 overflow-y-auto space-y-6 px-6 py-6">
             
-            {/* Error Message */}
-            {error && (
-              <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg mb-4">
-                <AlertCircle className="h-4 w-4 text-red-600" />
-                <span className="text-sm text-red-800 dark:text-red-200">{error}</span>
-              </div>
-            )}
+            {/* Strategy Name Input */}
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-200">
+                Strategy Name *
+              </label>
+              <Input
+                value={strategyName}
+                onChange={(e) => setStrategyName(e.target.value)}
+                placeholder="e.g., NIFTY Iron Condor Weekly"
+                className="w-full"
+                autoFocus
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Enter a descriptive name for your strategy
+              </p>
+            </div>
 
-            {/* Step Content */}
-            {currentStep === 'basic' && renderBasicStep()}
-            {currentStep === 'legs' && renderLegsStep()}
-            {currentStep === 'preview' && renderPreviewStep()}
-          </CardContent>
-
-          {/* Footer */}
-          <div className="p-6 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  if (currentStep === 'legs') setCurrentStep('basic');
-                  else if (currentStep === 'preview') setCurrentStep('legs');
-                }}
-                disabled={currentStep === 'basic' || isSubmitting}
-              >
-                Previous
-              </Button>
-
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  onClick={onClose}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-                
-                {currentStep === 'preview' ? (
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={isSubmitting || !validateBasicInfo() || !validateLegs()}
-                    leftIcon={<Target className="h-4 w-4" />}
-                  >
-                    {isSubmitting ? 'Adding Strategy...' : 'Add Strategy'}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => {
-                      if (currentStep === 'basic' && validateBasicInfo()) {
-                        setCurrentStep('legs');
-                      } else if (currentStep === 'legs' && validateLegs()) {
-                        setCurrentStep('preview');
-                      } else {
-                        setError('Please complete all required fields');
-                      }
-                    }}
-                    disabled={
-                      (currentStep === 'basic' && !validateBasicInfo()) ||
-                      (currentStep === 'legs' && !validateLegs())
-                    }
-                  >
-                    Next
-                  </Button>
-                )}
+            {/* Selection Method Radio Buttons */}
+            <div>
+              <label className="block text-sm font-medium mb-3 text-gray-700 dark:text-gray-200">
+                Selection Method
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { value: 'ATM_POINT', label: 'ATM Point' },
+                  { value: 'ATM_PERCENT', label: 'ATM Percent' },
+                  { value: 'CLOSEST_PREMIUM', label: 'Closest Premium' },
+                  { value: 'CLOSEST_STRADDLE_PREMIUM', label: 'Closest Straddle Premium' }
+                ].map((method) => (
+                  <label key={method.value} className="flex items-center gap-2 cursor-pointer p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <input
+                      type="radio"
+                      name="selectionMethod"
+                      value={method.value}
+                      checked={selectionMethod === method.value}
+                      onChange={(e) => setSelectionMethod(e.target.value as any)}
+                      className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                    />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{method.label}</span>
+                  </label>
+                ))}
               </div>
             </div>
+
+            {/* Position Configuration Form */}
+            <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-200">
+                    Index Selection
+                  </label>
+                  <Select
+                    value={formData.index}
+                    onChange={(e) => {
+                      const newIndex = e.target.value;
+                      setFormData(prev => ({
+                        ...prev,
+                        index: newIndex,
+                        strikePrice: getATMStrike(newIndex).toString()
+                      }));
+                    }}
+                    options={[
+                      { value: 'NIFTY', label: 'NIFTY' },
+                      { value: 'BANKNIFTY', label: 'BANKNIFTY' },
+                      { value: 'FINNIFTY', label: 'FINNIFTY' }
+                    ]}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-200">
+                    Option Type
+                  </label>
+                  <Select
+                    value={formData.optionType}
+                    onChange={(e) => setFormData(prev => ({ ...prev, optionType: e.target.value as 'CE' | 'PE' }))}
+                    options={[
+                      { value: 'CE', label: 'CE' },
+                      { value: 'PE', label: 'PE' }
+                    ]}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-200">
+                    Action Type
+                  </label>
+                  <Select
+                    value={formData.actionType}
+                    onChange={(e) => setFormData(prev => ({ ...prev, actionType: e.target.value as 'BUY' | 'SELL' }))}
+                    options={[
+                      { value: 'BUY', label: 'BUY' },
+                      { value: 'SELL', label: 'SELL' }
+                    ]}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-200">
+                    Strike Price
+                  </label>
+                  <Select
+                    value={formData.strikePrice}
+                    onChange={(e) => setFormData(prev => ({ ...prev, strikePrice: e.target.value }))}
+                    options={generateStrikeOptions(formData.index)}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-200">
+                    Total Lots
+                  </label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={formData.totalLots}
+                    onChange={(e) => setFormData(prev => ({ ...prev, totalLots: e.target.value }))}
+                    placeholder="1"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-200">
+                    Expiry Type
+                  </label>
+                  <Select
+                    value={formData.expiryType}
+                    onChange={(e) => setFormData(prev => ({ ...prev, expiryType: e.target.value as 'weekly' | 'monthly' }))}
+                    options={[
+                      { value: 'weekly', label: 'Weekly' },
+                      { value: 'monthly', label: 'Monthly' }
+                    ]}
+                  />
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <span className="text-sm text-red-800 dark:text-red-200">{error}</span>
+                </div>
+              )}
+
+              {/* Add Position Button */}
+              <div className="mt-6">
+                <Button onClick={addPosition} className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Position
+                </Button>
+              </div>
+            </div>
+
+            {/* Strategy Positions - Row Wizard Format */}
+            {legs.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+                  Strategy Positions ({legs.length})
+                </h3>
+                <div className="space-y-3">
+                  {legs.map((leg, index) => (
+                    <div
+                      key={leg.id}
+                      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                          Position {index + 1}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyLeg(leg)}
+                            className="h-8 w-8 p-0 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                            title="Copy position"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeLeg(leg.id)}
+                            className="h-8 w-8 p-0 text-gray-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            title="Delete position"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        {/* Selection Method Radio Buttons */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+                            Selection Method
+                          </label>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            {[
+                              { value: 'ATM_POINT', label: 'ATM Point' },
+                              { value: 'ATM_PERCENT', label: 'ATM Percent' },
+                              { value: 'CLOSEST_PREMIUM', label: 'Closest Premium' },
+                              { value: 'CLOSEST_STRADDLE_PREMIUM', label: 'Closest Straddle Premium' }
+                            ].map((method) => (
+                              <label key={method.value} className="flex items-center gap-1 cursor-pointer p-2 border border-gray-200 dark:border-gray-700 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-xs">
+                                <input
+                                  type="radio"
+                                  name={`selectionMethod-${leg.id}`}
+                                  value={method.value}
+                                  checked={leg.selectionMethod === method.value}
+                                  onChange={(e) => {
+                                    const newSelectionMethod = e.target.value as 'ATM_POINT' | 'ATM_PERCENT' | 'CLOSEST_PREMIUM' | 'CLOSEST_STRADDLE_PREMIUM';
+                                    setLegs(prev => prev.map(l => 
+                                      l.id === leg.id ? { ...l, selectionMethod: newSelectionMethod } : l
+                                    ));
+                                  }}
+                                  className="h-3 w-3 text-blue-600 border-gray-300 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700"
+                                />
+                                <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{method.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Other fields in grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                          
+                          {/* Index Display */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                              Index
+                            </label>
+                            <div className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-md text-sm font-medium">
+                              {leg.index}
+                            </div>
+                          </div>
+
+                          {/* Editable Total Lots */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                              Lots
+                            </label>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={leg.totalLots}
+                              onChange={(e) => {
+                                const newLots = parseInt(e.target.value) || 1;
+                                setLegs(prev => prev.map(l => 
+                                  l.id === leg.id ? { ...l, totalLots: newLots } : l
+                                ));
+                              }}
+                              className="h-9 text-sm"
+                            />
+                          </div>
+
+                          {/* Switchable Transaction Type */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                              Transaction
+                            </label>
+                            <Select
+                              value={leg.actionType}
+                              onChange={(e) => {
+                                const newActionType = e.target.value as 'BUY' | 'SELL';
+                                setLegs(prev => prev.map(l => 
+                                  l.id === leg.id ? { ...l, actionType: newActionType } : l
+                                ));
+                              }}
+                              options={[
+                                { value: 'BUY', label: 'BUY' },
+                                { value: 'SELL', label: 'SELL' }
+                              ]}
+                              className="h-9 text-sm"
+                            />
+                          </div>
+
+                          {/* Strike Selection */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                              Strike
+                            </label>
+                            <Select
+                              value={leg.strikePrice.toString()}
+                              onChange={(e) => {
+                                const newStrikePrice = parseInt(e.target.value);
+                                setLegs(prev => prev.map(l => 
+                                  l.id === leg.id ? { ...l, strikePrice: newStrikePrice } : l
+                                ));
+                              }}
+                              options={generatePositionStrikeOptions(leg.index, leg.selectionMethod)}
+                              className="h-9 text-sm"
+                            />
+                          </div>
+
+                          {/* Switchable Call Type */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                              Option Type
+                            </label>
+                            <Select
+                              value={leg.optionType}
+                              onChange={(e) => {
+                                const newOptionType = e.target.value as 'CE' | 'PE';
+                                setLegs(prev => prev.map(l => 
+                                  l.id === leg.id ? { ...l, optionType: newOptionType } : l
+                                ));
+                              }}
+                              options={[
+                                { value: 'CE', label: 'CE' },
+                                { value: 'PE', label: 'PE' }
+                              ]}
+                              className="h-9 text-sm"
+                            />
+                          </div>
+
+                          {/* Expiry Type */}
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                              Expiry
+                            </label>
+                            <Select
+                              value={leg.expiryType}
+                              onChange={(e) => {
+                                const newExpiryType = e.target.value as 'weekly' | 'monthly';
+                                setLegs(prev => prev.map(l => 
+                                  l.id === leg.id ? { ...l, expiryType: newExpiryType } : l
+                                ));
+                              }}
+                              options={[
+                                { value: 'weekly', label: 'Weekly' },
+                                { value: 'monthly', label: 'Monthly' }
+                              ]}
+                              className="h-9 text-sm"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Position Summary */}
+                      <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-600">
+                        <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
+                          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                            leg.actionType === 'BUY'
+                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400'
+                              : 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400'
+                          }`}>
+                            {leg.actionType}
+                          </span>
+                          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                            leg.optionType === 'CE' 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                              : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                          }`}>
+                            {leg.optionType}
+                          </span>
+                          <span className="font-mono font-medium">{leg.strikePrice}</span>
+                          <span>{leg.totalLots} lot{leg.totalLots !== 1 ? 's' : ''}</span>
+                          <span className="capitalize">{leg.expiryType}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+
+          {/* Action Buttons - Fixed at Bottom */}
+          <div className="flex items-center gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={legs.length === 0 || isSubmitting}
+              className="flex-1 disabled:opacity-50"
+            >
+              {isSubmitting ? 'Adding Strategy...' : `Create Strategy (${legs.length} position${legs.length !== 1 ? 's' : ''})`}
+            </Button>
           </div>
         </Card>
       </div>
