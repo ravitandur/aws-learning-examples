@@ -4,6 +4,8 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Select from '../ui/Select';
 import { X, Plus, Trash2, Copy } from 'lucide-react';
+import strategyService from '../../services/strategyService';
+import { FrontendStrategyData } from '../../services/strategyTransformationService';
 
 interface StrategyLeg {
   id: string;
@@ -84,12 +86,17 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
     rangeBreakoutTimeHour: '09',
     rangeBreakoutTimeMinute: '30',
     moveSlToCost: false,
+    // New trading type configuration
+    tradingType: 'INTRADAY' as 'INTRADAY' | 'POSITIONAL',
+    intradayExitMode: 'SAME_DAY' as 'SAME_DAY' | 'NEXT_DAY_BTST',
+    positionalEntryDays: 2, // Independent entry days for positional
+    positionalExitDays: 0, // Independent exit days for positional
     targetProfit: {
-      type: 'TOTAL_MTM', // 'TOTAL_MTM' | 'COMBINED_PREMIUM_PERCENT'
+      type: 'TOTAL_MTM' as const,
       value: 0
     },
     mtmStopLoss: {
-      type: 'TOTAL_MTM', // 'TOTAL_MTM' | 'COMBINED_PREMIUM_PERCENT'  
+      type: 'TOTAL_MTM' as const,
       value: 0
     }
   });
@@ -178,6 +185,29 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
     return options;
   };
 
+  // Get expiry text based on legs selection (defaults to weekly if no legs or all weekly)
+  const getExpiryText = (): string => {
+    if (legs.length === 0) return 'weekly';
+    
+    // If any leg has monthly expiry, show monthly, otherwise show weekly
+    const hasMonthlyExpiry = legs.some(leg => leg.expiryType === 'monthly');
+    return hasMonthlyExpiry ? 'monthly' : 'weekly';
+  };
+
+  // Get maximum slider range based on expiry type
+  const getMaxSliderRange = (): number => {
+    const hasMonthlyExpiry = legs.some(leg => leg.expiryType === 'monthly');
+    return hasMonthlyExpiry ? 24 : 4;
+  };
+
+  // Get default values for positional sliders based on expiry type
+  const getDefaultPositionalValues = () => {
+    return {
+      entryDays: 4,
+      exitDays: 0 // Always 0 for exit
+    };
+  };
+
 
   // Optimized add position with stable IDs
   const addPosition = useCallback(() => {
@@ -263,7 +293,7 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
     return null;
   };
 
-  // Submit handler
+  // Submit handler with strategy service integration
   const handleSubmit = async () => {
     const validationError = validateInputs();
     if (validationError) {
@@ -275,12 +305,14 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
       setIsSubmitting(true);
       setError(null);
 
-      const strategyData = {
+      // Prepare strategy data in frontend format
+      const strategyData: FrontendStrategyData = {
         basketId,
         strategyName: strategyName.trim(),
         index: strategyIndex,
         config: strategyConfig,
         legs: legs.map(leg => ({
+          id: leg.id,
           index: leg.index,
           optionType: leg.optionType,
           actionType: leg.actionType,
@@ -301,8 +333,19 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
         }))
       };
 
-      await onSubmit(strategyData);
+      // Use strategy service to create strategy (includes data transformation)
+      const result = await strategyService.createStrategy(basketId, strategyData);
+
+      if (result.success) {
+        // Call the parent onSubmit handler with the result
+        await onSubmit(result);
+        // Close dialog on success
+        onClose();
+      } else {
+        throw new Error(result.message || 'Failed to create strategy');
+      }
     } catch (error: any) {
+      console.error('Strategy creation error:', error);
       setError(error.message || 'Failed to create strategy. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -311,7 +354,7 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50"
       role="dialog"
       aria-modal="true"
       aria-labelledby="strategy-dialog-title"
@@ -319,13 +362,14 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
       <div 
         ref={dialogRef}
         tabIndex={-1}
-        className="w-full max-w-5xl"
+        className="w-full max-w-5xl h-full sm:h-[95vh] flex flex-col"
       >
-        <Card className="h-[90vh] flex flex-col bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-white/20 dark:border-gray-700/20 rounded-2xl shadow-2xl overflow-hidden">
-          <CardHeader className="flex-shrink-0 flex flex-row items-center justify-between pb-4 border-b border-gray-200/50 dark:border-gray-700/50">
+        <Card className="flex flex-col bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-white/20 dark:border-gray-700/20 rounded-none sm:rounded-2xl shadow-2xl overflow-hidden h-full">
+          {/* Fixed Header */}
+          <CardHeader className="flex-shrink-0 flex flex-row items-center justify-between pb-4 px-4 sm:px-6 border-b border-gray-200/50 dark:border-gray-700/50">
             <h2 
               id="strategy-dialog-title"
-              className="text-xl font-semibold text-gray-900 dark:text-white tracking-tight"
+              className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white tracking-tight"
             >
               Strategy Creator
             </h2>
@@ -340,11 +384,10 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
             </Button>
           </CardHeader>
 
-          <CardContent className="flex-1 overflow-hidden p-0">
-            <div className="h-full flex flex-col">
-              
-              {/* Initial Layout - Strategy Name and Add Position Button */}
-              <div className="bg-gray-50 dark:bg-gray-700/50 px-4 py-4 border-b border-gray-200 dark:border-gray-600">
+          {/* Content Area */}
+          <CardContent className="flex-1 flex flex-col overflow-hidden p-0">
+            {/* Strategy Name and Add Position Button - Always Visible */}
+            <div className="flex-shrink-0 bg-gray-50 dark:bg-gray-700/50 px-4 py-4 border-b border-gray-200 dark:border-gray-600">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                   {/* Strategy Name - Column 1 */}
                   <div>
@@ -420,10 +463,11 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                 </div>
               )}
 
-              {/* Scrollable Positions Content */}
+            {/* Scrollable Content Area */}
+            <div className="flex-1 overflow-y-auto">
+              {/* Positions Content */}
               {legs.length > 0 && (
-                <div className="flex-1 overflow-y-auto">
-                  <div className="p-4 space-y-4">
+                <div className="p-4 pb-0 space-y-4">
                     {legs.map((leg, index) => (
                     <div key={leg.id} className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-4">
                       <div className="space-y-4">
@@ -1093,7 +1137,6 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                     </div>
                     ))}
                   </div>
-                </div>
               )}
 
               {/* Footer Section - Strategy Configuration (Only show after first position) */}
@@ -1188,6 +1231,43 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                               </div>
                             </div>
                           )}
+
+                          {/* Positional Entry Days Slider - Show as second row when Positional is selected */}
+                          {strategyConfig.tradingType === 'POSITIONAL' && (
+                            <div className="pt-4 border-t border-gray-200/50 dark:border-gray-600/50">
+
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    {strategyConfig.positionalEntryDays} trading days before {getExpiryText()} expiry (excluding holidays)
+                                  </span>
+                                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                                    {strategyConfig.positionalEntryDays} {strategyConfig.positionalEntryDays === 1 ? 'day' : 'days'}
+                                  </span>
+                                </div>
+                                <div className="relative">
+                                  <input
+                                    type="range"
+                                    min="0"
+                                    max={getMaxSliderRange()}
+                                    value={getMaxSliderRange() - strategyConfig.positionalEntryDays}
+                                    onChange={(e) => setStrategyConfig(prev => ({ 
+                                      ...prev, 
+                                      positionalEntryDays: getMaxSliderRange() - parseInt(e.target.value) 
+                                    }))}
+                                    className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+                                    style={{
+                                      background: `linear-gradient(to right, #e5e7eb 0%, #e5e7eb ${((getMaxSliderRange() - strategyConfig.positionalEntryDays) / getMaxSliderRange()) * 100}%, #3b82f6 ${((getMaxSliderRange() - strategyConfig.positionalEntryDays) / getMaxSliderRange()) * 100}%, #3b82f6 100%)`
+                                    }}
+                                  />
+                                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    <span>{getMaxSliderRange()} days</span>
+                                    <span>0 days</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -1200,6 +1280,43 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                               Exit Time
                             </label>
                           </div>
+                          
+                          {/* Intraday Exit Mode - Show as first row when Intraday is selected */}
+                          {strategyConfig.tradingType === 'INTRADAY' && (
+                            <div className="pb-3 border-b border-gray-200/50 dark:border-gray-600/50">
+                              <div className="flex items-center gap-4">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name="intradayExitMode"
+                                    value="SAME_DAY"
+                                    checked={strategyConfig.intradayExitMode === 'SAME_DAY'}
+                                    onChange={(e) => setStrategyConfig(prev => ({ 
+                                      ...prev, 
+                                      intradayExitMode: e.target.value as 'SAME_DAY' | 'NEXT_DAY_BTST' 
+                                    }))}
+                                    className="text-blue-600 focus:ring-blue-500"
+                                  />
+                                  <span className="text-sm text-gray-700 dark:text-gray-200">Same Day</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name="intradayExitMode"
+                                    value="NEXT_DAY_BTST"
+                                    checked={strategyConfig.intradayExitMode === 'NEXT_DAY_BTST'}
+                                    onChange={(e) => setStrategyConfig(prev => ({ 
+                                      ...prev, 
+                                      intradayExitMode: e.target.value as 'SAME_DAY' | 'NEXT_DAY_BTST' 
+                                    }))}
+                                    className="text-blue-600 focus:ring-blue-500"
+                                  />
+                                  <span className="text-sm text-gray-700 dark:text-gray-200">Next Day (BTST/STBT)</span>
+                                </label>
+                              </div>
+                            </div>
+                          )}
+
                           <div className="grid grid-cols-2 gap-3">
                             <div>
                               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Hour</label>
@@ -1226,7 +1343,98 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                               />
                             </div>
                           </div>
+
+                          {/* Positional Exit Days Slider - Show as second row when Positional is selected */}
+                          {strategyConfig.tradingType === 'POSITIONAL' && (
+                            <div className="pt-4 border-t border-gray-200/50 dark:border-gray-600/50">
+
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    {strategyConfig.positionalExitDays} trading days before {getExpiryText()} expiry (excluding holidays)
+                                  </span>
+                                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                                    {strategyConfig.positionalExitDays} {strategyConfig.positionalExitDays === 1 ? 'day' : 'days'}
+                                  </span>
+                                </div>
+                                <div className="relative">
+                                  <input
+                                    type="range"
+                                    min="0"
+                                    max={getMaxSliderRange()}
+                                    value={getMaxSliderRange() - strategyConfig.positionalExitDays}
+                                    onChange={(e) => setStrategyConfig(prev => ({ 
+                                      ...prev, 
+                                      positionalExitDays: getMaxSliderRange() - parseInt(e.target.value) 
+                                    }))}
+                                    className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+                                    style={{
+                                      background: `linear-gradient(to right, #e5e7eb 0%, #e5e7eb ${((getMaxSliderRange() - strategyConfig.positionalExitDays) / getMaxSliderRange()) * 100}%, #3b82f6 ${((getMaxSliderRange() - strategyConfig.positionalExitDays) / getMaxSliderRange()) * 100}%, #3b82f6 100%)`
+                                    }}
+                                  />
+                                  <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    <span>{getMaxSliderRange()} days</span>
+                                    <span>0 days</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Trading Type Configuration */}
+                    <div className="bg-white/90 dark:bg-gray-800/90 rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-600/50 p-5">
+                      <div className="space-y-4">
+                        {/* Trading Type Toggle */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                            <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200">
+                              Trading Type
+                            </label>
+                          </div>
+                          <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                            <button
+                              type="button"
+                              onClick={() => setStrategyConfig(prev => ({ 
+                                ...prev, 
+                                tradingType: 'INTRADAY',
+                                // Reset conditional values when switching
+                                intradayExitMode: 'SAME_DAY'
+                              }))}
+                              className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                                strategyConfig.tradingType === 'INTRADAY'
+                                  ? 'bg-blue-600 text-white shadow-sm' 
+                                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              }`}
+                            >
+                              Intraday
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const defaults = getDefaultPositionalValues();
+                                setStrategyConfig(prev => ({ 
+                                  ...prev, 
+                                  tradingType: 'POSITIONAL',
+                                  // Reset conditional values when switching
+                                  positionalEntryDays: defaults.entryDays,
+                                  positionalExitDays: defaults.exitDays
+                                }));
+                              }}
+                              className={`px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 ${
+                                strategyConfig.tradingType === 'POSITIONAL'
+                                  ? 'bg-blue-600 text-white shadow-sm' 
+                                  : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              }`}
+                            >
+                              Positional
+                            </button>
+                          </div>
+                        </div>
+
                       </div>
                     </div>
 
@@ -1246,10 +1454,16 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Type</label>
                               <Select
                                 value={strategyConfig.targetProfit.type}
-                                onChange={(e) => setStrategyConfig(prev => ({ 
-                                  ...prev, 
-                                  targetProfit: { ...prev.targetProfit, type: e.target.value as 'TOTAL_MTM' | 'COMBINED_PREMIUM_PERCENT' }
-                                }))}
+                                onChange={(e) => {
+                                  const newType = e.target.value as 'TOTAL_MTM' | 'COMBINED_PREMIUM_PERCENT';
+                                  setStrategyConfig(prev => ({ 
+                                    ...prev, 
+                                    targetProfit: { 
+                                      type: newType as any,
+                                      value: prev.targetProfit.value
+                                    }
+                                  }));
+                                }}
                                 options={[
                                   { value: 'TOTAL_MTM', label: 'Total MTM' },
                                   { value: 'COMBINED_PREMIUM_PERCENT', label: 'Combined Premium %' }
@@ -1290,10 +1504,16 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                               <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Type</label>
                               <Select
                                 value={strategyConfig.mtmStopLoss.type}
-                                onChange={(e) => setStrategyConfig(prev => ({ 
-                                  ...prev, 
-                                  mtmStopLoss: { ...prev.mtmStopLoss, type: e.target.value as 'TOTAL_MTM' | 'COMBINED_PREMIUM_PERCENT' }
-                                }))}
+                                onChange={(e) => {
+                                  const newType = e.target.value as 'TOTAL_MTM' | 'COMBINED_PREMIUM_PERCENT';
+                                  setStrategyConfig(prev => ({ 
+                                    ...prev, 
+                                    mtmStopLoss: { 
+                                      type: newType as any,
+                                      value: prev.mtmStopLoss.value
+                                    }
+                                  }));
+                                }}
                                 options={[
                                   { value: 'TOTAL_MTM', label: 'Total MTM' },
                                   { value: 'COMBINED_PREMIUM_PERCENT', label: 'Combined Premium %' }
@@ -1324,32 +1544,35 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                 </div>
               )}
             </div>
-          </CardContent>
-
-          {/* Footer Actions */}
-          <div className="flex-shrink-0 flex items-center justify-between gap-3 p-4 border-t bg-gray-50 dark:bg-gray-700/50">
-            {error && (
-              <div className="flex-1 text-sm text-red-600 dark:text-red-400">
-                {error}
+            
+            {/* Sticky Footer Actions */}
+            <div className="flex-shrink-0 sticky bottom-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200/50 dark:border-gray-700/50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                {error && (
+                  <div className="flex-1 text-sm text-red-600 dark:text-red-400">
+                    {error}
+                  </div>
+                )}
+                <div className={`flex items-center gap-3 ${error ? '' : 'ml-auto'}`}>
+                  <Button
+                    variant="outline"
+                    onClick={onClose}
+                    disabled={isSubmitting}
+                    className="min-w-[80px]"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={isSubmitting || legs.length === 0}
+                    className="bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]"
+                  >
+                    {isSubmitting ? 'Creating...' : 'Create Strategy'}
+                  </Button>
+                </div>
               </div>
-            )}
-            <div className={`flex items-center gap-3 ${error ? '' : 'ml-auto'}`}>
-              <Button
-                variant="outline"
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={isSubmitting || legs.length === 0}
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                {isSubmitting ? 'Creating...' : 'Create Strategy'}
-              </Button>
             </div>
-          </div>
+          </CardContent>
         </Card>
       </div>
     </div>

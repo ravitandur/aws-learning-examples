@@ -204,6 +204,41 @@ const PageComponent: React.FC = () => {
 - **Form inputs**: `bg-white dark:bg-gray-700` with proper borders
 - **Interactive elements**: Consistent hover states and focus rings
 
+### Scrollable Dialog Patterns (2025 Standard)
+For complex dialogs like StrategyWizardDialog, use this architecture:
+
+```tsx
+// REQUIRED PATTERN: Fixed header + scrollable content + sticky footer
+const ScrollableDialog: React.FC = () => (
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
+    <div className="w-full max-w-5xl h-full sm:h-[95vh] flex flex-col">
+      <Card className="flex flex-col bg-white/95 dark:bg-gray-900/95 backdrop-blur-md overflow-hidden h-full">
+        {/* Fixed Header */}
+        <CardHeader className="flex-shrink-0">...</CardHeader>
+        
+        {/* Scrollable Content */}
+        <CardContent className="flex-1 flex flex-col overflow-hidden p-0">
+          <div className="flex-1 overflow-y-auto">
+            {/* Complex forms, dynamic content */}
+          </div>
+          
+          {/* Sticky Footer */}
+          <div className="flex-shrink-0 sticky bottom-0 backdrop-blur-md border-t p-4">
+            {/* Action buttons */}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  </div>
+);
+```
+
+**Key Requirements**:
+- Mobile optimization: `h-full sm:h-[95vh]` and `p-2 sm:p-4`
+- Proper overflow management: `overflow-y-auto` on content area
+- Glassmorphism effects: `backdrop-blur-md` for modern depth
+- Sticky footer: Ensures actions always accessible
+
 ### Authentication Integration
 - JWT tokens with auto-refresh functionality
 - Context-based state management for user auth
@@ -277,7 +312,32 @@ const PageComponent: React.FC = () => {
 - ✅ **Resource Name Pattern**: All resource names follow {module-prefix}-{function-name}
 - ✅ **Deployment Reliability**: Stacks can be destroyed and redeployed without errors
 
-## Latest Project Updates (September 5, 2025)
+## Latest Project Updates (September 10, 2025)
+
+### 🎯 **StrategyWizardDialog Revolutionary UI/UX Overhaul** ✅
+**Major Achievement**: Complete transformation of options strategy creation interface with enterprise-grade UX
+
+#### **Revolutionary Frontend Improvements**:
+- **Massive Code Enhancement**: 1,179 insertions, 486 deletions - complete dialog architecture overhaul
+- **Scrollable Layout Mastery**: Fixed header + scrollable content + sticky footer for optimal mobile experience
+- **Advanced Risk Management**: 6 comprehensive risk control types per position (Stop Loss, Target Profit, Trailing SL, Wait & Trade, Re-Entry, Re-Execute)
+- **Sophisticated Strike Selection**: 4 selection methods including CLOSEST_PREMIUM and CLOSEST_STRADDLE_PREMIUM algorithms
+- **2025 Minimalist Compliance**: Clean glassmorphism effects, professional typography, content-first design
+- **Mobile-First Architecture**: Responsive design preventing footer overlap on smaller devices
+
+#### **Technical Excellence Achieved**:
+- **Complex State Management**: Nested form handling for multiple positions with individual configurations
+- **JSX Structure Optimization**: Proper component nesting with overflow management
+- **Performance Optimization**: Efficient re-rendering patterns for complex form interactions
+- **Configuration Cleanup**: Removed redundant strategy-level properties, moving to position-level control
+
+#### **2025 Design Standards Implementation**:
+- **Glassmorphism Effects**: `backdrop-blur-md` for modern depth and visual hierarchy
+- **Professional Typography**: Eliminated decorative elements for business-focused interface
+- **Responsive Patterns**: `h-full sm:h-[95vh]` and `p-2 sm:p-4` mobile optimization
+- **Sticky Footer Architecture**: Action accessibility without content obstruction
+
+## Previous Project Updates (September 5, 2025)
 
 ### 🧪 **Comprehensive Testing Framework & Agent Infrastructure**
 **Latest Achievement**: Implemented enterprise-grade testing framework with dedicated testing agent for complete platform validation
@@ -429,3 +489,4 @@ def calculate_next_minute_wait_seconds(current_ist: datetime) -> int:
 - **Documentation**: ✅ All CLAUDE.md files updated with latest enhancements
 - .claude directory exists at project root
 - all frontent components must follow minimalist 2025 design trends.
+- whenever I use /context:update please also update root CLAUDE.md file also with required details if required.

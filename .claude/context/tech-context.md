@@ -1,7 +1,7 @@
 ---
 created: 2025-09-05T19:46:11Z
-last_updated: 2025-09-09T13:34:24Z
-version: 1.2
+last_updated: 2025-09-10T07:09:49Z
+version: 1.3
 author: Claude Code PM System
 ---
 
@@ -70,6 +70,14 @@ requests-oauthlib>=1.3.0 # OAuth implementation
   }
 }
 ```
+
+#### Advanced Responsive Design Patterns
+- **Scrollable Dialog Architecture**: Fixed header + scrollable content + sticky footer
+- **Mobile-First Approach**: `p-2 sm:p-4` responsive padding patterns
+- **Viewport Optimization**: `h-full sm:h-[95vh]` for mobile screen utilization
+- **Glassmorphism Effects**: `backdrop-blur-md` for modern depth and transparency
+- **Overflow Management**: `overflow-y-auto` containers with proper JSX nesting
+- **Flexbox Layouts**: `flex-1 flex flex-col` patterns for complex dialog structures
 
 ## Development Environment
 

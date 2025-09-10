@@ -1,7 +1,7 @@
 ---
 created: 2025-09-05T19:46:11Z
-last_updated: 2025-09-09T13:34:24Z
-version: 1.1
+last_updated: 2025-09-10T07:09:49Z
+version: 1.2
 author: Claude Code PM System
 ---
 
@@ -103,8 +103,16 @@ The AWS Learning Examples project has evolved from a simple serverless learning 
 ### Frontend Integration
 - **Technology**: React 18 + TypeScript + TailwindCSS
 - **Architecture**: Multi-API integration (Auth + Options)
-- **Design**: Consistent algo-platform layout patterns
+- **Design**: 2025 minimalist design with comprehensive UI components
 - **Branding**: Turtle icon with blue primary colors
+
+#### Advanced UI Components
+- **StrategyWizardDialog**: Revolutionary scrollable dialog with enterprise-grade UX
+  - Comprehensive risk management: 6 types of risk controls per position
+  - Advanced strike price selection: 4 methods including CLOSEST_PREMIUM patterns
+  - Mobile-optimized: Fixed header, scrollable content, sticky footer architecture
+  - State complexity: Nested form management for multiple positions with individual settings
+  - Design compliance: 2025 minimalist standards with glassmorphism effects
 
 ### External Integrations
 - **Indian Brokers**: OAuth integration ready for major SEBI-registered brokers

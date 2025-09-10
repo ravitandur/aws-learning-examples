@@ -1,7 +1,7 @@
 ---
 created: 2025-09-05T19:46:11Z
-last_updated: 2025-09-09T20:30:29Z
-version: 1.2
+last_updated: 2025-09-10T07:09:49Z
+version: 1.3
 author: Claude Code PM System
 ---
 
@@ -173,6 +173,92 @@ text-red-600     // Errors and destructive actions
 </ToastProvider>
 ```
 
+#### Scrollable Dialog Patterns (2025 Standard)
+```tsx
+// REVOLUTIONARY SCROLLABLE DIALOG ARCHITECTURE - StrategyWizardDialog Pattern
+const ScrollableDialog: React.FC = () => {
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50">
+      <div className="w-full max-w-5xl h-full sm:h-[95vh] flex flex-col">
+        <Card className="flex flex-col bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-white/20 dark:border-gray-700/20 rounded-none sm:rounded-2xl shadow-2xl overflow-hidden h-full">
+          
+          {/* 1. FIXED HEADER - Always visible, consistent height */}
+          <CardHeader className="flex-shrink-0 flex flex-row items-center justify-between pb-4 px-4 sm:px-6 border-b border-gray-200/50 dark:border-gray-700/50">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white tracking-tight">
+              Dialog Title
+            </h2>
+            <Button variant="ghost" size="sm" onClick={onClose}>
+              <X className="h-5 w-5" />
+            </Button>
+          </CardHeader>
+
+          {/* 2. SCROLLABLE CONTENT AREA - Flexible height, optimized overflow */}
+          <CardContent className="flex-1 flex flex-col overflow-hidden p-0">
+            
+            {/* Fixed UI Elements (Always Visible) */}
+            <div className="flex-shrink-0 bg-gray-50 dark:bg-gray-700/50 px-4 py-4 border-b border-gray-200 dark:border-gray-600">
+              {/* Important controls that should always be accessible */}
+            </div>
+
+            {/* Scrollable Dynamic Content */}
+            <div className="flex-1 overflow-y-auto">
+              {/* Complex forms, position lists, multi-section content */}
+              <div className="p-4 space-y-4">
+                {/* Dynamic content that can grow infinitely */}
+              </div>
+            </div>
+            
+            {/* 3. STICKY FOOTER - Fixed at bottom, outside scroll area */}
+            <div className="flex-shrink-0 sticky bottom-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200/50 dark:border-gray-700/50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                {/* Action buttons, error messages */}
+              </div>
+            </div>
+            
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+// MOBILE OPTIMIZATION PRINCIPLES:
+// ✅ Full height utilization: h-full sm:h-[95vh]
+// ✅ Responsive padding: p-2 sm:p-4  
+// ✅ Scrollable content prevents footer overlap
+// ✅ Fixed header provides context and navigation
+// ✅ Backdrop blur maintains visual hierarchy
+// ✅ Sticky footer ensures action accessibility
+```
+
+#### Complex Form State Management
+```tsx
+// PATTERN: Multi-section state with nested objects
+interface ComplexFormState {
+  items: Array<{
+    id: string;
+    config: {
+      selectionMethod: 'ATM_POINT' | 'CLOSEST_PREMIUM';
+      riskManagement: {
+        stopLoss: { enabled: boolean; value: number };
+        targetProfit: { enabled: boolean; value: number };
+      };
+    };
+  }>;
+  globalConfig: {
+    timing: { entry: string; exit: string };
+    settings: { moveSlToCost: boolean };
+  };
+}
+
+// STATE UPDATES: Immutable patterns with nested updates
+const updateItemConfig = useCallback((itemId: string, newConfig: Partial<ItemConfig>) => {
+  setItems(prev => prev.map(item => 
+    item.id === itemId ? { ...item, config: { ...item.config, ...newConfig } } : item
+  ));
+}, []);
+```
+
 #### Design Audit Checklist
 ```tsx
 // BEFORE COMMITTING - RUN THIS CHECKLIST:
@@ -184,6 +270,10 @@ text-red-600     // Errors and destructive actions
 // □ Functional icons, no decorative symbols
 // □ Blue-gray professional color palette
 // □ Content-first, information-focused layout
+// □ Scrollable dialogs use fixed header + sticky footer pattern
+// □ Mobile-first responsive design (p-2 sm:p-4 patterns)
+// □ Complex forms use nested state management patterns
+// □ JSX structure properly nested with overflow management
 ```
 
 ## File Structure Patterns
