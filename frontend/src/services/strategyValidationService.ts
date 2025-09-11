@@ -140,11 +140,11 @@ class StrategyValidationService {
     const warnings: string[] = [];
 
     switch (leg.selectionMethod) {
-      case 'ATM_POINT':
+      case 'ATM_POINTS':
         if (!leg.strikePrice) {
-          errors.push('Strike price is required for ATM Point method');
+          errors.push('Strike price is required for ATM Points method');
         } else if (!this.isValidATMPointStrike(leg.strikePrice)) {
-          errors.push('Invalid ATM Point strike price format');
+          errors.push('Invalid ATM Points strike price format');
         }
         break;
 

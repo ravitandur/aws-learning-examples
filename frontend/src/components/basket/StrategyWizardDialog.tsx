@@ -1,9 +1,9 @@
 /**
  * StrategyWizardDialog (Refactored)
- * 
+ *
  * COMPLETE MODULAR REFACTORING of the original 1,580-line monolithic component.
  * Now uses proper component architecture with single responsibility principle.
- * 
+ *
  * Architecture:
  * - StrategyHeader: Dialog header with name, index, and add position
  * - PositionConfig: Complete position configuration with risk management
@@ -11,22 +11,22 @@
  * - Custom hooks: Business logic separation
  * - Type system: Centralized type definitions
  * - Utility modules: Reusable constants and helpers
- * 
+ *
  * All functionality and look/feel maintained while improving maintainability.
  */
 
-import React, { useRef } from 'react';
-import { Card, CardContent } from '../ui/Card';
-import Button from '../ui/Button';
-import StrategyHeader from '../strategy/header/StrategyHeader';
-import PositionConfig from '../strategy/position/PositionConfig';
-import StrategyConfiguration from '../strategy/config/StrategyConfiguration';
-import { StrategyConfig } from '../../types/strategy';
-import { useToast } from '../common/ToastContainer';
-import { useStrategyForm } from '../../hooks/strategy/useStrategyForm';
-import { usePositionManagement } from '../../hooks/strategy/usePositionManagement';
-import { useStrategyValidation } from '../../hooks/strategy/useStrategyValidation';
-import { useStrategySubmission } from '../../hooks/strategy/useStrategySubmission';
+import React, { useRef } from "react";
+import { Card, CardContent } from "../ui/Card";
+import Button from "../ui/Button";
+import StrategyHeader from "../strategy/header/StrategyHeader";
+import PositionConfig from "../strategy/position/PositionConfig";
+import StrategyConfiguration from "../strategy/config/StrategyConfiguration";
+import { StrategyConfig } from "../../types/strategy";
+import { useToast } from "../common/ToastContainer";
+import { useStrategyForm } from "../../hooks/strategy/useStrategyForm";
+import { usePositionManagement } from "../../hooks/strategy/usePositionManagement";
+import { useStrategyValidation } from "../../hooks/strategy/useStrategyValidation";
+import { useStrategySubmission } from "../../hooks/strategy/useStrategySubmission";
 
 interface StrategyWizardDialogProps {
   basketId: string;
@@ -34,14 +34,14 @@ interface StrategyWizardDialogProps {
   onSubmit: (strategyData: any) => void;
 }
 
-const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({ 
-  basketId, 
-  onClose, 
-  onSubmit 
+const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
+  basketId,
+  onClose,
+  onSubmit,
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
   const { showSuccess, showError } = useToast();
-  
+
   // Use custom hooks for business logic
   const {
     strategyName,
@@ -51,13 +51,15 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
     legs,
     setLegs,
     strategyConfig,
-    setStrategyConfig
+    setStrategyConfig,
   } = useStrategyForm({ basketId, onClose });
 
-  const {
-    actions,
-    updatePosition
-  } = usePositionManagement({ legs, setLegs, strategyIndex, showError });
+  const { actions, updatePosition } = usePositionManagement({
+    legs,
+    setLegs,
+    strategyIndex,
+    showError,
+  });
 
   const validation = useStrategyValidation();
 
@@ -70,22 +72,22 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
     onClose,
     showError,
     showSuccess,
-    validation
+    validation,
   });
 
   // Handler for strategy config updates
   const handleStrategyConfigUpdate = (updates: Partial<StrategyConfig>) => {
-    setStrategyConfig(prev => ({ ...prev, ...updates }));
+    setStrategyConfig((prev) => ({ ...prev, ...updates }));
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-50"
       role="dialog"
       aria-modal="true"
       aria-labelledby="strategy-dialog-title"
     >
-      <div 
+      <div
         ref={dialogRef}
         tabIndex={-1}
         className="w-full max-w-5xl h-full sm:h-[95vh] flex flex-col"
@@ -101,12 +103,10 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
             onAddPosition={actions.add}
             onClose={onClose}
           />
-          
+
           {/* Scrollable Content */}
           <CardContent className="flex-1 flex flex-col overflow-hidden p-0">
-            <div 
-              className="flex-1 overflow-y-auto"
-            >
+            <div className="flex-1 overflow-y-auto">
               {/* Positions List */}
               {legs.length > 0 && (
                 <div className="py-4">
@@ -132,7 +132,7 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                 />
               )}
             </div>
-            
+
             {/* Sticky Footer */}
             <div className="flex-shrink-0 sticky bottom-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-t border-gray-200/50 dark:border-gray-600/50 p-4">
               <div className="flex items-center justify-end">
@@ -150,7 +150,7 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                     disabled={isSubmitting || legs.length === 0}
                     className="bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]"
                   >
-                    {isSubmitting ? 'Creating...' : 'Create Strategy'}
+                    {isSubmitting ? "Creating..." : "Create Strategy"}
                   </Button>
                 </div>
               </div>

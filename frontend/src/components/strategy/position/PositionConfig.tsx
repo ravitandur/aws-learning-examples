@@ -154,13 +154,15 @@ const PositionConfig: React.FC<PositionConfigProps> = ({
           </div>
         </div>
 
-        {/* Expiry and Strike Selection */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Expiry Type */}
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-              Expiry Type
-            </label>
+        {/* Strike Selection - Full Row */}
+        <StrikeSelection leg={leg} onUpdate={onUpdate} />
+
+        {/* Expiry Type - Full Row */}
+        <div>
+          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            Expiry Type
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Select
               value={leg.expiryType}
               onChange={(e) => handleExpiryTypeChange(e.target.value as 'weekly' | 'monthly')}
@@ -168,9 +170,6 @@ const PositionConfig: React.FC<PositionConfigProps> = ({
               className="h-9 text-sm"
             />
           </div>
-
-          {/* Strike Selection */}
-          <StrikeSelection leg={leg} onUpdate={onUpdate} />
         </div>
 
         {/* Risk Management */}

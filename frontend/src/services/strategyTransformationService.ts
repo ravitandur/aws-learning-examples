@@ -7,6 +7,7 @@
  */
 
 import strategyValidationService from './strategyValidationService';
+import { parseStrikeValue, validateStrikeFormat, formatStrikeForDisplay } from '../utils/strategy/strikeValueParser';
 
 // Frontend types from StrategyWizardDialog
 interface FrontendStrategyLeg {
@@ -17,7 +18,7 @@ interface FrontendStrategyLeg {
   strikePrice: string;
   totalLots: number;
   expiryType: 'weekly' | 'monthly';
-  selectionMethod: 'ATM_POINT' | 'ATM_PERCENT' | 'CLOSEST_PREMIUM' | 'CLOSEST_STRADDLE_PREMIUM';
+  selectionMethod: 'ATM_POINTS' | 'ATM_PERCENT' | 'CLOSEST_PREMIUM' | 'CLOSEST_STRADDLE_PREMIUM';
   
   // Premium selection fields
   premiumOperator?: 'CP_EQUAL' | 'CP_GREATER_EQUAL' | 'CP_LESS_EQUAL';
@@ -228,34 +229,117 @@ class StrategyTransformationService {
    * Transform backend strategy data to frontend format
    */
   transformToFrontend(backendData: any, basketId: string): Partial<FrontendStrategyData> {
-    // This will be implemented when we need to edit existing strategies
-    // For now, we focus on create flow
+    const { name, strategy_name, underlying, legs = [], strategy_config = {}, entry_time, exit_time } = backendData;
+    
+    // Transform backend legs to frontend format
+    const frontendLegs: FrontendStrategyLeg[] = legs.map((backendLeg: any, index: number) => {
+      const leg: FrontendStrategyLeg = {
+        id: `leg-${index}`,
+        index: underlying || 'NIFTY',
+        optionType: backendLeg.option_type === 'CALL' ? 'CE' : 'PE',
+        actionType: backendLeg.action,
+        strikePrice: formatStrikeForDisplay(backendLeg.strike, backendLeg.selection_method || 'ATM_POINTS'),
+        totalLots: backendLeg.lots || 1,
+        expiryType: 'weekly', // Default, can be enhanced later
+        selectionMethod: backendLeg.selection_method || 'ATM_POINTS',
+        
+        // Premium selection fields
+        premiumOperator: backendLeg.premium_criteria?.operator || 'CP_EQUAL',
+        premiumValue: backendLeg.premium_criteria?.value || 0,
+        
+        // Straddle premium fields
+        straddlePremiumOperator: backendLeg.straddle_premium_criteria?.operator || 'CP_EQUAL',
+        straddlePremiumPercentage: backendLeg.straddle_premium_criteria?.percentage || 5,
+        
+        // Risk Management Fields - transform from backend
+        stopLoss: {
+          enabled: backendLeg.risk_management?.stop_loss?.enabled || false,
+          type: backendLeg.risk_management?.stop_loss?.type || 'POINTS',
+          value: backendLeg.risk_management?.stop_loss?.value || 0,
+        },
+        targetProfit: {
+          enabled: backendLeg.risk_management?.target_profit?.enabled || false,
+          type: backendLeg.risk_management?.target_profit?.type || 'POINTS',
+          value: backendLeg.risk_management?.target_profit?.value || 0,
+        },
+        trailingStopLoss: {
+          enabled: backendLeg.risk_management?.trailing_stop_loss?.enabled || false,
+          type: backendLeg.risk_management?.trailing_stop_loss?.type || 'POINTS',
+          instrumentMoveValue: backendLeg.risk_management?.trailing_stop_loss?.instrument_move_value || 0,
+          stopLossMoveValue: backendLeg.risk_management?.trailing_stop_loss?.stop_loss_move_value || 0,
+        },
+        waitAndTrade: {
+          enabled: backendLeg.risk_management?.wait_and_trade?.enabled || false,
+          type: backendLeg.risk_management?.wait_and_trade?.type || 'POINTS',
+          value: backendLeg.risk_management?.wait_and_trade?.value || 0,
+        },
+        reEntry: {
+          enabled: backendLeg.risk_management?.re_entry?.enabled || false,
+          type: backendLeg.risk_management?.re_entry?.type || 'SL_REENTRY',
+          count: backendLeg.risk_management?.re_entry?.count || 1,
+        },
+        reExecute: {
+          enabled: backendLeg.risk_management?.re_execute?.enabled || false,
+          type: backendLeg.risk_management?.re_execute?.type || 'TP_REEXEC',
+          count: backendLeg.risk_management?.re_execute?.count || 1,
+        },
+      };
+      
+      return leg;
+    });
+    
+    // Parse time strings
+    const [entryHour = '09', entryMinute = '15'] = entry_time ? entry_time.split(':') : [];
+    const [exitHour = '15', exitMinute = '30'] = exit_time ? exit_time.split(':') : [];
+    const [rangeBreakoutHour = '09', rangeBreakoutMinute = '30'] = strategy_config.range_breakout_time ? strategy_config.range_breakout_time.split(':') : [];
+    
+    // Transform strategy configuration
+    const config: FrontendStrategyConfig = {
+      entryTimeHour: entryHour,
+      entryTimeMinute: entryMinute,
+      exitTimeHour: exitHour,
+      exitTimeMinute: exitMinute,
+      rangeBreakout: strategy_config.range_breakout || false,
+      rangeBreakoutTimeHour: rangeBreakoutHour,
+      rangeBreakoutTimeMinute: rangeBreakoutMinute,
+      moveSlToCost: strategy_config.move_sl_to_cost || false,
+      tradingType: 'INTRADAY', // Default, can be enhanced
+      intradayExitMode: 'SAME_DAY', // Default
+      positionalEntryDays: 2,
+      positionalExitDays: 0,
+      targetProfit: {
+        type: strategy_config.target_profit?.type || 'TOTAL_MTM',
+        value: strategy_config.target_profit?.value || 0,
+      },
+      mtmStopLoss: {
+        type: strategy_config.mtm_stop_loss?.type || 'TOTAL_MTM',
+        value: strategy_config.mtm_stop_loss?.value || 0,
+      },
+    };
+    
     return {
       basketId,
-      strategyName: backendData.name || backendData.strategy_name,
-      index: backendData.underlying,
-      // TODO: Map backend data back to frontend format
+      strategyName: name || strategy_name || 'Imported Strategy',
+      index: underlying || 'NIFTY',
+      config,
+      legs: frontendLegs,
     };
   }
   
   /**
    * Transform strike price based on selection method
+   * Now extracts numeric values for ATM_POINTS and ATM_PERCENT methods
    */
   private transformStrike(strikePrice: string, selectionMethod: string): number | string {
-    switch (selectionMethod) {
-      case 'ATM_POINT':
-      case 'ATM_PERCENT':
-        // Keep as string for backend to interpret (ATM, OTM1, ITM2, etc.)
-        return strikePrice;
-      case 'CLOSEST_PREMIUM':
-      case 'CLOSEST_STRADDLE_PREMIUM':
-        // For premium-based selection, backend handles the logic
-        return 'DYNAMIC'; // Special marker for backend
-      default:
-        // Try to parse as number, fallback to string
-        const numericStrike = parseFloat(strikePrice);
-        return isNaN(numericStrike) ? strikePrice : numericStrike;
+    // Use the new parser to extract numeric values for backend API
+    const transformedValue = parseStrikeValue(strikePrice, selectionMethod as any);
+    
+    // Debug logging to verify transformation
+    if (process.env.REACT_APP_DEBUG === 'true') {
+      console.log(`Strike transformation [${selectionMethod}]: "${strikePrice}" → ${JSON.stringify(transformedValue)}`);
     }
+    
+    return transformedValue;
   }
   
   /**
@@ -353,6 +437,13 @@ class StrategyTransformationService {
           errors.push(`Position ${index + 1}: Straddle premium criteria required for Closest Straddle Premium selection`);
         }
       }
+      
+      // Validate strike value format for ATM_POINTS and ATM_PERCENT methods
+      if (leg.selectionMethod === 'ATM_POINTS' || leg.selectionMethod === 'ATM_PERCENT') {
+        if (!validateStrikeFormat(leg.strikePrice, leg.selectionMethod)) {
+          errors.push(`Position ${index + 1}: Invalid strike price format "${leg.strikePrice}" for ${leg.selectionMethod} method`);
+        }
+      }
     });
     
     // Validate time configuration
@@ -387,7 +478,7 @@ class StrategyTransformationService {
   /**
    * Create a strategy creation API call payload
    */
-  createApiPayload(basketId: string, frontendData: FrontendStrategyData): BackendStrategyData {
+  createApiPayload(_basketId: string, frontendData: FrontendStrategyData): BackendStrategyData {
     const validation = this.validateFrontendData(frontendData);
     
     if (!validation.isValid) {

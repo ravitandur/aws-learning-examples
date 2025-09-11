@@ -6,6 +6,7 @@
       "dom.iterable",
       "es6"
     ],
+    "types": ["jest", "node"],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -22,5 +23,8 @@
   },
   "include": [
     "src"
+  ],
+  "exclude": [
+    "src/test/**/*"
   ]
 }

@@ -2,7 +2,7 @@
  * StrikeSelection Component
  * 
  * Handles complex strike price selection logic including:
- * - ATM Point/Percent selection
+ * - ATM Points/Percent selection
  * - Closest Premium selection with operator and value
  * - Closest Straddle Premium selection with operator and percentage
  * Extracted from StrategyWizardDialog.tsx for better maintainability.
@@ -54,88 +54,81 @@ const StrikeSelection: React.FC<StrikeSelectionProps> = ({ leg, onUpdate }) => {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Selection Method */}
-      <div>
-        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-          Strike Selection
-        </label>
-        <Select
-          value={leg.selectionMethod}
-          onChange={(e) => handleSelectionMethodChange(e.target.value as StrategyLeg['selectionMethod'])}
-          options={SELECTION_METHOD_OPTIONS}
-          className="h-9 text-sm"
-        />
-      </div>
-
-      {/* Dynamic Selection UI based on method */}
+    <div>
+      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+        Strike Selection
+      </label>
+      
+      {/* Single Row Layout for Strike Selection */}
       {leg.selectionMethod === 'CLOSEST_PREMIUM' ? (
-        // Premium Selection UI
-        <div className="grid grid-cols-2 gap-2">
+        // Premium Selection UI - 3 columns
+        <div className="grid grid-cols-3 gap-2">
+          {/* Selection Method */}
+          <Select
+            value={leg.selectionMethod}
+            onChange={(e) => handleSelectionMethodChange(e.target.value as StrategyLeg['selectionMethod'])}
+            options={SELECTION_METHOD_OPTIONS}
+            className="h-9 text-sm"
+          />
+          
           {/* Premium Operator */}
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-              Premium Operator
-            </label>
-            <Select
-              value={leg.premiumOperator || 'CP_EQUAL'}
-              onChange={(e) => handlePremiumOperatorChange(e.target.value as 'CP_EQUAL' | 'CP_GREATER_EQUAL' | 'CP_LESS_EQUAL')}
-              options={PREMIUM_OPERATOR_OPTIONS}
-              className="h-9 text-sm"
-            />
-          </div>
+          <Select
+            value={leg.premiumOperator || 'CP_EQUAL'}
+            onChange={(e) => handlePremiumOperatorChange(e.target.value as 'CP_EQUAL' | 'CP_GREATER_EQUAL' | 'CP_LESS_EQUAL')}
+            options={PREMIUM_OPERATOR_OPTIONS}
+            className="h-9 text-sm"
+          />
           
           {/* Premium Value */}
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-              Premium Value
-            </label>
-            <Input
-              type="number"
-              min="0"
-              step="0.1"
-              value={leg.premiumValue || 0}
-              onChange={(e) => handlePremiumValueChange(parseFloat(e.target.value) || 0)}
-              placeholder="Enter premium"
-              className="h-9 text-sm"
-            />
-          </div>
+          <Input
+            type="number"
+            min="0"
+            step="0.1"
+            value={leg.premiumValue || 0}
+            onChange={(e) => handlePremiumValueChange(parseFloat(e.target.value) || 0)}
+            placeholder="Enter premium"
+            className="h-9 text-sm"
+          />
         </div>
       ) : leg.selectionMethod === 'CLOSEST_STRADDLE_PREMIUM' ? (
-        // Straddle Premium Selection UI
-        <div className="grid grid-cols-2 gap-2">
+        // Straddle Premium Selection UI - 3 columns
+        <div className="grid grid-cols-3 gap-2">
+          {/* Selection Method */}
+          <Select
+            value={leg.selectionMethod}
+            onChange={(e) => handleSelectionMethodChange(e.target.value as StrategyLeg['selectionMethod'])}
+            options={SELECTION_METHOD_OPTIONS}
+            className="h-9 text-sm"
+          />
+          
           {/* Straddle Premium Operator */}
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-              Premium Operator
-            </label>
-            <Select
-              value={leg.straddlePremiumOperator || 'CP_EQUAL'}
-              onChange={(e) => handleStraddlePremiumOperatorChange(e.target.value as 'CP_EQUAL' | 'CP_GREATER_EQUAL' | 'CP_LESS_EQUAL')}
-              options={PREMIUM_OPERATOR_OPTIONS}
-              className="h-9 text-sm"
-            />
-          </div>
+          <Select
+            value={leg.straddlePremiumOperator || 'CP_EQUAL'}
+            onChange={(e) => handleStraddlePremiumOperatorChange(e.target.value as 'CP_EQUAL' | 'CP_GREATER_EQUAL' | 'CP_LESS_EQUAL')}
+            options={PREMIUM_OPERATOR_OPTIONS}
+            className="h-9 text-sm"
+          />
           
           {/* Straddle Premium Percentage */}
-          <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-              Premium %
-            </label>
-            <Select
-              value={(leg.straddlePremiumPercentage || 5).toString()}
-              onChange={(e) => handleStraddlePremiumPercentageChange(parseInt(e.target.value))}
-              options={generateStraddlePremiumPercentageOptions()}
-              className="h-9 text-sm"
-            />
-          </div>
+          <Select
+            value={(leg.straddlePremiumPercentage || 5).toString()}
+            onChange={(e) => handleStraddlePremiumPercentageChange(parseInt(e.target.value))}
+            options={generateStraddlePremiumPercentageOptions()}
+            className="h-9 text-sm"
+          />
         </div>
       ) : (
-        // Regular Strike Price Selection
-        <div>
-          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-            Strike Price
-          </label>
+        // Regular Strike Price Selection - 2 columns
+        <div className="grid grid-cols-2 gap-2">
+          {/* Selection Method */}
+          <Select
+            value={leg.selectionMethod}
+            onChange={(e) => handleSelectionMethodChange(e.target.value as StrategyLeg['selectionMethod'])}
+            options={SELECTION_METHOD_OPTIONS}
+            className="h-9 text-sm"
+          />
+          
+          {/* Strike Price */}
           <Select
             value={leg.strikePrice}
             onChange={(e) => handleStrikePriceChange(e.target.value)}

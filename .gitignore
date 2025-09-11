@@ -74,3 +74,17 @@ aws/config
 frontend/build/
 **/build/
 **/dist/
+
+# Frontend test and development artifacts
+frontend/coverage/
+frontend/test-results/
+frontend/.eslintcache
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# React development environment files
+frontend/.env.local
+frontend/.env.development.local  
+frontend/.env.test.local
+frontend/.env.production.local

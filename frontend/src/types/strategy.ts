@@ -1,22 +1,26 @@
 /**
  * Strategy Types & Interfaces
- * 
+ *
  * Centralized type definitions for strategy creation and management.
  * Extracted from StrategyWizardDialog.tsx for better maintainability.
  */
 
 // Base enums for strategy options
-export type OptionType = 'CE' | 'PE';
-export type ActionType = 'BUY' | 'SELL';
-export type ExpiryType = 'weekly' | 'monthly';
-export type SelectionMethod = 'ATM_POINT' | 'ATM_PERCENT' | 'CLOSEST_PREMIUM' | 'CLOSEST_STRADDLE_PREMIUM';
-export type PremiumOperator = 'CP_EQUAL' | 'CP_GREATER_EQUAL' | 'CP_LESS_EQUAL';
-export type RiskManagementType = 'POINTS' | 'PERCENTAGE' | 'RANGE';
-export type ReEntryType = 'SL_REENTRY' | 'SL_RECOST' | 'SL_REEXEC';
-export type ReExecuteType = 'TP_REEXEC';
-export type TradingType = 'INTRADAY' | 'POSITIONAL';
-export type IntradayExitMode = 'SAME_DAY' | 'NEXT_DAY_BTST';
-export type MTMType = 'TOTAL_MTM' | 'COMBINED_PREMIUM_PERCENT';
+export type OptionType = "CE" | "PE";
+export type ActionType = "BUY" | "SELL";
+export type ExpiryType = "weekly" | "monthly";
+export type SelectionMethod =
+  | "ATM_POINTS"
+  | "ATM_PERCENT"
+  | "CLOSEST_PREMIUM"
+  | "CLOSEST_STRADDLE_PREMIUM";
+export type PremiumOperator = "CP_EQUAL" | "CP_GREATER_EQUAL" | "CP_LESS_EQUAL";
+export type RiskManagementType = "POINTS" | "PERCENTAGE" | "RANGE";
+export type ReEntryType = "SL_REENTRY" | "SL_RECOST" | "SL_REEXEC";
+export type ReExecuteType = "TP_REEXEC";
+export type TradingType = "INTRADAY" | "POSITIONAL";
+export type IntradayExitMode = "SAME_DAY" | "NEXT_DAY_BTST";
+export type MTMType = "TOTAL_MTM" | "COMBINED_PREMIUM_PERCENT";
 
 // Risk Management sub-interfaces
 export interface StopLossConfig {
@@ -27,20 +31,20 @@ export interface StopLossConfig {
 
 export interface TargetProfitConfig {
   enabled: boolean;
-  type: 'POINTS' | 'PERCENTAGE';
+  type: "POINTS" | "PERCENTAGE";
   value: number;
 }
 
 export interface TrailingStopLossConfig {
   enabled: boolean;
-  type: 'POINTS' | 'PERCENTAGE';
+  type: "POINTS" | "PERCENTAGE";
   instrumentMoveValue: number;
   stopLossMoveValue: number;
 }
 
 export interface WaitAndTradeConfig {
   enabled: boolean;
-  type: 'POINTS' | 'PERCENTAGE';
+  type: "POINTS" | "PERCENTAGE";
   value: number;
 }
 
@@ -66,15 +70,15 @@ export interface StrategyLeg {
   totalLots: number;
   expiryType: ExpiryType;
   selectionMethod: SelectionMethod;
-  
+
   // Premium selection fields for CLOSEST_PREMIUM method
   premiumOperator?: PremiumOperator;
   premiumValue?: number;
-  
+
   // Straddle premium fields for CLOSEST_STRADDLE_PREMIUM method
   straddlePremiumOperator?: PremiumOperator;
   straddlePremiumPercentage?: number;
-  
+
   // Risk Management Fields
   stopLoss: StopLossConfig;
   targetProfit: TargetProfitConfig;
@@ -94,13 +98,13 @@ export interface StrategyConfig {
   rangeBreakoutTimeHour: string;
   rangeBreakoutTimeMinute: string;
   moveSlToCost: boolean;
-  
+
   // Trading type configuration
   tradingType: TradingType;
   intradayExitMode: IntradayExitMode;
   positionalEntryDays: number;
   positionalExitDays: number;
-  
+
   // Strategy-level risk management
   targetProfit: {
     type: MTMType;
