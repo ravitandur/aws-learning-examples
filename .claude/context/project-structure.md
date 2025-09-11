@@ -1,7 +1,7 @@
 ---
 created: 2025-09-05T19:46:11Z
-last_updated: 2025-09-09T20:30:29Z
-version: 1.3
+last_updated: 2025-09-11T11:27:00Z
+version: 1.4
 author: Claude Code PM System
 ---
 
@@ -90,7 +90,14 @@ aws-learning-examples/
 ### Frontend Applications
 ```
 ├── frontend/                             # Main React/TypeScript frontend
-│   ├── package.json                      # Dependencies & scripts
+│   ├── package.json                      # Dependencies & scripts (5 testing deps added)
+│   ├── jest.config.js                    # Jest testing configuration
+│   ├── scripts/                          # Test orchestration scripts
+│   │   └── test-runner.js                # Test execution automation
+│   ├── docs/                             # Testing documentation
+│   │   └── TESTING.md                    # Comprehensive testing guide
+│   ├── .github/                          # CI/CD workflows
+│   │   └── workflows/test.yml            # GitHub Actions test workflow
 │   ├── src/                              # React application source
 │   │   ├── components/                   # Organized component structure
 │   │   │   ├── auth/                     # Authentication components
@@ -103,11 +110,31 @@ aws-learning-examples/
 │   │   │   │   └── StandardLayout.tsx    # 2025 minimalist layout
 │   │   │   ├── layout/                   # App layout components
 │   │   │   ├── oauth/                    # OAuth integration components
-│   │   │   ├── strategy/                 # Strategy creation components
+│   │   │   ├── strategy/                 # Strategy creation components (8 new components)
+│   │   │   │   ├── config/               # Strategy configuration
+│   │   │   │   ├── header/               # Strategy header components
+│   │   │   │   ├── position/             # Position management
+│   │   │   │   └── risk/                 # Risk management controls
 │   │   │   └── ui/                       # Base UI elements (15+ components)
 │   │   ├── pages/                        # Page-level components
-│   │   ├── services/                     # API and business logic services
-│   │   └── types/                        # TypeScript type definitions
+│   │   ├── services/                     # API and business logic services (4 new services)
+│   │   │   ├── strategyService.ts        # Strategy API integration
+│   │   │   ├── strategyTransformationService.ts  # Data transformation
+│   │   │   ├── strategyValidationService.ts      # Form validation
+│   │   │   └── errorHandlingService.ts   # Error management
+│   │   ├── hooks/                        # Custom React hooks (5 new hooks)
+│   │   │   └── strategy/                 # Strategy-specific hooks
+│   │   ├── utils/                        # Utility functions (6 new utilities)
+│   │   │   └── strategy/                 # Strategy utilities & parsers
+│   │   ├── types/                        # TypeScript type definitions (enhanced)
+│   │   │   └── strategy.ts               # Complete strategy type system
+│   │   └── test/                         # Testing infrastructure (NEW)
+│   │       ├── __mocks__/                # Mock implementations
+│   │       ├── setup.ts                  # Jest global setup
+│   │       ├── utils/                    # Test utilities
+│   │       └── suites/                   # Test suites by category
+│   │           ├── services/             # Service tests
+│   │           └── utils/                # Utility function tests
 │   └── public/                           # Static assets
 ```
 
@@ -175,6 +202,7 @@ aws-learning-examples/
 - **Environment-specific** configuration management
 
 ## Update History
+- 2025-09-11: Major frontend infrastructure expansion - added comprehensive testing suite (jest.config.js, test-runner.js, 4 test suites), 8 new strategy components, 4 new services, 5 new hooks, 6 new utilities, complete test infrastructure with mocks and utilities
 - 2025-09-09: Frontend component structure expansion - detailed common components (toast system, headers, layouts), basket management (10+ components), comprehensive UI elements (15+ components)
 - 2025-09-08: Major PM system integration - 78+ new files in .claude/ directory, expanded options-strategy-platform with new Lambda functions and Step Function definitions
 - 2025-09-08: Complete documentation reorganization - centralized root docs, standardized module structure, eliminated duplicates, showcased revolutionary features

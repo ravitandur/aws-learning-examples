@@ -1,7 +1,7 @@
 ---
 created: 2025-09-05T19:46:11Z
-last_updated: 2025-09-10T07:09:49Z
-version: 1.3
+last_updated: 2025-09-11T11:38:29Z
+version: 1.4
 author: Claude Code PM System
 ---
 
@@ -431,6 +431,77 @@ Project-specific patterns and conventions.
 
 ## Deployment Guide
 Step-by-step deployment instructions.
+
+### Frontend Testing Standards (TypeScript/React)
+
+#### Jest Configuration Pattern
+```javascript
+// jest.config.js
+module.exports = {
+  testEnvironment: 'jsdom',
+  setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
+  collectCoverageFrom: [
+    'src/**/*.{ts,tsx}',
+    '!src/test/**/*',
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
+    },
+    'src/utils/strategy/': {
+      branches: 95,
+      functions: 95,
+      lines: 95,
+      statements: 95,
+    },
+  },
+};
+```
+
+#### Test Structure Pattern
+```typescript
+// Component tests
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { ComponentName } from './ComponentName';
+
+describe('ComponentName', () => {
+  const user = userEvent.setup();
+  
+  it('should render with required props', () => {
+    render(<ComponentName prop="value" />);
+    expect(screen.getByRole('button')).toBeInTheDocument();
+  });
+  
+  it('should handle user interactions', async () => {
+    const mockHandler = jest.fn();
+    render(<ComponentName onClick={mockHandler} />);
+    
+    await user.click(screen.getByRole('button'));
+    expect(mockHandler).toHaveBeenCalledTimes(1);
+  });
+});
+```
+
+#### Mock Patterns
+```typescript
+// API mocks
+export const mockStrategyService = {
+  createStrategy: jest.fn<Promise<ApiResponse>, [string, StrategyData]>(),
+  getStrategy: jest.fn<Promise<ApiResponse>, [string]>(),
+};
+
+// Test utilities
+export const renderWithRouter = (ui: ReactElement, options?: RenderOptions) => {
+  const Wrapper = ({ children }: { children: React.ReactNode }) => (
+    <BrowserRouter>{children}</BrowserRouter>
+  );
+  return render(ui, { wrapper: Wrapper, ...options });
+};
+```
 
 ## Testing Strategy
 Testing approach and execution.

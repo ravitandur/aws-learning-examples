@@ -145,10 +145,22 @@ POST /broker-accounts/{id}/verify - Test connection
 
 ### Available Scripts
 
+**Development:**
 - `npm start` - Start development server (http://localhost:3000)
 - `npm run build` - Build for production  
-- `npm test` - Run test suite
 - `npm run eject` - Eject from Create React App
+
+**Testing Infrastructure ⭐ NEW:**
+- `npm test` - Interactive test runner
+- `npm run test:all` - Run all test categories
+- `npm run test:utils` - Test utility functions
+- `npm run test:services` - Test API services
+- `npm run test:components` - Test React components
+- `npm run test:integration` - Test end-to-end workflows
+- `npm run test:coverage` - Generate coverage reports (HTML/LCOV)
+- `npm run test:ci` - CI/CD optimized testing with coverage
+- `npm run test:watch` - Watch mode for development
+- `npm run test:verbose` - Detailed test output
 
 ### Testing User Flow
 

@@ -5,7 +5,7 @@ This file provides **frontend-specific guidance** for the Quantleap Analytics tr
 **📋 Shared Context**: Root `/CLAUDE.md` contains shared AWS configuration, deployment patterns, and enterprise standards
 **🏗️ Architecture**: Complex architectural decisions managed by `/.claude/agents/architecture_agent.md`
 
-## Current Environment Configuration (September 2, 2025)
+## Current Environment Configuration (September 11, 2025)
 
 ### ✅ Multi-API Architecture Deployment
 **Status**: ✅ Updated with both deployed stack endpoints
@@ -159,10 +159,33 @@ npm start
 npm run build
 ```
 
-### Testing
+### Testing Infrastructure ⭐ NEW
 ```bash
+# Interactive testing
 npm test
+
+# Comprehensive test suites
+npm run test:all          # Run all test categories
+npm run test:utils        # Test utility functions  
+npm run test:services     # Test API services
+npm run test:components   # Test React components
+npm run test:integration  # Test end-to-end workflows
+
+# Coverage and reporting
+npm run test:coverage     # Generate coverage reports
+npm run test:ci          # CI/CD optimized testing
+npm run test:verbose     # Detailed test output
+
+# Development testing
+npm run test:watch       # Watch mode for development
+npm run test:update      # Update test snapshots
 ```
+
+#### Test Configuration
+- **Jest**: Industry-standard configuration with 80-95% coverage thresholds
+- **React Testing Library**: Component testing with user interaction simulation
+- **Coverage Reports**: HTML, LCOV, and JSON formats in `coverage/` directory
+- **Test Files**: Located in `src/test/` with organized suites by category
 
 ## Common Patterns
 
@@ -223,6 +246,30 @@ Use consistent table styling across all data tables:
 - Component-level state for page-specific data
 - Consistent loading and error state patterns
 
+## Recent Updates
+
+### September 11, 2025 - Testing Infrastructure & ATM_POINTS Migration
+- ✅ **Comprehensive Testing Suite**: Added Jest configuration with 4 test categories and 10 test scripts
+- ✅ **Strike Selection Enhancement**: Migrated ATM_POINT to ATM_POINTS with bidirectional transformation
+- ✅ **Test Coverage**: 80-95% coverage thresholds with HTML/LCOV reporting
+- ✅ **Type Safety**: Complete TypeScript integration with strategy type system
+- ✅ **CI/CD Integration**: GitHub Actions workflow and jest-junit reporting
+- ✅ **Repository Security**: Enhanced .gitignore with frontend-specific patterns
+
+### Toast Notification System (2025-09-09)
+- ✅ Fixed overlapping toast notifications with improved positioning architecture
+- ✅ Changed from individual `fixed` positioning to container-managed `relative` positioning
+- ✅ Increased maxToasts limit from 5 to 10 for better user experience
+- ✅ Implemented proper gap spacing with `gap-2` for clean toast stacking
+- ✅ Maintained slide-in animations and auto-dismiss functionality
+
+### Auth Pages Styling (2025-08-30)
+- ✅ Standardized all authentication forms with project design system
+- ✅ Added comprehensive dark mode support across all auth components
+- ✅ Replaced custom gradients with consistent gray backgrounds
+- ✅ Updated form inputs, labels, and interactive elements for dark mode
+- ✅ Used consistent Turtle icon from main app in AuthPage header
+
 ## Future Development Guidelines
 
 When creating new pages or components:
@@ -232,3 +279,4 @@ When creating new pages or components:
 4. Follow existing API service patterns
 5. Include proper error handling and loading states
 6. Test on both desktop and mobile viewports
+7. **NEW**: Write comprehensive tests using Jest and React Testing Library
