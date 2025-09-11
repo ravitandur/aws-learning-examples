@@ -71,7 +71,7 @@ export const parseStrikeValue = (
 ): number | string => {
   try {
     switch (method) {
-      case "ATM_POINTS": // Handle both old and new naming
+      case "ATM_POINTS":
         return parseATMPointStrike(value);
 
       case "ATM_PERCENT":

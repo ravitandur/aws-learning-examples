@@ -352,4 +352,136 @@ describe("Strategy Transformation Service", () => {
       expect(frontendData.config!.entryTimeMinute).toBe("15");
     });
   });
+
+  describe('Time Parsing Edge Cases', () => {
+    test('handles various invalid time formats gracefully', () => {
+      const testCases = [
+        {
+          name: 'invalid string',
+          entry_time: 'invalid',
+          exit_time: 'also-invalid',
+          expected: { entryHour: '09', entryMinute: '15', exitHour: '15', exitMinute: '30' }
+        },
+        {
+          name: 'empty strings',
+          entry_time: '',
+          exit_time: '',
+          expected: { entryHour: '09', entryMinute: '15', exitHour: '15', exitMinute: '30' }
+        },
+        {
+          name: 'undefined values',
+          entry_time: undefined,
+          exit_time: undefined,
+          expected: { entryHour: '09', entryMinute: '15', exitHour: '15', exitMinute: '30' }
+        },
+        {
+          name: 'invalid hour ranges',
+          entry_time: '25:30',
+          exit_time: '24:15',
+          expected: { entryHour: '09', entryMinute: '15', exitHour: '15', exitMinute: '30' }
+        },
+        {
+          name: 'invalid minute ranges',
+          entry_time: '10:70',
+          exit_time: '12:60',
+          expected: { entryHour: '09', entryMinute: '15', exitHour: '15', exitMinute: '30' }
+        },
+        {
+          name: 'missing colon',
+          entry_time: '1030',
+          exit_time: '1245',
+          expected: { entryHour: '09', entryMinute: '15', exitHour: '15', exitMinute: '30' }
+        },
+        {
+          name: 'multiple colons',
+          entry_time: '10:30:45',
+          exit_time: '12:45:00',
+          expected: { entryHour: '09', entryMinute: '15', exitHour: '15', exitMinute: '30' }
+        }
+      ];
+
+      testCases.forEach(({ name, entry_time, exit_time, expected }) => {
+        const backendStrategy = {
+          name: 'Test Strategy',
+          entry_time,
+          exit_time,
+        };
+        
+        const frontendData = strategyTransformationService.transformToFrontend(
+          backendStrategy,
+          'basket-id'
+        );
+        
+        expect(frontendData.config!.entryTimeHour).toBe(expected.entryHour);
+        expect(frontendData.config!.entryTimeMinute).toBe(expected.entryMinute);
+        expect(frontendData.config!.exitTimeHour).toBe(expected.exitHour);
+        expect(frontendData.config!.exitTimeMinute).toBe(expected.exitMinute);
+      });
+    });
+
+    test('handles valid time formats correctly', () => {
+      const validTestCases = [
+        {
+          name: 'standard format',
+          entry_time: '09:15',
+          exit_time: '15:30',
+          expected: { entryHour: '09', entryMinute: '15', exitHour: '15', exitMinute: '30' }
+        },
+        {
+          name: 'single digit hour',
+          entry_time: '9:15',
+          exit_time: '5:30',
+          expected: { entryHour: '09', entryMinute: '15', exitHour: '05', exitMinute: '30' }
+        },
+        {
+          name: 'midnight and noon',
+          entry_time: '00:00',
+          exit_time: '12:00',
+          expected: { entryHour: '00', entryMinute: '00', exitHour: '12', exitMinute: '00' }
+        },
+        {
+          name: 'late hours',
+          entry_time: '23:59',
+          exit_time: '22:45',
+          expected: { entryHour: '23', entryMinute: '59', exitHour: '22', exitMinute: '45' }
+        }
+      ];
+
+      validTestCases.forEach(({ name, entry_time, exit_time, expected }) => {
+        const backendStrategy = {
+          name: 'Test Strategy',
+          entry_time,
+          exit_time,
+        };
+        
+        const frontendData = strategyTransformationService.transformToFrontend(
+          backendStrategy,
+          'basket-id'
+        );
+        
+        expect(frontendData.config!.entryTimeHour).toBe(expected.entryHour);
+        expect(frontendData.config!.entryTimeMinute).toBe(expected.entryMinute);
+        expect(frontendData.config!.exitTimeHour).toBe(expected.exitHour);
+        expect(frontendData.config!.exitTimeMinute).toBe(expected.exitMinute);
+      });
+    });
+
+    test('handles range breakout time parsing', () => {
+      const backendStrategy = {
+        name: 'Test Strategy',
+        strategy_config: {
+          range_breakout_time: 'invalid-time',
+        },
+      };
+      
+      const frontendData = strategyTransformationService.transformToFrontend(
+        backendStrategy,
+        'basket-id'
+      );
+      
+      // Should use defaults for invalid range breakout time
+      expect(frontendData.config!.rangeBreakoutTimeHour).toBe('09');
+      expect(frontendData.config!.rangeBreakoutTimeMinute).toBe('30');
+    });
+  });
 });

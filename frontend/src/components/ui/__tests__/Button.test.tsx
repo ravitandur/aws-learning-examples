@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, jest } from '@jest/globals';
 import { render, screen, fireEvent } from '../../../test/utils/test-utils';
 import Button from '../Button';
 
@@ -11,7 +11,7 @@ describe('Button', () => {
   });
 
   it('handles click events', () => {
-    const handleClick = vi.fn();
+    const handleClick = jest.fn();
     render(<Button onClick={handleClick}>Click me</Button>);
 
     fireEvent.click(screen.getByRole('button'));

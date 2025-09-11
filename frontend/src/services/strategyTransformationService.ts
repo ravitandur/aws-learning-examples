@@ -8,6 +8,7 @@
 
 import strategyValidationService from './strategyValidationService';
 import { parseStrikeValue, validateStrikeFormat, formatStrikeForDisplay } from '../utils/strategy/strikeValueParser';
+import { SelectionMethod } from '../types/strategy';
 
 // Frontend types from StrategyWizardDialog
 interface FrontendStrategyLeg {
@@ -18,7 +19,7 @@ interface FrontendStrategyLeg {
   strikePrice: string;
   totalLots: number;
   expiryType: 'weekly' | 'monthly';
-  selectionMethod: 'ATM_POINTS' | 'ATM_PERCENT' | 'CLOSEST_PREMIUM' | 'CLOSEST_STRADDLE_PREMIUM';
+  selectionMethod: SelectionMethod;
   
   // Premium selection fields
   premiumOperator?: 'CP_EQUAL' | 'CP_GREATER_EQUAL' | 'CP_LESS_EQUAL';
@@ -226,6 +227,30 @@ class StrategyTransformationService {
   }
   
   /**
+   * Parse and validate time string in HH:MM format
+   * Returns default values for invalid input
+   */
+  private parseTimeString(
+    timeString: string | undefined, 
+    defaultHour: string, 
+    defaultMinute: string
+  ): [string, string] {
+    // If no time string provided, use defaults
+    if (!timeString) {
+      return [defaultHour, defaultMinute];
+    }
+    
+    // Check if string matches HH:MM format (supports H:MM and HH:MM)
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/;
+    if (!timeRegex.test(timeString)) {
+      return [defaultHour, defaultMinute];
+    }
+    
+    const [hour, minute] = timeString.split(':');
+    return [hour.padStart(2, '0'), minute.padStart(2, '0')];
+  }
+  
+  /**
    * Transform backend strategy data to frontend format
    */
   transformToFrontend(backendData: any, basketId: string): Partial<FrontendStrategyData> {
@@ -288,10 +313,14 @@ class StrategyTransformationService {
       return leg;
     });
     
-    // Parse time strings
-    const [entryHour = '09', entryMinute = '15'] = entry_time ? entry_time.split(':') : [];
-    const [exitHour = '15', exitMinute = '30'] = exit_time ? exit_time.split(':') : [];
-    const [rangeBreakoutHour = '09', rangeBreakoutMinute = '30'] = strategy_config.range_breakout_time ? strategy_config.range_breakout_time.split(':') : [];
+    // Parse time strings with robust validation and defaults
+    const [entryHour, entryMinute] = this.parseTimeString(entry_time, '09', '15');
+    const [exitHour, exitMinute] = this.parseTimeString(exit_time, '15', '30');
+    const [rangeBreakoutHour, rangeBreakoutMinute] = this.parseTimeString(
+      strategy_config.range_breakout_time, 
+      '09', 
+      '30'
+    );
     
     // Transform strategy configuration
     const config: FrontendStrategyConfig = {

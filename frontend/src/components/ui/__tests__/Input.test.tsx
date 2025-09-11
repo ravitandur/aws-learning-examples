@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from '@jest/globals';
 import { render, screen } from '../../../test/utils/test-utils';
 import Input from '../Input';
 
