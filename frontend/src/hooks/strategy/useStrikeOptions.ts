@@ -21,6 +21,8 @@ interface UseStrikeOptionsReturn {
   checkRequiresPremiumCriteria: (selectionMethod: SelectionMethod) => boolean;
   checkRequiresStraddlePremiumCriteria: (selectionMethod: SelectionMethod) => boolean;
   checkUsesRegularStrikeSelection: (selectionMethod: SelectionMethod) => boolean;
+  generatePositionStrikeOptions: (selectionMethod: SelectionMethod) => SelectOption[];
+  generateStraddlePremiumPercentageOptions: () => SelectOption[];
 }
 
 export const useStrikeOptions = (): UseStrikeOptionsReturn => {
@@ -43,6 +45,8 @@ export const useStrikeOptions = (): UseStrikeOptionsReturn => {
     straddlePremiumOptions,
     checkRequiresPremiumCriteria: requiresPremiumCriteria,
     checkRequiresStraddlePremiumCriteria: requiresStraddlePremiumCriteria,
-    checkUsesRegularStrikeSelection: usesRegularStrikeSelection
+    checkUsesRegularStrikeSelection: usesRegularStrikeSelection,
+    generatePositionStrikeOptions,
+    generateStraddlePremiumPercentageOptions
   };
 };

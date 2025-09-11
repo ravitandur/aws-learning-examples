@@ -20,7 +20,7 @@ interface UsePositionManagementProps {
   legs: StrategyLeg[];
   setLegs: React.Dispatch<React.SetStateAction<StrategyLeg[]>>;
   strategyIndex: string;
-  setError: (error: string | null) => void;
+  showError: (message: string) => void;
 }
 
 interface UsePositionManagementReturn {
@@ -33,15 +33,14 @@ export const usePositionManagement = ({
   legs,
   setLegs,
   strategyIndex,
-  setError
+  showError
 }: UsePositionManagementProps): UsePositionManagementReturn => {
   
   // Add new position
   const addPosition = useCallback(() => {
     const newPosition = createNewPosition(strategyIndex);
     setLegs(prev => [...prev, newPosition]);
-    setError(null);
-  }, [strategyIndex, setLegs, setError]);
+  }, [strategyIndex, setLegs]);
   
   // Remove position
   const removePosition = useCallback((legId: string) => {
