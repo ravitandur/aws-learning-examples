@@ -105,14 +105,14 @@ const StrategyConfiguration: React.FC<StrategyConfigurationProps> = ({ config, o
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             Strategy Configuration
           </h3>
-          <div className="flex items-center gap-2">
+          <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
             <button
               type="button"
               onClick={() => handleTradingTypeChange('INTRADAY')}
-              className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
                 config.tradingType === 'INTRADAY'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
               }`}
             >
               Intraday
@@ -120,10 +120,10 @@ const StrategyConfiguration: React.FC<StrategyConfigurationProps> = ({ config, o
             <button
               type="button"
               onClick={() => handleTradingTypeChange('POSITIONAL')}
-              className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+              className={`flex-1 px-4 py-2 text-sm font-medium border-l border-gray-300 dark:border-gray-600 transition-colors ${
                 config.tradingType === 'POSITIONAL'
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
               }`}
             >
               Positional

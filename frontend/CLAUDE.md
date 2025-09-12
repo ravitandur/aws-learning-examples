@@ -248,7 +248,23 @@ Use consistent table styling across all data tables:
 
 ## Recent Updates
 
-### September 11, 2025 - Testing Infrastructure & ATM_POINTS Migration
+### September 12, 2025 - Product Type System & UI Consistency Enhancement
+- ✅ **Complete Product Type System**: Comprehensive MIS/NRML validation with business rules
+- ✅ **UI Components**: GlobalIndexSelector and PositionsSection components for better architecture
+- ✅ **Business Logic Validation**: ProductTypeValidation utility with 31 comprehensive tests
+- ✅ **Position-Level Integration**: Product type badges displayed alongside index and expiry
+- ✅ **Component Architecture**: Improved StrategyWizardDialog with row-based layout
+- ✅ **Type Safety**: Enhanced TypeScript interfaces for product type prop drilling
+- ✅ **Default Configuration**: Changed system default from MIS to NRML as requested
+
+### UI Consistency Enhancement (September 12, 2025)
+- ✅ **Connected Toggle Pattern**: Standardized trading type (INTRADAY/POSITIONAL) toggle to match MIS/NRML styling
+- ✅ **Design System Compliance**: Updated StrategyConfiguration component with connected button group pattern
+- ✅ **Consistent Styling**: Both toggles now use `flex rounded-lg overflow-hidden border` container with `border-l` separators
+- ✅ **2025 Design Standards**: Maintained minimalist design principles with unified toggle appearances
+- ✅ **Cross-Component Harmony**: Achieved visual consistency across all strategy configuration interfaces
+
+### September 11, 2025 - Testing Infrastructure & ATM_POINTS Migration  
 - ✅ **Comprehensive Testing Suite**: Added Jest configuration with 4 test categories and 10 test scripts
 - ✅ **Strike Selection Enhancement**: Migrated ATM_POINT to ATM_POINTS with bidirectional transformation
 - ✅ **Test Coverage**: 80-95% coverage thresholds with HTML/LCOV reporting

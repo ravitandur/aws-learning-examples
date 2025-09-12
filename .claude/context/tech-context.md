@@ -1,7 +1,7 @@
 ---
 created: 2025-09-05T19:46:11Z
-last_updated: 2025-09-11T11:27:00Z
-version: 1.4
+last_updated: 2025-09-12T04:48:39Z
+version: 1.5
 author: Claude Code PM System
 ---
 
@@ -23,6 +23,14 @@ author: Claude Code PM System
 - **TailwindCSS**: Utility-first CSS framework
 - **Node.js**: JavaScript runtime environment
 - **Vite/Create React App**: Build tooling
+
+### Testing & Quality Assurance (Updated September 12, 2025)
+- **Jest**: JavaScript testing framework with comprehensive configuration
+- **React Testing Library**: Component testing with user interaction simulation  
+- **@testing-library/jest-dom**: Custom Jest matchers for DOM assertions
+- **@testing-library/user-event**: Advanced user event simulation
+- **jest-junit**: JUnit XML reporting for CI/CD integration
+- **Coverage Reporting**: HTML, LCOV, and JSON formats with 80-95% thresholds
 
 ### AWS Services Portfolio
 - **API Gateway**: RESTful API endpoints
@@ -89,6 +97,7 @@ requests-oauthlib>=1.3.0 # OAuth implementation
 - **Glassmorphism Effects**: `backdrop-blur-md` for modern depth and transparency
 - **Overflow Management**: `overflow-y-auto` containers with proper JSX nesting
 - **Flexbox Layouts**: `flex-1 flex flex-col` patterns for complex dialog structures
+- **Connected Toggle Groups**: `flex rounded-lg overflow-hidden border` pattern for consistent UI toggles
 
 ## Development Environment
 
@@ -208,6 +217,7 @@ tests/options_strategies/               # Trading-specific test suite
 - **Security hardening**: Additional AWS security services
 
 ## Update History
+- 2025-09-12: Added connected toggle group UI pattern, documented comprehensive documentation management system with smart categorization and update triggers
 - 2025-09-11: Added comprehensive frontend testing dependencies (@testing-library suite, jest-junit), updated frontend dependencies to exact versions from package.json, enhanced testing section with implemented features
 - 2025-09-09: Added modern testing dependencies (moto mock_aws, pytest, faker), updated testing infrastructure with 100% error elimination achievements
 - 2025-09-08: Added revolutionary testing infrastructure, dedicated test environments, and enterprise testing agent capabilities

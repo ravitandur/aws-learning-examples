@@ -1,7 +1,7 @@
 ---
 created: 2025-09-05T19:46:11Z
-last_updated: 2025-09-11T11:38:29Z
-version: 1.4
+last_updated: 2025-09-12T04:48:39Z
+version: 1.5
 author: Claude Code PM System
 ---
 
@@ -133,6 +133,12 @@ const PageComponent: React.FC = () => {
 <h1 className="text-2xl font-bold">   // Page titles (never text-3xl)
 <div className="bg-white dark:bg-gray-800 rounded-lg shadow"> // Cards
 <input className="bg-white dark:bg-gray-700"> // Form inputs
+
+// Connected Toggle Groups (NEW - Consistent UI Pattern)
+<div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+  <button className="flex-1 px-4 py-2 text-sm font-medium bg-blue-600 text-white">Active</button>
+  <button className="flex-1 px-4 py-2 text-sm font-medium border-l border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700">Inactive</button>
+</div>
 ```
 
 #### 2025 Minimalist Design Standards (ENFORCED)
@@ -604,3 +610,6 @@ def get_strategy_data(user_id: str, strategy_id: str) -> dict:
 ```
 
 This style guide ensures consistency, quality, and maintainability across the entire project while supporting the revolutionary features that set this platform apart from competitors.
+
+## Update History
+- 2025-09-12: Added connected toggle group UI pattern standards for consistent button group styling (trading type, product type toggles), documented comprehensive documentation management system integration
