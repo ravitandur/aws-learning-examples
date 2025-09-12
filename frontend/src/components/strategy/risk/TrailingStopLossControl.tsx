@@ -10,6 +10,7 @@ import Input from '../../ui/Input';
 import Select from '../../ui/Select';
 import { StrategyLeg } from '../../../types/strategy';
 import { TARGET_PROFIT_TYPE_OPTIONS } from '../../../utils/strategy';
+import { canEnableTrailingStopLoss, getStopLossInvalidReason } from '../../../utils/strategy/riskValidators';
 
 interface TrailingStopLossControlProps {
   leg: StrategyLeg;
@@ -17,7 +18,14 @@ interface TrailingStopLossControlProps {
 }
 
 const TrailingStopLossControl: React.FC<TrailingStopLossControlProps> = ({ leg, onUpdate }) => {
+  const canEnable = canEnableTrailingStopLoss(leg.stopLoss, leg.trailingStopLoss);
+  const disabledReason = getStopLossInvalidReason(leg.stopLoss);
+
   const handleEnabledChange = (enabled: boolean) => {
+    // Only allow enabling if Stop Loss is valid
+    if (enabled && !canEnable) {
+      return;
+    }
     onUpdate({
       trailingStopLoss: { ...leg.trailingStopLoss, enabled }
     });
@@ -53,23 +61,25 @@ const TrailingStopLossControl: React.FC<TrailingStopLossControlProps> = ({ leg, 
           type="checkbox"
           id={`trailingStopLoss-${leg.id}`}
           checked={leg.trailingStopLoss.enabled}
-          disabled={!leg.stopLoss.enabled}
+          disabled={!canEnable}
           onChange={(e) => handleEnabledChange(e.target.checked)}
           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+          title={!canEnable ? disabledReason || 'Requires valid Stop Loss configuration' : ''}
         />
         <label 
           htmlFor={`trailingStopLoss-${leg.id}`} 
           className={`text-sm font-medium ${
-            !leg.stopLoss.enabled 
+            !canEnable 
               ? 'text-gray-400' 
               : 'text-gray-700 dark:text-gray-200'
           }`}
+          title={!canEnable ? disabledReason || 'Requires valid Stop Loss configuration' : ''}
         >
           Trailing Stop Loss
         </label>
       </div>
       
-      {leg.trailingStopLoss.enabled && leg.stopLoss.enabled && (
+      {leg.trailingStopLoss.enabled && canEnable && (
         <div className="space-y-2">
           {/* Type Selection */}
           <Select

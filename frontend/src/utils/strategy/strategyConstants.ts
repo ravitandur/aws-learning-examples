@@ -22,15 +22,15 @@ export const INDEX_OPTIONS: SelectOption[] = [
 export const SELECTION_METHOD_OPTIONS: SelectOption[] = [
   { value: "ATM_POINTS", label: "ATM Points" },
   { value: "ATM_PERCENT", label: "ATM Percent" },
-  { value: "CLOSEST_PREMIUM", label: "Closest Premium" },
-  { value: "CLOSEST_STRADDLE_PREMIUM", label: "Closest Straddle Premium %" },
+  { value: "PREMIUM", label: "Premium" },
+  { value: "PERCENTAGE_OF_STRADDLE_PREMIUM", label: "Straddle Premium %" },
 ];
 
 // Premium operator options
 export const PREMIUM_OPERATOR_OPTIONS: SelectOption[] = [
-  { value: "CP_EQUAL", label: "CP ~" },
-  { value: "CP_GREATER_EQUAL", label: "CP >=" },
-  { value: "CP_LESS_EQUAL", label: "CP <=" },
+  { value: "CLOSEST", label: "Closest ~" },
+  { value: "GTE", label: "GTE >=" },
+  { value: "LTE", label: "LTE <=" },
 ];
 
 // Expiry type options
@@ -79,6 +79,12 @@ export const MTM_TYPE_OPTIONS: SelectOption[] = [
   { value: "COMBINED_PREMIUM_PERCENT", label: "Combined Premium %" },
 ];
 
+// Product type options
+export const PRODUCT_TYPE_OPTIONS: SelectOption[] = [
+  { value: "MIS", label: "MIS (Intraday)" },
+  { value: "NRML", label: "NRML (Carry Forward)" },
+];
+
 // Time options (24 hours)
 export const HOUR_OPTIONS: SelectOption[] = Array.from(
   { length: 24 },
@@ -107,10 +113,12 @@ export const DEFAULT_STRATEGY_CONFIG: StrategyConfig = {
   rangeBreakoutTimeHour: "09",
   rangeBreakoutTimeMinute: "30",
   moveSlToCost: false,
+  expiryType: "weekly",
+  productType: "NRML",
   tradingType: "INTRADAY",
   intradayExitMode: "SAME_DAY",
-  positionalEntryDays: 2,
-  positionalExitDays: 0,
+  entryTradingDaysBeforeExpiry: 4, // Weekly default
+  exitTradingDaysBeforeExpiry: 0, // Default for both weekly and monthly
   targetProfit: {
     type: "TOTAL_MTM",
     value: 0,
@@ -130,26 +138,25 @@ export const createDefaultPositionTemplate = (
   actionType: "BUY",
   strikePrice: "ATM",
   totalLots: 1,
-  expiryType: "weekly",
   selectionMethod: "ATM_POINTS",
 
   // Default premium selection values
-  premiumOperator: "CP_EQUAL",
+  premiumOperator: "CLOSEST",
   premiumValue: 0,
 
   // Default straddle premium values
-  straddlePremiumOperator: "CP_EQUAL",
+  straddlePremiumOperator: "CLOSEST",
   straddlePremiumPercentage: 5,
 
   // Default risk management values
   stopLoss: {
     enabled: false,
-    type: "POINTS",
+    type: "PERCENTAGE",
     value: 0,
   },
   targetProfit: {
     enabled: false,
-    type: "POINTS",
+    type: "PERCENTAGE",
     value: 0,
   },
   trailingStopLoss: {
@@ -160,7 +167,7 @@ export const createDefaultPositionTemplate = (
   },
   waitAndTrade: {
     enabled: false,
-    type: "POINTS",
+    type: "PERCENTAGE",
     value: 0,
   },
   reEntry: {

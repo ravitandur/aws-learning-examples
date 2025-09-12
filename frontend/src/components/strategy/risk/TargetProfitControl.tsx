@@ -10,6 +10,7 @@ import Input from '../../ui/Input';
 import Select from '../../ui/Select';
 import { StrategyLeg } from '../../../types/strategy';
 import { TARGET_PROFIT_TYPE_OPTIONS } from '../../../utils/strategy';
+import { isValidTargetProfit } from '../../../utils/strategy/riskValidators';
 
 interface TargetProfitControlProps {
   leg: StrategyLeg;
@@ -18,20 +19,35 @@ interface TargetProfitControlProps {
 
 const TargetProfitControl: React.FC<TargetProfitControlProps> = ({ leg, onUpdate }) => {
   const handleEnabledChange = (enabled: boolean) => {
+    const newTargetProfit = { ...leg.targetProfit, enabled };
+    const isValid = enabled && isValidTargetProfit(newTargetProfit);
+    
     onUpdate({
-      targetProfit: { ...leg.targetProfit, enabled }
+      targetProfit: newTargetProfit,
+      // Disable Re Execute if Target Profit becomes invalid
+      reExecute: isValid ? leg.reExecute : { ...leg.reExecute, enabled: false }
     });
   };
 
   const handleTypeChange = (type: 'POINTS' | 'PERCENTAGE') => {
+    const newTargetProfit = { ...leg.targetProfit, type, value: 0 };
+    const isValid = isValidTargetProfit(newTargetProfit);
+    
     onUpdate({
-      targetProfit: { ...leg.targetProfit, type, value: 0 }
+      targetProfit: newTargetProfit,
+      // Disable Re Execute if Target Profit becomes invalid
+      reExecute: isValid ? leg.reExecute : { ...leg.reExecute, enabled: false }
     });
   };
 
   const handleValueChange = (value: number) => {
+    const newTargetProfit = { ...leg.targetProfit, value };
+    const isValid = isValidTargetProfit(newTargetProfit);
+    
     onUpdate({
-      targetProfit: { ...leg.targetProfit, value }
+      targetProfit: newTargetProfit,
+      // Disable Re Execute if Target Profit becomes invalid
+      reExecute: isValid ? leg.reExecute : { ...leg.reExecute, enabled: false }
     });
   };
 

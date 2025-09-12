@@ -9,6 +9,7 @@ import React from 'react';
 import Select from '../../ui/Select';
 import { StrategyLeg } from '../../../types/strategy';
 import { RE_EXECUTE_TYPE_OPTIONS, COUNT_OPTIONS } from '../../../utils/strategy';
+import { canEnableReExecute, getTargetProfitInvalidReason } from '../../../utils/strategy/riskValidators';
 
 interface ReExecuteControlProps {
   leg: StrategyLeg;
@@ -16,7 +17,14 @@ interface ReExecuteControlProps {
 }
 
 const ReExecuteControl: React.FC<ReExecuteControlProps> = ({ leg, onUpdate }) => {
+  const canEnable = canEnableReExecute(leg.targetProfit);
+  const disabledReason = getTargetProfitInvalidReason(leg.targetProfit);
+
   const handleEnabledChange = (enabled: boolean) => {
+    // Only allow enabling if Target Profit is valid
+    if (enabled && !canEnable) {
+      return;
+    }
     onUpdate({
       reExecute: { ...leg.reExecute, enabled }
     });
@@ -41,18 +49,25 @@ const ReExecuteControl: React.FC<ReExecuteControlProps> = ({ leg, onUpdate }) =>
           type="checkbox"
           id={`reExecute-${leg.id}`}
           checked={leg.reExecute.enabled}
+          disabled={!canEnable}
           onChange={(e) => handleEnabledChange(e.target.checked)}
-          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+          title={!canEnable ? disabledReason || 'Requires valid Target Profit configuration' : ''}
         />
         <label 
           htmlFor={`reExecute-${leg.id}`} 
-          className="text-sm font-medium text-gray-700 dark:text-gray-200"
+          className={`text-sm font-medium ${
+            !canEnable 
+              ? 'text-gray-400' 
+              : 'text-gray-700 dark:text-gray-200'
+          }`}
+          title={!canEnable ? disabledReason || 'Requires valid Target Profit configuration' : ''}
         >
           Re-Execute (TP)
         </label>
       </div>
       
-      {leg.reExecute.enabled && (
+      {leg.reExecute.enabled && canEnable && (
         <div className="space-y-2">
           <Select
             value={leg.reExecute.type}

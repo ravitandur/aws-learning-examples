@@ -77,8 +77,8 @@ export const parseStrikeValue = (
       case "ATM_PERCENT":
         return parseATMPercentStrike(value);
 
-      case "CLOSEST_PREMIUM":
-      case "CLOSEST_STRADDLE_PREMIUM":
+      case "PREMIUM":
+      case "PERCENTAGE_OF_STRADDLE_PREMIUM":
         // These methods use dynamic strike resolution in backend
         return "DYNAMIC";
 
@@ -117,8 +117,8 @@ export const validateStrikeFormat = (
           /^ATM-[0-9]+\.?[0-9]*%$/.test(value)
         );
 
-      case "CLOSEST_PREMIUM":
-      case "CLOSEST_STRADDLE_PREMIUM":
+      case "PREMIUM":
+      case "PERCENTAGE_OF_STRADDLE_PREMIUM":
         // These methods don't use strike value directly
         return true;
 

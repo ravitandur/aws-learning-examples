@@ -71,22 +71,18 @@ export const updateAllPositionsIndex = (
 };
 
 /**
- * Get expiry text based on positions selection
- * Returns 'monthly' if any position has monthly expiry, otherwise 'weekly'
+ * Get expiry text from strategy config
+ * Returns the strategy-level expiry type
  */
-export const getExpiryText = (positions: StrategyLeg[]): ExpiryType => {
-  if (positions.length === 0) return 'weekly';
-  
-  const hasMonthlyExpiry = positions.some(position => position.expiryType === 'monthly');
-  return hasMonthlyExpiry ? 'monthly' : 'weekly';
+export const getExpiryText = (expiryType: ExpiryType): ExpiryType => {
+  return expiryType;
 };
 
 /**
  * Get maximum slider range based on expiry type
  */
-export const getMaxSliderRange = (positions: StrategyLeg[]): number => {
-  const hasMonthlyExpiry = positions.some(position => position.expiryType === 'monthly');
-  return hasMonthlyExpiry ? SLIDER_RANGE.MONTHLY_MAX : SLIDER_RANGE.WEEKLY_MAX;
+export const getMaxSliderRange = (expiryType: ExpiryType): number => {
+  return expiryType === 'monthly' ? SLIDER_RANGE.MONTHLY_MAX : SLIDER_RANGE.WEEKLY_MAX;
 };
 
 /**
@@ -172,9 +168,9 @@ export const resetPositionSelectionMethod = (
     selectionMethod: newMethod,
     strikePrice: 'ATM', // Reset to ATM when method changes
     // Clear method-specific fields
-    premiumOperator: newMethod === 'CLOSEST_PREMIUM' ? position.premiumOperator : undefined,
-    premiumValue: newMethod === 'CLOSEST_PREMIUM' ? position.premiumValue : undefined,
-    straddlePremiumOperator: newMethod === 'CLOSEST_STRADDLE_PREMIUM' ? position.straddlePremiumOperator : undefined,
-    straddlePremiumPercentage: newMethod === 'CLOSEST_STRADDLE_PREMIUM' ? position.straddlePremiumPercentage : undefined
+    premiumOperator: newMethod === 'PREMIUM' ? position.premiumOperator : undefined,
+    premiumValue: newMethod === 'PREMIUM' ? position.premiumValue : undefined,
+    straddlePremiumOperator: newMethod === 'PERCENTAGE_OF_STRADDLE_PREMIUM' ? position.straddlePremiumOperator : undefined,
+    straddlePremiumPercentage: newMethod === 'PERCENTAGE_OF_STRADDLE_PREMIUM' ? position.straddlePremiumPercentage : undefined
   };
 };

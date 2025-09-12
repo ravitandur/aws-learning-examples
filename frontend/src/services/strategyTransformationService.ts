@@ -8,6 +8,7 @@
 
 import strategyValidationService from './strategyValidationService';
 import { parseStrikeValue, validateStrikeFormat, formatStrikeForDisplay } from '../utils/strategy/strikeValueParser';
+import { isValidProductType, getProductTypeValidationError, autoCorrectProductType } from '../utils/strategy/productTypeValidation';
 import { SelectionMethod } from '../types/strategy';
 
 // Frontend types from StrategyWizardDialog
@@ -22,11 +23,11 @@ interface FrontendStrategyLeg {
   selectionMethod: SelectionMethod;
   
   // Premium selection fields
-  premiumOperator?: 'CP_EQUAL' | 'CP_GREATER_EQUAL' | 'CP_LESS_EQUAL';
+  premiumOperator?: 'CLOSEST' | 'GTE' | 'LTE';
   premiumValue?: number;
   
   // Straddle premium fields
-  straddlePremiumOperator?: 'CP_EQUAL' | 'CP_GREATER_EQUAL' | 'CP_LESS_EQUAL';
+  straddlePremiumOperator?: 'CLOSEST' | 'GTE' | 'LTE';
   straddlePremiumPercentage?: number;
   
   // Risk Management Fields (6 types)
@@ -72,11 +73,13 @@ interface FrontendStrategyConfig {
   rangeBreakoutTimeHour: string;
   rangeBreakoutTimeMinute: string;
   moveSlToCost: boolean;
+  // Product type configuration  
+  productType: 'MIS' | 'NRML';
   // New trading type configuration
   tradingType: 'INTRADAY' | 'POSITIONAL';
   intradayExitMode: 'SAME_DAY' | 'NEXT_DAY_BTST';
-  positionalEntryDays: number;
-  positionalExitDays: number;
+  entryTradingDaysBeforeExpiry: number;
+  exitTradingDaysBeforeExpiry: number;
   targetProfit: {
     type: 'TOTAL_MTM' | 'COMBINED_PREMIUM_PERCENT';
     value: number;
@@ -97,7 +100,7 @@ interface FrontendStrategyData {
 
 // Backend API schema
 interface BackendStrategyLeg {
-  option_type: 'CALL' | 'PUT';
+  option_type: 'CE' | 'PE';
   action: 'BUY' | 'SELL';
   strike: number | string; // Backend handles both numeric strikes and ATM references
   lots: number;
@@ -115,13 +118,38 @@ interface BackendStrategyLeg {
     operator: string;
     percentage: number;
   };
-  risk_management?: {
-    stop_loss?: any;
-    target_profit?: any;
-    trailing_stop_loss?: any;
-    wait_and_trade?: any;
-    re_entry?: any;
-    re_execute?: any;
+  
+  // Flattened risk management fields (conditional based on enabled state)
+  stop_loss?: {
+    enabled: boolean;
+    type: string;
+    value: number;
+  };
+  target_profit?: {
+    enabled: boolean;
+    type: string;
+    value: number;
+  };
+  trailing_stop_loss?: {
+    enabled: boolean;
+    type: string;
+    instrument_move_value: number;
+    stop_loss_move_value: number;
+  };
+  wait_and_trade?: {
+    enabled: boolean;
+    type: string;
+    value: number;
+  };
+  re_entry?: {
+    enabled: boolean;
+    type: string;
+    count: number;
+  };
+  re_execute?: {
+    enabled: boolean;
+    type: string;
+    count: number;
   };
 }
 
@@ -136,19 +164,25 @@ interface BackendStrategyData {
   exit_days: string[];
   legs: BackendStrategyLeg[];
   
-  // Strategy-level configuration
-  strategy_config?: {
-    range_breakout?: boolean;
-    range_breakout_time?: string;
-    move_sl_to_cost?: boolean;
-    target_profit?: {
-      type: string;
-      value: number;
-    };
-    mtm_stop_loss?: {
-      type: string;
-      value: number;
-    };
+  // Trading type configuration
+  trading_type: 'INTRADAY' | 'POSITIONAL';  // MANDATORY
+  
+  // Conditional fields based on trading_type:
+  intraday_exit_mode?: 'SAME_DAY' | 'NEXT_DAY_BTST';  // Only for INTRADAY
+  entry_trading_days_before_expiry?: number;  // Only for POSITIONAL
+  exit_trading_days_before_expiry?: number;   // Only for POSITIONAL
+  
+  // Flattened strategy configuration fields
+  range_breakout?: boolean;
+  range_breakout_time?: string;
+  move_sl_to_cost?: boolean;
+  target_profit?: {
+    type: string;
+    value: number;
+  };
+  mtm_stop_loss?: {
+    type: string;
+    value: number;
   };
 }
 
@@ -159,34 +193,104 @@ class StrategyTransformationService {
   transformToBackend(frontendData: FrontendStrategyData): BackendStrategyData {
     const { basketId, strategyName, index, config, legs } = frontendData;
     
+    // Validate product type against trading configuration
+    const productTypeError = getProductTypeValidationError(
+      config.productType,
+      config.tradingType,
+      config.intradayExitMode
+    );
+    
+    if (productTypeError) {
+      throw new Error(`Product type validation failed: ${productTypeError}`);
+    }
+    
+    // Auto-correct product type if needed (additional safety check)
+    const { productType: validatedProductType, wasChanged } = autoCorrectProductType(
+      config.productType,
+      config.tradingType,
+      config.intradayExitMode
+    );
+    
+    if (wasChanged) {
+      console.warn(`Product type auto-corrected from ${config.productType} to ${validatedProductType}`);
+      config.productType = validatedProductType;
+    }
+    
     // Transform legs with advanced mappings
     const backendLegs: BackendStrategyLeg[] = legs.map(leg => {
       const backendLeg: BackendStrategyLeg = {
-        option_type: leg.optionType === 'CE' ? 'CALL' : 'PUT',
+        option_type: leg.optionType,  // Direct pass-through: CE → CE, PE → PE
         action: leg.actionType,
         strike: this.transformStrike(leg.strikePrice, leg.selectionMethod),
         lots: leg.totalLots,
         selection_method: leg.selectionMethod
       };
       
-      // Add premium criteria for CLOSEST_PREMIUM method
-      if (leg.selectionMethod === 'CLOSEST_PREMIUM' && leg.premiumOperator && leg.premiumValue !== undefined) {
+      // Add premium criteria for PREMIUM method
+      if (leg.selectionMethod === 'PREMIUM' && leg.premiumOperator && leg.premiumValue !== undefined) {
         backendLeg.premium_criteria = {
           operator: leg.premiumOperator,
           value: leg.premiumValue
         };
       }
       
-      // Add straddle premium criteria for CLOSEST_STRADDLE_PREMIUM method
-      if (leg.selectionMethod === 'CLOSEST_STRADDLE_PREMIUM' && leg.straddlePremiumOperator && leg.straddlePremiumPercentage !== undefined) {
+      // Add straddle premium criteria for PERCENTAGE_OF_STRADDLE_PREMIUM method
+      if (leg.selectionMethod === 'PERCENTAGE_OF_STRADDLE_PREMIUM' && leg.straddlePremiumOperator && leg.straddlePremiumPercentage !== undefined) {
         backendLeg.straddle_premium_criteria = {
           operator: leg.straddlePremiumOperator,
           percentage: leg.straddlePremiumPercentage
         };
       }
       
-      // Add risk management configuration
-      backendLeg.risk_management = this.transformRiskManagement(leg);
+      // Add flattened risk management fields conditionally
+      if (leg.stopLoss.enabled) {
+        backendLeg.stop_loss = {
+          enabled: true,
+          type: leg.stopLoss.type,
+          value: leg.stopLoss.value
+        };
+      }
+      
+      if (leg.targetProfit.enabled) {
+        backendLeg.target_profit = {
+          enabled: true,
+          type: leg.targetProfit.type,
+          value: leg.targetProfit.value
+        };
+      }
+      
+      if (leg.trailingStopLoss.enabled) {
+        backendLeg.trailing_stop_loss = {
+          enabled: true,
+          type: leg.trailingStopLoss.type,
+          instrument_move_value: leg.trailingStopLoss.instrumentMoveValue,
+          stop_loss_move_value: leg.trailingStopLoss.stopLossMoveValue
+        };
+      }
+      
+      if (leg.waitAndTrade.enabled) {
+        backendLeg.wait_and_trade = {
+          enabled: true,
+          type: leg.waitAndTrade.type,
+          value: leg.waitAndTrade.value
+        };
+      }
+      
+      if (leg.reEntry.enabled) {
+        backendLeg.re_entry = {
+          enabled: true,
+          type: leg.reEntry.type,
+          count: leg.reEntry.count
+        };
+      }
+      
+      if (leg.reExecute.enabled) {
+        backendLeg.re_execute = {
+          enabled: true,
+          type: leg.reExecute.type,
+          count: leg.reExecute.count
+        };
+      }
       
       return backendLeg;
     });
@@ -202,25 +306,37 @@ class StrategyTransformationService {
       name: strategyName,
       description: `${index} strategy with ${legs.length} legs`,
       underlying: index, // NIFTY, BANKNIFTY, etc.
-      product: 'MIS', // Default to intraday for options strategies
+      product: config.productType, // Use user-selected product type
       entry_time: entryTime,
       exit_time: exitTime,
       entry_days: tradingDays,
       exit_days: tradingDays,
       legs: backendLegs,
-      strategy_config: {
-        range_breakout: config.rangeBreakout,
-        range_breakout_time: config.rangeBreakout ? `${config.rangeBreakoutTimeHour}:${config.rangeBreakoutTimeMinute}` : undefined,
-        move_sl_to_cost: config.moveSlToCost,
-        target_profit: config.targetProfit.value > 0 ? {
-          type: config.targetProfit.type,
-          value: config.targetProfit.value
-        } : undefined,
-        mtm_stop_loss: config.mtmStopLoss.value > 0 ? {
-          type: config.mtmStopLoss.type,
-          value: config.mtmStopLoss.value
-        } : undefined
-      }
+      
+      // Trading type configuration (always required)
+      trading_type: config.tradingType,
+      
+      // Conditional fields based on trading type
+      ...(config.tradingType === 'INTRADAY' && {
+        intraday_exit_mode: config.intradayExitMode
+      }),
+      ...(config.tradingType === 'POSITIONAL' && {
+        entry_trading_days_before_expiry: config.entryTradingDaysBeforeExpiry,
+        exit_trading_days_before_expiry: config.exitTradingDaysBeforeExpiry
+      }),
+      
+      // Flattened strategy configuration
+      range_breakout: config.rangeBreakout,
+      range_breakout_time: config.rangeBreakout ? `${config.rangeBreakoutTimeHour}:${config.rangeBreakoutTimeMinute}` : undefined,
+      move_sl_to_cost: config.moveSlToCost,
+      target_profit: config.targetProfit.value > 0 ? {
+        type: config.targetProfit.type,
+        value: config.targetProfit.value
+      } : undefined,
+      mtm_stop_loss: config.mtmStopLoss.value > 0 ? {
+        type: config.mtmStopLoss.type,
+        value: config.mtmStopLoss.value
+      } : undefined
     };
     
     return backendData;
@@ -254,14 +370,14 @@ class StrategyTransformationService {
    * Transform backend strategy data to frontend format
    */
   transformToFrontend(backendData: any, basketId: string): Partial<FrontendStrategyData> {
-    const { name, strategy_name, underlying, legs = [], strategy_config = {}, entry_time, exit_time } = backendData;
+    const { name, strategy_name, underlying, legs = [], entry_time, exit_time } = backendData;
     
     // Transform backend legs to frontend format
     const frontendLegs: FrontendStrategyLeg[] = legs.map((backendLeg: any, index: number) => {
       const leg: FrontendStrategyLeg = {
         id: `leg-${index}`,
         index: underlying || 'NIFTY',
-        optionType: backendLeg.option_type === 'CALL' ? 'CE' : 'PE',
+        optionType: backendLeg.option_type,  // Direct pass-through: CE → CE, PE → PE
         actionType: backendLeg.action,
         strikePrice: formatStrikeForDisplay(backendLeg.strike, backendLeg.selection_method || 'ATM_POINTS'),
         totalLots: backendLeg.lots || 1,
@@ -269,44 +385,44 @@ class StrategyTransformationService {
         selectionMethod: backendLeg.selection_method || 'ATM_POINTS',
         
         // Premium selection fields
-        premiumOperator: backendLeg.premium_criteria?.operator || 'CP_EQUAL',
+        premiumOperator: backendLeg.premium_criteria?.operator || 'CLOSEST',
         premiumValue: backendLeg.premium_criteria?.value || 0,
         
         // Straddle premium fields
-        straddlePremiumOperator: backendLeg.straddle_premium_criteria?.operator || 'CP_EQUAL',
+        straddlePremiumOperator: backendLeg.straddle_premium_criteria?.operator || 'CLOSEST',
         straddlePremiumPercentage: backendLeg.straddle_premium_criteria?.percentage || 5,
         
-        // Risk Management Fields - transform from backend
+        // Risk Management Fields - transform from flattened backend structure
         stopLoss: {
-          enabled: backendLeg.risk_management?.stop_loss?.enabled || false,
-          type: backendLeg.risk_management?.stop_loss?.type || 'POINTS',
-          value: backendLeg.risk_management?.stop_loss?.value || 0,
+          enabled: backendLeg.stop_loss?.enabled || false,
+          type: backendLeg.stop_loss?.type || 'PERCENTAGE',
+          value: backendLeg.stop_loss?.value || 0,
         },
         targetProfit: {
-          enabled: backendLeg.risk_management?.target_profit?.enabled || false,
-          type: backendLeg.risk_management?.target_profit?.type || 'POINTS',
-          value: backendLeg.risk_management?.target_profit?.value || 0,
+          enabled: backendLeg.target_profit?.enabled || false,
+          type: backendLeg.target_profit?.type || 'PERCENTAGE',
+          value: backendLeg.target_profit?.value || 0,
         },
         trailingStopLoss: {
-          enabled: backendLeg.risk_management?.trailing_stop_loss?.enabled || false,
-          type: backendLeg.risk_management?.trailing_stop_loss?.type || 'POINTS',
-          instrumentMoveValue: backendLeg.risk_management?.trailing_stop_loss?.instrument_move_value || 0,
-          stopLossMoveValue: backendLeg.risk_management?.trailing_stop_loss?.stop_loss_move_value || 0,
+          enabled: backendLeg.trailing_stop_loss?.enabled || false,
+          type: backendLeg.trailing_stop_loss?.type || 'POINTS',
+          instrumentMoveValue: backendLeg.trailing_stop_loss?.instrument_move_value || 0,
+          stopLossMoveValue: backendLeg.trailing_stop_loss?.stop_loss_move_value || 0,
         },
         waitAndTrade: {
-          enabled: backendLeg.risk_management?.wait_and_trade?.enabled || false,
-          type: backendLeg.risk_management?.wait_and_trade?.type || 'POINTS',
-          value: backendLeg.risk_management?.wait_and_trade?.value || 0,
+          enabled: backendLeg.wait_and_trade?.enabled || false,
+          type: backendLeg.wait_and_trade?.type || 'PERCENTAGE',
+          value: backendLeg.wait_and_trade?.value || 0,
         },
         reEntry: {
-          enabled: backendLeg.risk_management?.re_entry?.enabled || false,
-          type: backendLeg.risk_management?.re_entry?.type || 'SL_REENTRY',
-          count: backendLeg.risk_management?.re_entry?.count || 1,
+          enabled: backendLeg.re_entry?.enabled || false,
+          type: backendLeg.re_entry?.type || 'SL_REENTRY',
+          count: backendLeg.re_entry?.count || 1,
         },
         reExecute: {
-          enabled: backendLeg.risk_management?.re_execute?.enabled || false,
-          type: backendLeg.risk_management?.re_execute?.type || 'TP_REEXEC',
-          count: backendLeg.risk_management?.re_execute?.count || 1,
+          enabled: backendLeg.re_execute?.enabled || false,
+          type: backendLeg.re_execute?.type || 'TP_REEXEC',
+          count: backendLeg.re_execute?.count || 1,
         },
       };
       
@@ -317,7 +433,7 @@ class StrategyTransformationService {
     const [entryHour, entryMinute] = this.parseTimeString(entry_time, '09', '15');
     const [exitHour, exitMinute] = this.parseTimeString(exit_time, '15', '30');
     const [rangeBreakoutHour, rangeBreakoutMinute] = this.parseTimeString(
-      strategy_config.range_breakout_time, 
+      backendData.range_breakout_time, 
       '09', 
       '30'
     );
@@ -328,21 +444,22 @@ class StrategyTransformationService {
       entryTimeMinute: entryMinute,
       exitTimeHour: exitHour,
       exitTimeMinute: exitMinute,
-      rangeBreakout: strategy_config.range_breakout || false,
+      rangeBreakout: backendData.range_breakout || false,
       rangeBreakoutTimeHour: rangeBreakoutHour,
       rangeBreakoutTimeMinute: rangeBreakoutMinute,
-      moveSlToCost: strategy_config.move_sl_to_cost || false,
-      tradingType: 'INTRADAY', // Default, can be enhanced
-      intradayExitMode: 'SAME_DAY', // Default
-      positionalEntryDays: 2,
-      positionalExitDays: 0,
+      moveSlToCost: backendData.move_sl_to_cost || false,
+      productType: backendData.product || 'MIS',
+      tradingType: backendData.trading_type || 'INTRADAY',
+      intradayExitMode: backendData.intraday_exit_mode || 'SAME_DAY',
+      entryTradingDaysBeforeExpiry: backendData.entry_trading_days_before_expiry || 4,
+      exitTradingDaysBeforeExpiry: backendData.exit_trading_days_before_expiry || 0,
       targetProfit: {
-        type: strategy_config.target_profit?.type || 'TOTAL_MTM',
-        value: strategy_config.target_profit?.value || 0,
+        type: backendData.target_profit?.type || 'TOTAL_MTM',
+        value: backendData.target_profit?.value || 0,
       },
       mtmStopLoss: {
-        type: strategy_config.mtm_stop_loss?.type || 'TOTAL_MTM',
-        value: strategy_config.mtm_stop_loss?.value || 0,
+        type: backendData.mtm_stop_loss?.type || 'TOTAL_MTM',
+        value: backendData.mtm_stop_loss?.value || 0,
       },
     };
     
@@ -371,63 +488,6 @@ class StrategyTransformationService {
     return transformedValue;
   }
   
-  /**
-   * Transform complex risk management configuration
-   */
-  private transformRiskManagement(leg: FrontendStrategyLeg): any {
-    const riskManagement: any = {};
-    
-    if (leg.stopLoss.enabled) {
-      riskManagement.stop_loss = {
-        enabled: true,
-        type: leg.stopLoss.type,
-        value: leg.stopLoss.value
-      };
-    }
-    
-    if (leg.targetProfit.enabled) {
-      riskManagement.target_profit = {
-        enabled: true,
-        type: leg.targetProfit.type,
-        value: leg.targetProfit.value
-      };
-    }
-    
-    if (leg.trailingStopLoss.enabled) {
-      riskManagement.trailing_stop_loss = {
-        enabled: true,
-        type: leg.trailingStopLoss.type,
-        instrument_move_value: leg.trailingStopLoss.instrumentMoveValue,
-        stop_loss_move_value: leg.trailingStopLoss.stopLossMoveValue
-      };
-    }
-    
-    if (leg.waitAndTrade.enabled) {
-      riskManagement.wait_and_trade = {
-        enabled: true,
-        type: leg.waitAndTrade.type,
-        value: leg.waitAndTrade.value
-      };
-    }
-    
-    if (leg.reEntry.enabled) {
-      riskManagement.re_entry = {
-        enabled: true,
-        type: leg.reEntry.type,
-        count: leg.reEntry.count
-      };
-    }
-    
-    if (leg.reExecute.enabled) {
-      riskManagement.re_execute = {
-        enabled: true,
-        type: leg.reExecute.type,
-        count: leg.reExecute.count
-      };
-    }
-    
-    return Object.keys(riskManagement).length > 0 ? riskManagement : undefined;
-  }
   
   /**
    * Validate frontend data before transformation using basic validation
@@ -455,15 +515,15 @@ class StrategyTransformationService {
         errors.push(`Position ${index + 1}: Total lots must be greater than 0`);
       }
       
-      if (leg.selectionMethod === 'CLOSEST_PREMIUM') {
+      if (leg.selectionMethod === 'PREMIUM') {
         if (!leg.premiumOperator || leg.premiumValue === undefined) {
-          errors.push(`Position ${index + 1}: Premium criteria required for Closest Premium selection`);
+          errors.push(`Position ${index + 1}: Premium criteria required for Premium selection`);
         }
       }
       
-      if (leg.selectionMethod === 'CLOSEST_STRADDLE_PREMIUM') {
+      if (leg.selectionMethod === 'PERCENTAGE_OF_STRADDLE_PREMIUM') {
         if (!leg.straddlePremiumOperator || leg.straddlePremiumPercentage === undefined) {
-          errors.push(`Position ${index + 1}: Straddle premium criteria required for Closest Straddle Premium selection`);
+          errors.push(`Position ${index + 1}: Straddle premium criteria required for Percentage of Straddle Premium selection`);
         }
       }
       

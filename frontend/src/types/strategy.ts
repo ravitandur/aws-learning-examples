@@ -12,15 +12,16 @@ export type ExpiryType = "weekly" | "monthly";
 export type SelectionMethod =
   | "ATM_POINTS"
   | "ATM_PERCENT"
-  | "CLOSEST_PREMIUM"
-  | "CLOSEST_STRADDLE_PREMIUM";
-export type PremiumOperator = "CP_EQUAL" | "CP_GREATER_EQUAL" | "CP_LESS_EQUAL";
+  | "PREMIUM"
+  | "PERCENTAGE_OF_STRADDLE_PREMIUM";
+export type PremiumOperator = "CLOSEST" | "GTE" | "LTE";
 export type RiskManagementType = "POINTS" | "PERCENTAGE" | "RANGE";
 export type ReEntryType = "SL_REENTRY" | "SL_RECOST" | "SL_REEXEC";
 export type ReExecuteType = "TP_REEXEC";
 export type TradingType = "INTRADAY" | "POSITIONAL";
 export type IntradayExitMode = "SAME_DAY" | "NEXT_DAY_BTST";
 export type MTMType = "TOTAL_MTM" | "COMBINED_PREMIUM_PERCENT";
+export type ProductType = "MIS" | "NRML";
 
 // Risk Management sub-interfaces
 export interface StopLossConfig {
@@ -68,14 +69,13 @@ export interface StrategyLeg {
   actionType: ActionType;
   strikePrice: string;
   totalLots: number;
-  expiryType: ExpiryType;
   selectionMethod: SelectionMethod;
 
-  // Premium selection fields for CLOSEST_PREMIUM method
+  // Premium selection fields for PREMIUM method
   premiumOperator?: PremiumOperator;
   premiumValue?: number;
 
-  // Straddle premium fields for CLOSEST_STRADDLE_PREMIUM method
+  // Straddle premium fields for PERCENTAGE_OF_STRADDLE_PREMIUM method
   straddlePremiumOperator?: PremiumOperator;
   straddlePremiumPercentage?: number;
 
@@ -99,11 +99,19 @@ export interface StrategyConfig {
   rangeBreakoutTimeMinute: string;
   moveSlToCost: boolean;
 
+  // Strategy-level expiry type
+  expiryType: ExpiryType;
+
+  // Product type configuration
+  productType: ProductType;
+
   // Trading type configuration
   tradingType: TradingType;
   intradayExitMode: IntradayExitMode;
-  positionalEntryDays: number;
-  positionalExitDays: number;
+
+  // Trading days before expiry (for positional trading)
+  entryTradingDaysBeforeExpiry: number;
+  exitTradingDaysBeforeExpiry: number;
 
   // Strategy-level risk management
   targetProfit: {
@@ -154,6 +162,6 @@ export interface PositionActions {
 
 // Default values type
 export interface DefaultValues {
-  positionalEntryDays: number;
-  positionalExitDays: number;
+  entryTradingDaysBeforeExpiry: number;
+  exitTradingDaysBeforeExpiry: number;
 }

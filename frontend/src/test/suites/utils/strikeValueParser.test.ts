@@ -70,21 +70,21 @@ describe("Strike Value Parser - Bidirectional Transformation", () => {
 
   // Edge Cases and Dynamic Methods
   describe("Special Methods", () => {
-    test("CLOSEST_PREMIUM: Dynamic value", () => {
-      const result = parseStrikeValue("100", "CLOSEST_PREMIUM");
+    test("PREMIUM: Dynamic value", () => {
+      const result = parseStrikeValue("100", "PREMIUM");
       expect(result).toBe("DYNAMIC");
 
-      const display = formatStrikeForDisplay("DYNAMIC", "CLOSEST_PREMIUM");
+      const display = formatStrikeForDisplay("DYNAMIC", "PREMIUM");
       expect(display).toBe("DYNAMIC");
     });
 
-    test("CLOSEST_STRADDLE_PREMIUM: Dynamic value", () => {
-      const result = parseStrikeValue("25", "CLOSEST_STRADDLE_PREMIUM");
+    test("PERCENTAGE_OF_STRADDLE_PREMIUM: Dynamic value", () => {
+      const result = parseStrikeValue("25", "PERCENTAGE_OF_STRADDLE_PREMIUM");
       expect(result).toBe("DYNAMIC");
 
       const display = formatStrikeForDisplay(
         "DYNAMIC",
-        "CLOSEST_STRADDLE_PREMIUM"
+        "PERCENTAGE_OF_STRADDLE_PREMIUM"
       );
       expect(display).toBe("DYNAMIC");
     });

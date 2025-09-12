@@ -156,10 +156,10 @@ class StrategyValidationService {
         }
         break;
 
-      case 'CLOSEST_PREMIUM':
+      case 'PREMIUM':
         // Validate premium criteria
         if (!leg.premiumOperator) {
-          errors.push('Premium operator is required for Closest Premium method');
+          errors.push('Premium operator is required for Premium method');
         }
         if (leg.premiumValue === undefined || leg.premiumValue < 0) {
           errors.push('Premium value must be a positive number');
@@ -168,10 +168,10 @@ class StrategyValidationService {
         }
         break;
 
-      case 'CLOSEST_STRADDLE_PREMIUM':
+      case 'PERCENTAGE_OF_STRADDLE_PREMIUM':
         // Validate straddle premium criteria
         if (!leg.straddlePremiumOperator) {
-          errors.push('Premium operator is required for Closest Straddle Premium method');
+          errors.push('Premium operator is required for Percentage of Straddle Premium method');
         }
         if (leg.straddlePremiumPercentage === undefined || leg.straddlePremiumPercentage <= 0) {
           errors.push('Straddle premium percentage must be greater than 0');

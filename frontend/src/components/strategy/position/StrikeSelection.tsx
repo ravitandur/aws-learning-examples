@@ -37,7 +37,7 @@ const StrikeSelection: React.FC<StrikeSelectionProps> = ({ leg, onUpdate }) => {
     onUpdate({ strikePrice });
   };
 
-  const handlePremiumOperatorChange = (operator: 'CP_EQUAL' | 'CP_GREATER_EQUAL' | 'CP_LESS_EQUAL') => {
+  const handlePremiumOperatorChange = (operator: 'CLOSEST' | 'GTE' | 'LTE') => {
     onUpdate({ premiumOperator: operator });
   };
 
@@ -45,7 +45,7 @@ const StrikeSelection: React.FC<StrikeSelectionProps> = ({ leg, onUpdate }) => {
     onUpdate({ premiumValue: value });
   };
 
-  const handleStraddlePremiumOperatorChange = (operator: 'CP_EQUAL' | 'CP_GREATER_EQUAL' | 'CP_LESS_EQUAL') => {
+  const handleStraddlePremiumOperatorChange = (operator: 'CLOSEST' | 'GTE' | 'LTE') => {
     onUpdate({ straddlePremiumOperator: operator });
   };
 
@@ -60,7 +60,7 @@ const StrikeSelection: React.FC<StrikeSelectionProps> = ({ leg, onUpdate }) => {
       </label>
       
       {/* Single Row Layout for Strike Selection */}
-      {leg.selectionMethod === 'CLOSEST_PREMIUM' ? (
+      {leg.selectionMethod === 'PREMIUM' ? (
         // Premium Selection UI - 3 columns
         <div className="grid grid-cols-3 gap-2">
           {/* Selection Method */}
@@ -73,8 +73,8 @@ const StrikeSelection: React.FC<StrikeSelectionProps> = ({ leg, onUpdate }) => {
           
           {/* Premium Operator */}
           <Select
-            value={leg.premiumOperator || 'CP_EQUAL'}
-            onChange={(e) => handlePremiumOperatorChange(e.target.value as 'CP_EQUAL' | 'CP_GREATER_EQUAL' | 'CP_LESS_EQUAL')}
+            value={leg.premiumOperator || 'CLOSEST'}
+            onChange={(e) => handlePremiumOperatorChange(e.target.value as 'CLOSEST' | 'GTE' | 'LTE')}
             options={PREMIUM_OPERATOR_OPTIONS}
             className="h-9 text-sm"
           />
@@ -90,7 +90,7 @@ const StrikeSelection: React.FC<StrikeSelectionProps> = ({ leg, onUpdate }) => {
             className="h-9 text-sm"
           />
         </div>
-      ) : leg.selectionMethod === 'CLOSEST_STRADDLE_PREMIUM' ? (
+      ) : leg.selectionMethod === 'PERCENTAGE_OF_STRADDLE_PREMIUM' ? (
         // Straddle Premium Selection UI - 3 columns
         <div className="grid grid-cols-3 gap-2">
           {/* Selection Method */}
@@ -103,8 +103,8 @@ const StrikeSelection: React.FC<StrikeSelectionProps> = ({ leg, onUpdate }) => {
           
           {/* Straddle Premium Operator */}
           <Select
-            value={leg.straddlePremiumOperator || 'CP_EQUAL'}
-            onChange={(e) => handleStraddlePremiumOperatorChange(e.target.value as 'CP_EQUAL' | 'CP_GREATER_EQUAL' | 'CP_LESS_EQUAL')}
+            value={leg.straddlePremiumOperator || 'CLOSEST'}
+            onChange={(e) => handleStraddlePremiumOperatorChange(e.target.value as 'CLOSEST' | 'GTE' | 'LTE')}
             options={PREMIUM_OPERATOR_OPTIONS}
             className="h-9 text-sm"
           />

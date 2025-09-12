@@ -15,11 +15,12 @@
  * All functionality and look/feel maintained while improving maintainability.
  */
 
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import { Card, CardContent } from "../ui/Card";
 import Button from "../ui/Button";
 import StrategyHeader from "../strategy/header/StrategyHeader";
-import PositionConfig from "../strategy/position/PositionConfig";
+import GlobalIndexSelector from "../strategy/config/GlobalIndexSelector";
+import PositionsSection from "../strategy/position/PositionsSection";
 import StrategyConfiguration from "../strategy/config/StrategyConfiguration";
 import { StrategyConfig } from "../../types/strategy";
 import { useToast } from "../common/ToastContainer";
@@ -54,12 +55,26 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
     setStrategyConfig,
   } = useStrategyForm({ basketId, onClose });
 
-  const { actions, updatePosition } = usePositionManagement({
+  const { actions, updateIndex, updatePosition } = usePositionManagement({
     legs,
     setLegs,
     strategyIndex,
     showError,
   });
+
+  // Sync all positions when global index changes
+  useEffect(() => {
+    if (legs.length > 0) {
+      updateIndex(strategyIndex);
+    }
+  }, [strategyIndex, updateIndex, legs.length]);
+
+  // Sync expiry type changes across the strategy
+  useEffect(() => {
+    console.log('Strategy expiry type changed to:', strategyConfig.expiryType);
+    // Expiry type is now strategy-level, so it automatically applies to all positions
+    // No need to update individual positions as we did with index
+  }, [strategyConfig.expiryType]);
 
   const validation = useStrategyValidation();
 
@@ -93,44 +108,53 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
         className="w-full max-w-5xl h-full sm:h-[95vh] flex flex-col"
       >
         <Card className="flex flex-col bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border border-white/20 dark:border-gray-700/20 rounded-none sm:rounded-2xl shadow-2xl overflow-hidden h-full">
-          {/* Fixed Header */}
+          {/* Row 1: Fixed Header */}
           <StrategyHeader
             strategyName={strategyName}
-            strategyIndex={strategyIndex}
             positionCount={legs.length}
             onStrategyNameChange={setStrategyName}
-            onStrategyIndexChange={setStrategyIndex}
             onAddPosition={actions.add}
             onClose={onClose}
           />
 
-          {/* Scrollable Content */}
+          {/* Content Area */}
           <CardContent className="flex-1 flex flex-col overflow-hidden p-0">
             <div className="flex-1 overflow-y-auto">
-              {/* Positions List */}
-              {legs.length > 0 && (
-                <div className="py-4">
-                  {legs.map((leg, index) => (
-                    <PositionConfig
-                      key={leg.id}
-                      leg={leg}
-                      legNumber={index + 1}
-                      isFirst={index === 0}
-                      onUpdate={(updates) => updatePosition(leg.id, updates)}
-                      onDuplicate={() => actions.copy(leg.id)}
-                      onDelete={() => actions.remove(leg.id)}
-                    />
-                  ))}
-                </div>
-              )}
+              {/* Row 2: Global Index Selection */}
+              <div className="flex-shrink-0">
+                <GlobalIndexSelector
+                  value={strategyIndex}
+                  onChange={setStrategyIndex}
+                  expiryType={strategyConfig.expiryType}
+                  onExpiryTypeChange={(expiryType) => handleStrategyConfigUpdate({ expiryType })}
+                  productType={strategyConfig.productType}
+                  onProductTypeChange={(productType) => handleStrategyConfigUpdate({ productType })}
+                  tradingType={strategyConfig.tradingType}
+                  intradayExitMode={strategyConfig.intradayExitMode}
+                />
+              </div>
 
-              {/* Strategy Configuration - Only show after first position */}
-              {legs.length > 0 && (
+              {/* Row 3: Positions Section */}
+              <div className="flex-shrink-0">
+                <PositionsSection
+                  positions={legs}
+                  onPositionUpdate={updatePosition}
+                  onPositionRemove={actions.remove}
+                  onPositionCopy={actions.copy}
+                  onAddPosition={actions.add}
+                  strategyIndex={strategyIndex}
+                  strategyExpiryType={strategyConfig.expiryType}
+                  strategyProductType={strategyConfig.productType}
+                />
+              </div>
+
+              {/* Row 4: Strategy Configuration - Always visible */}
+              <div className="flex-shrink-0">
                 <StrategyConfiguration
                   config={strategyConfig}
                   onUpdate={handleStrategyConfigUpdate}
                 />
-              )}
+              </div>
             </div>
 
             {/* Sticky Footer */}

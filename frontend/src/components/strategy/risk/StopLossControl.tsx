@@ -10,6 +10,7 @@ import Input from '../../ui/Input';
 import Select from '../../ui/Select';
 import { StrategyLeg } from '../../../types/strategy';
 import { RISK_MANAGEMENT_TYPE_OPTIONS } from '../../../utils/strategy';
+import { isValidStopLoss } from '../../../utils/strategy/riskValidators';
 
 interface StopLossControlProps {
   leg: StrategyLeg;
@@ -18,22 +19,38 @@ interface StopLossControlProps {
 
 const StopLossControl: React.FC<StopLossControlProps> = ({ leg, onUpdate }) => {
   const handleEnabledChange = (enabled: boolean) => {
+    const newStopLoss = { ...leg.stopLoss, enabled };
+    const isValid = enabled && isValidStopLoss(newStopLoss);
+    
     onUpdate({
-      stopLoss: { ...leg.stopLoss, enabled },
-      // Disable trailing stop loss if stop loss is disabled
-      trailingStopLoss: enabled ? leg.trailingStopLoss : { ...leg.trailingStopLoss, enabled: false }
+      stopLoss: newStopLoss,
+      // Disable dependent controls if stop loss becomes invalid
+      trailingStopLoss: isValid ? leg.trailingStopLoss : { ...leg.trailingStopLoss, enabled: false },
+      reEntry: isValid ? leg.reEntry : { ...leg.reEntry, enabled: false }
     });
   };
 
   const handleTypeChange = (type: 'POINTS' | 'PERCENTAGE' | 'RANGE') => {
+    const newStopLoss = { ...leg.stopLoss, type, value: 0 };
+    const isValid = isValidStopLoss(newStopLoss);
+    
     onUpdate({
-      stopLoss: { ...leg.stopLoss, type, value: 0 }
+      stopLoss: newStopLoss,
+      // Disable dependent controls if stop loss becomes invalid
+      trailingStopLoss: isValid ? leg.trailingStopLoss : { ...leg.trailingStopLoss, enabled: false },
+      reEntry: isValid ? leg.reEntry : { ...leg.reEntry, enabled: false }
     });
   };
 
   const handleValueChange = (value: number) => {
+    const newStopLoss = { ...leg.stopLoss, value };
+    const isValid = isValidStopLoss(newStopLoss);
+    
     onUpdate({
-      stopLoss: { ...leg.stopLoss, value }
+      stopLoss: newStopLoss,
+      // Disable dependent controls if stop loss becomes invalid
+      trailingStopLoss: isValid ? leg.trailingStopLoss : { ...leg.trailingStopLoss, enabled: false },
+      reEntry: isValid ? leg.reEntry : { ...leg.reEntry, enabled: false }
     });
   };
 

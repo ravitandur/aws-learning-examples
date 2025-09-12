@@ -91,7 +91,7 @@ export const generatePositionStrikeOptions = (
 export const requiresPremiumCriteria = (
   selectionMethod: SelectionMethod
 ): boolean => {
-  return selectionMethod === "CLOSEST_PREMIUM";
+  return selectionMethod === "PREMIUM";
 };
 
 /**
@@ -100,7 +100,7 @@ export const requiresPremiumCriteria = (
 export const requiresStraddlePremiumCriteria = (
   selectionMethod: SelectionMethod
 ): boolean => {
-  return selectionMethod === "CLOSEST_STRADDLE_PREMIUM";
+  return selectionMethod === "PERCENTAGE_OF_STRADDLE_PREMIUM";
 };
 
 /**

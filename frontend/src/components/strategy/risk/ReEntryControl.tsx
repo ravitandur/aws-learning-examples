@@ -9,6 +9,7 @@ import React from 'react';
 import Select from '../../ui/Select';
 import { StrategyLeg } from '../../../types/strategy';
 import { RE_ENTRY_TYPE_OPTIONS, COUNT_OPTIONS } from '../../../utils/strategy';
+import { canEnableReEntry, getStopLossInvalidReason } from '../../../utils/strategy/riskValidators';
 
 interface ReEntryControlProps {
   leg: StrategyLeg;
@@ -16,7 +17,14 @@ interface ReEntryControlProps {
 }
 
 const ReEntryControl: React.FC<ReEntryControlProps> = ({ leg, onUpdate }) => {
+  const canEnable = canEnableReEntry(leg.stopLoss);
+  const disabledReason = getStopLossInvalidReason(leg.stopLoss);
+
   const handleEnabledChange = (enabled: boolean) => {
+    // Only allow enabling if Stop Loss is valid
+    if (enabled && !canEnable) {
+      return;
+    }
     onUpdate({
       reEntry: { ...leg.reEntry, enabled }
     });
@@ -41,18 +49,25 @@ const ReEntryControl: React.FC<ReEntryControlProps> = ({ leg, onUpdate }) => {
           type="checkbox"
           id={`reEntry-${leg.id}`}
           checked={leg.reEntry.enabled}
+          disabled={!canEnable}
           onChange={(e) => handleEnabledChange(e.target.checked)}
-          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+          title={!canEnable ? disabledReason || 'Requires valid Stop Loss configuration' : ''}
         />
         <label 
           htmlFor={`reEntry-${leg.id}`} 
-          className="text-sm font-medium text-gray-700 dark:text-gray-200"
+          className={`text-sm font-medium ${
+            !canEnable 
+              ? 'text-gray-400' 
+              : 'text-gray-700 dark:text-gray-200'
+          }`}
+          title={!canEnable ? disabledReason || 'Requires valid Stop Loss configuration' : ''}
         >
           Re-Entry (SL)
         </label>
       </div>
       
-      {leg.reEntry.enabled && (
+      {leg.reEntry.enabled && canEnable && (
         <div className="space-y-2">
           <Select
             value={leg.reEntry.type}

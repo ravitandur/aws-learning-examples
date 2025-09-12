@@ -88,8 +88,8 @@ export const useStrategyForm = ({
   }, [onClose]);
   
   // Derived values
-  const expiryText = getExpiryText(legs);
-  const maxSliderRange = getMaxSliderRange(legs);
+  const expiryText = getExpiryText(strategyConfig.expiryType);
+  const maxSliderRange = getMaxSliderRange(strategyConfig.expiryType);
   const defaultPositionalValues = getDefaultPositionalValues();
   
   // Form data getter
@@ -105,7 +105,6 @@ export const useStrategyForm = ({
       actionType: leg.actionType,
       strikePrice: leg.strikePrice,
       totalLots: leg.totalLots,
-      expiryType: leg.expiryType,
       selectionMethod: leg.selectionMethod,
       premiumOperator: leg.premiumOperator,
       premiumValue: leg.premiumValue,

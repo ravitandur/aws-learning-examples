@@ -22,25 +22,27 @@ interface RiskManagementSectionProps {
 
 const RiskManagementSection: React.FC<RiskManagementSectionProps> = ({ leg, onUpdate }) => {
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-      <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-4">
-        Risk Management
-      </h4>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Primary Risk Controls */}
-        <div className="space-y-4">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      {/* Stop Loss Card */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-600/50 p-4">
+        <div className="space-y-3">
           <StopLossControl leg={leg} onUpdate={onUpdate} />
-          <TargetProfitControl leg={leg} onUpdate={onUpdate} />
           <TrailingStopLossControl leg={leg} onUpdate={onUpdate} />
-        </div>
-        
-        {/* Advanced Risk Controls */}
-        <div className="space-y-4">
-          <WaitAndTradeControl leg={leg} onUpdate={onUpdate} />
           <ReEntryControl leg={leg} onUpdate={onUpdate} />
+        </div>
+      </div>
+
+      {/* Target Profit Card */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-600/50 p-4">
+        <div className="space-y-3">
+          <TargetProfitControl leg={leg} onUpdate={onUpdate} />
           <ReExecuteControl leg={leg} onUpdate={onUpdate} />
         </div>
+      </div>
+
+      {/* Wait and Trade - Independent */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-600/50 p-4">
+        <WaitAndTradeControl leg={leg} onUpdate={onUpdate} />
       </div>
     </div>
   );

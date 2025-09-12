@@ -25,14 +25,30 @@ describe("Strategy Transformation Service", () => {
       expect(backendData).toMatchObject({
         name: "Test Strategy",
         underlying: "NIFTY",
-        product: "MIS",
+        product: "NRML",
         entry_time: "09:15",
         exit_time: "15:30",
+        trading_type: "INTRADAY",
+        intraday_exit_mode: "SAME_DAY",
       });
+      
+      // Verify INTRADAY mode doesn't include positional fields
+      expect(backendData.entry_trading_days_before_expiry).toBeUndefined();
+      expect(backendData.exit_trading_days_before_expiry).toBeUndefined();
+      
+      // Verify flattened strategy configuration fields
+      expect(backendData.range_breakout).toBe(false);
+      expect(backendData.range_breakout_time).toBeUndefined();
+      expect(backendData.move_sl_to_cost).toBe(false);
+      expect(backendData.target_profit).toBeUndefined(); // Default value is 0
+      expect(backendData.mtm_stop_loss).toBeUndefined(); // Default value is 0
+      
+      // Verify nested strategy_config object no longer exists
+      expect(backendData).not.toHaveProperty('strategy_config');
       
       expect(backendData.legs).toHaveLength(1);
       expect(backendData.legs[0]).toMatchObject({
-        option_type: "CALL",
+        option_type: "CE",
         action: "BUY",
         strike: 0, // ATM should be transformed to 0
         lots: 1,
@@ -72,13 +88,13 @@ describe("Strategy Transformation Service", () => {
       expect(backendData.legs[0].selection_method).toBe("ATM_POINTS");
     });
 
-    test("handles CLOSEST_PREMIUM method", () => {
+    test("handles PREMIUM method", () => {
       const testData = {
         ...mockStrategyData,
         legs: [{
           ...mockStrategyData.legs[0],
-          selectionMethod: "CLOSEST_PREMIUM" as const,
-          premiumOperator: "CP_GREATER_EQUAL" as const,
+          selectionMethod: "PREMIUM" as const,
+          premiumOperator: "GTE" as const,
           premiumValue: 100,
         }]
       };
@@ -87,35 +103,150 @@ describe("Strategy Transformation Service", () => {
       
       expect(backendData.legs[0].strike).toBe("DYNAMIC");
       expect(backendData.legs[0].premium_criteria).toEqual({
-        operator: "CP_GREATER_EQUAL",
+        operator: "GTE",
         value: 100,
       });
     });
 
-    test("includes risk management configuration", () => {
+    test("includes flattened risk management configuration", () => {
       const testData = {
         ...mockStrategyData,
         legs: [{
           ...mockStrategyData.legs[0],
-          stopLoss: { enabled: true, type: "POINTS" as const, value: 50 },
+          stopLoss: { enabled: true, type: "PERCENTAGE" as const, value: 50 },
           targetProfit: { enabled: true, type: "PERCENTAGE" as const, value: 20 },
+          trailingStopLoss: { enabled: true, type: "POINTS" as const, instrumentMoveValue: 10, stopLossMoveValue: 5 },
+          waitAndTrade: { enabled: true, type: "PERCENTAGE" as const, value: 15 },
         }]
       };
       
       const backendData = strategyTransformationService.transformToBackend(testData);
       
-      expect(backendData.legs[0].risk_management).toMatchObject({
-        stop_loss: {
-          enabled: true,
-          type: "POINTS",
-          value: 50,
-        },
-        target_profit: {
-          enabled: true,
-          type: "PERCENTAGE", 
-          value: 20,
-        },
+      // Verify flattened risk management fields at leg level
+      expect(backendData.legs[0].stop_loss).toEqual({
+        enabled: true,
+        type: "PERCENTAGE",
+        value: 50,
       });
+      expect(backendData.legs[0].target_profit).toEqual({
+        enabled: true,
+        type: "PERCENTAGE", 
+        value: 20,
+      });
+      expect(backendData.legs[0].trailing_stop_loss).toEqual({
+        enabled: true,
+        type: "POINTS",
+        instrument_move_value: 10,
+        stop_loss_move_value: 5,
+      });
+      expect(backendData.legs[0].wait_and_trade).toEqual({
+        enabled: true,
+        type: "PERCENTAGE",
+        value: 15,
+      });
+      
+      // Verify nested risk_management object no longer exists
+      expect(backendData.legs[0]).not.toHaveProperty('risk_management');
+    });
+
+    test("transforms INTRADAY trading type correctly", () => {
+      const testData = {
+        ...mockStrategyData,
+        config: {
+          ...mockStrategyData.config,
+          tradingType: "INTRADAY" as const,
+          intradayExitMode: "NEXT_DAY_BTST" as const,
+        }
+      };
+      
+      const backendData = strategyTransformationService.transformToBackend(testData);
+      
+      expect(backendData.trading_type).toBe("INTRADAY");
+      expect(backendData.intraday_exit_mode).toBe("NEXT_DAY_BTST");
+      
+      // Verify INTRADAY mode doesn't include positional fields
+      expect(backendData.entry_trading_days_before_expiry).toBeUndefined();
+      expect(backendData.exit_trading_days_before_expiry).toBeUndefined();
+    });
+
+    test("transforms POSITIONAL trading type correctly", () => {
+      const testData = {
+        ...mockStrategyData,
+        config: {
+          ...mockStrategyData.config,
+          tradingType: "POSITIONAL" as const,
+          entryTradingDaysBeforeExpiry: 5,
+          exitTradingDaysBeforeExpiry: 1,
+        }
+      };
+      
+      const backendData = strategyTransformationService.transformToBackend(testData);
+      
+      expect(backendData.trading_type).toBe("POSITIONAL");
+      expect(backendData.entry_trading_days_before_expiry).toBe(5);
+      expect(backendData.exit_trading_days_before_expiry).toBe(1);
+      
+      // Verify POSITIONAL mode doesn't include intraday fields
+      expect(backendData.intraday_exit_mode).toBeUndefined();
+    });
+
+    test("transforms flattened strategy configuration correctly", () => {
+      const testData = {
+        ...mockStrategyData,
+        config: {
+          ...mockStrategyData.config,
+          rangeBreakout: true,
+          rangeBreakoutTimeHour: "09",
+          rangeBreakoutTimeMinute: "45",
+          moveSlToCost: true,
+          targetProfit: { type: "TOTAL_MTM" as const, value: 1500 },
+          mtmStopLoss: { type: "COMBINED_PREMIUM_PERCENT" as const, value: 500 },
+        }
+      };
+      
+      const backendData = strategyTransformationService.transformToBackend(testData);
+      
+      // Verify flattened strategy configuration fields are at top level
+      expect(backendData.range_breakout).toBe(true);
+      expect(backendData.range_breakout_time).toBe("09:45");
+      expect(backendData.move_sl_to_cost).toBe(true);
+      expect(backendData.target_profit).toEqual({
+        type: "TOTAL_MTM",
+        value: 1500
+      });
+      expect(backendData.mtm_stop_loss).toEqual({
+        type: "COMBINED_PREMIUM_PERCENT",
+        value: 500
+      });
+      
+      // Verify no nested strategy_config object exists
+      expect(backendData).not.toHaveProperty('strategy_config');
+    });
+
+    test("handles product type selection correctly", () => {
+      // Test MIS product type (default)
+      const misData = {
+        ...mockStrategyData,
+        config: {
+          ...mockStrategyData.config,
+          productType: "MIS" as const,
+        }
+      };
+      
+      const misBackendData = strategyTransformationService.transformToBackend(misData);
+      expect(misBackendData.product).toBe("MIS");
+
+      // Test NRML product type
+      const nrmlData = {
+        ...mockStrategyData,
+        config: {
+          ...mockStrategyData.config,
+          productType: "NRML" as const,
+        }
+      };
+      
+      const nrmlBackendData = strategyTransformationService.transformToBackend(nrmlData);
+      expect(nrmlBackendData.product).toBe("NRML");
     });
   });
 
@@ -128,28 +259,29 @@ describe("Strategy Transformation Service", () => {
         exit_time: "15:15",
         legs: [
           {
-            option_type: "CALL",
+            option_type: "CE",
             action: "SELL",
             strike: 5,
             lots: 2,
             selection_method: "ATM_PERCENT",
           },
           {
-            option_type: "PUT",
+            option_type: "PE",
             action: "BUY",
             strike: -3,
             lots: 1,
             selection_method: "ATM_POINTS",
           },
         ],
-        strategy_config: {
-          range_breakout: true,
-          range_breakout_time: "09:45",
-          move_sl_to_cost: true,
-          target_profit: {
-            type: "TOTAL_MTM",
-            value: 1000,
-          },
+        // Flattened strategy configuration
+        trading_type: "INTRADAY",
+        intraday_exit_mode: "SAME_DAY",
+        range_breakout: true,
+        range_breakout_time: "09:45",
+        move_sl_to_cost: true,
+        target_profit: {
+          type: "TOTAL_MTM",
+          value: 1000,
         },
       };
       
@@ -184,6 +316,39 @@ describe("Strategy Transformation Service", () => {
       expect(frontendData.legs![1].strikePrice).toBe("ITM3");
       expect(frontendData.legs![1].optionType).toBe("PE");
       expect(frontendData.legs![1].actionType).toBe("BUY");
+      
+      // Test product type transformation
+      expect(frontendData.config.productType).toBe("MIS");
+    });
+
+    test("transforms product type from backend correctly", () => {
+      const backendStrategy = {
+        name: "NRML Strategy",
+        underlying: "BANKNIFTY",
+        product: "NRML",
+        entry_time: "09:15",
+        exit_time: "15:30",
+        trading_type: "POSITIONAL",
+        entry_trading_days_before_expiry: 5,
+        exit_trading_days_before_expiry: 1,
+        legs: [
+          {
+            option_type: "CE",
+            action: "BUY",
+            strike: "ATM",
+            selection_method: "ATM_POINTS",
+            lots: 2,
+          }
+        ]
+      };
+
+      const frontendData = strategyTransformationService.transformToFrontend(
+        "test-basket-id",
+        backendStrategy
+      );
+
+      expect(frontendData.config.productType).toBe("NRML");
+      expect(frontendData.config.tradingType).toBe("POSITIONAL");
     });
 
     test("handles DYNAMIC strikes for premium methods", () => {
@@ -195,9 +360,9 @@ describe("Strategy Transformation Service", () => {
             option_type: "CALL",
             action: "BUY", 
             strike: "DYNAMIC",
-            selection_method: "CLOSEST_PREMIUM",
+            selection_method: "PREMIUM",
             premium_criteria: {
-              operator: "CP_EQUAL",
+              operator: "CLOSEST",
               value: 75,
             },
           },
@@ -210,8 +375,76 @@ describe("Strategy Transformation Service", () => {
       );
       
       expect(frontendData.legs![0].strikePrice).toBe("DYNAMIC");
-      expect(frontendData.legs![0].premiumOperator).toBe("CP_EQUAL");
+      expect(frontendData.legs![0].premiumOperator).toBe("CLOSEST");
       expect(frontendData.legs![0].premiumValue).toBe(75);
+    });
+
+    test("transforms flattened backend strategy with risk management", () => {
+      const backendStrategy = {
+        name: "Flattened Risk Strategy",
+        underlying: "NIFTY",
+        entry_time: "09:15",
+        exit_time: "15:30",
+        legs: [
+          {
+            option_type: "PE",
+            action: "BUY",
+            strike: 0,
+            lots: 1,
+            selection_method: "ATM_POINTS",
+            // Flattened risk management
+            stop_loss: { enabled: true, type: "PERCENTAGE", value: 10 },
+            target_profit: { enabled: true, type: "PERCENTAGE", value: 15 },
+            trailing_stop_loss: {
+              enabled: true,
+              type: "POINTS",
+              instrument_move_value: 5,
+              stop_loss_move_value: 3
+            },
+            wait_and_trade: { enabled: true, type: "PERCENTAGE", value: 8 },
+            re_entry: { enabled: true, type: "SL_REENTRY", count: 2 },
+            re_execute: { enabled: true, type: "TP_REEXEC", count: 1 }
+          }
+        ],
+        // Flattened strategy configuration
+        trading_type: "POSITIONAL",
+        entry_trading_days_before_expiry: 5,
+        exit_trading_days_before_expiry: 1,
+        range_breakout: false,
+        move_sl_to_cost: false,
+        target_profit: { type: "COMBINED_PREMIUM_PERCENT", value: 2000 },
+        mtm_stop_loss: { type: "TOTAL_MTM", value: 1500 }
+      };
+      
+      const frontendData = strategyTransformationService.transformToFrontend(
+        backendStrategy,
+        "test-basket-id"
+      );
+      
+      // Verify strategy-level configuration
+      expect(frontendData.config).toMatchObject({
+        tradingType: "POSITIONAL",
+        entryTradingDaysBeforeExpiry: 5,
+        exitTradingDaysBeforeExpiry: 1,
+        rangeBreakout: false,
+        moveSlToCost: false,
+        targetProfit: { type: "COMBINED_PREMIUM_PERCENT", value: 2000 },
+        mtmStopLoss: { type: "TOTAL_MTM", value: 1500 }
+      });
+      
+      // Verify risk management transformation
+      const leg = frontendData.legs![0];
+      expect(leg.stopLoss).toEqual({ enabled: true, type: "PERCENTAGE", value: 10 });
+      expect(leg.targetProfit).toEqual({ enabled: true, type: "PERCENTAGE", value: 15 });
+      expect(leg.trailingStopLoss).toEqual({
+        enabled: true,
+        type: "POINTS",
+        instrumentMoveValue: 5,
+        stopLossMoveValue: 3
+      });
+      expect(leg.waitAndTrade).toEqual({ enabled: true, type: "PERCENTAGE", value: 8 });
+      expect(leg.reEntry).toEqual({ enabled: true, type: "SL_REENTRY", count: 2 });
+      expect(leg.reExecute).toEqual({ enabled: true, type: "TP_REEXEC", count: 1 });
     });
   });
 
@@ -236,7 +469,7 @@ describe("Strategy Transformation Service", () => {
         legs: [{
           ...mockStrategyData.legs[0],
           totalLots: 0,
-          selectionMethod: "CLOSEST_PREMIUM" as const,
+          selectionMethod: "PREMIUM" as const,
           premiumOperator: undefined,
         }]
       };
@@ -482,6 +715,124 @@ describe("Strategy Transformation Service", () => {
       // Should use defaults for invalid range breakout time
       expect(frontendData.config!.rangeBreakoutTimeHour).toBe('09');
       expect(frontendData.config!.rangeBreakoutTimeMinute).toBe('30');
+    });
+  });
+
+  describe("Product Type Validation", () => {
+    test("allows MIS for INTRADAY + SAME_DAY configuration", () => {
+      const testData = {
+        ...mockStrategyData,
+        config: {
+          ...mockStrategyData.config,
+          productType: "MIS" as const,
+          tradingType: "INTRADAY" as const,
+          intradayExitMode: "SAME_DAY" as const,
+        }
+      };
+      
+      const backendData = strategyTransformationService.transformToBackend(testData);
+      expect(backendData.product).toBe("MIS");
+    });
+
+    test("throws error for MIS with INTRADAY + NEXT_DAY_BTST", () => {
+      const testData = {
+        ...mockStrategyData,
+        config: {
+          ...mockStrategyData.config,
+          productType: "MIS" as const,
+          tradingType: "INTRADAY" as const,
+          intradayExitMode: "NEXT_DAY_BTST" as const,
+        }
+      };
+      
+      expect(() => {
+        strategyTransformationService.transformToBackend(testData);
+      }).toThrow("Product type validation failed: MIS product type is only allowed for INTRADAY trading with SAME_DAY exit mode.");
+    });
+
+    test("throws error for MIS with POSITIONAL trading", () => {
+      const testData = {
+        ...mockStrategyData,
+        config: {
+          ...mockStrategyData.config,
+          productType: "MIS" as const,
+          tradingType: "POSITIONAL" as const,
+          intradayExitMode: "SAME_DAY" as const,
+        }
+      };
+      
+      expect(() => {
+        strategyTransformationService.transformToBackend(testData);
+      }).toThrow("Product type validation failed: MIS product type is only allowed for INTRADAY trading with SAME_DAY exit mode.");
+    });
+
+    test("allows NRML for any trading configuration", () => {
+      // Test NRML with INTRADAY + NEXT_DAY_BTST
+      const testData1 = {
+        ...mockStrategyData,
+        config: {
+          ...mockStrategyData.config,
+          productType: "NRML" as const,
+          tradingType: "INTRADAY" as const,
+          intradayExitMode: "NEXT_DAY_BTST" as const,
+        }
+      };
+      
+      expect(() => {
+        const result = strategyTransformationService.transformToBackend(testData1);
+        expect(result.product).toBe("NRML");
+      }).not.toThrow();
+
+      // Test NRML with POSITIONAL
+      const testData2 = {
+        ...mockStrategyData,
+        config: {
+          ...mockStrategyData.config,
+          productType: "NRML" as const,
+          tradingType: "POSITIONAL" as const,
+          intradayExitMode: "SAME_DAY" as const,
+        }
+      };
+      
+      expect(() => {
+        const result = strategyTransformationService.transformToBackend(testData2);
+        expect(result.product).toBe("NRML");
+      }).not.toThrow();
+    });
+
+    test("preserves user choice for INTRADAY + SAME_DAY combinations", () => {
+      // Test that NRML is preserved for INTRADAY + SAME_DAY (user choice)
+      const testData = {
+        ...mockStrategyData,
+        config: {
+          ...mockStrategyData.config,
+          productType: "NRML" as const, // User chooses NRML for INTRADAY + SAME_DAY
+          tradingType: "INTRADAY" as const,
+          intradayExitMode: "SAME_DAY" as const,
+        }
+      };
+      
+      const backendData = strategyTransformationService.transformToBackend(testData);
+      
+      // Should preserve user choice (NRML)
+      expect(backendData.product).toBe("NRML");
+    });
+
+    test("throws error for invalid MIS configuration", () => {
+      const testData = {
+        ...mockStrategyData,
+        config: {
+          ...mockStrategyData.config,
+          productType: "MIS" as const, // Invalid: MIS not allowed for POSITIONAL
+          tradingType: "POSITIONAL" as const,
+          intradayExitMode: "SAME_DAY" as const,
+        }
+      };
+      
+      // Should throw validation error for invalid configuration
+      expect(() => {
+        strategyTransformationService.transformToBackend(testData);
+      }).toThrow("Product type validation failed: MIS product type is only allowed for INTRADAY trading with SAME_DAY exit mode.");
     });
   });
 });

@@ -62,21 +62,21 @@ export const validateSinglePosition = (leg: StrategyLeg, positionNumber: number)
     errors.push(`${prefix} Total lots cannot exceed 1000`);
   }
   
-  // Validate premium criteria for CLOSEST_PREMIUM method
-  if (leg.selectionMethod === 'CLOSEST_PREMIUM') {
+  // Validate premium criteria for PREMIUM method
+  if (leg.selectionMethod === 'PREMIUM') {
     if (!leg.premiumOperator) {
-      errors.push(`${prefix} Premium operator is required for Closest Premium selection`);
+      errors.push(`${prefix} Premium operator is required for Premium selection`);
     }
     
     if (leg.premiumValue === undefined || leg.premiumValue < 0) {
-      errors.push(`${prefix} Premium value must be a positive number for Closest Premium selection`);
+      errors.push(`${prefix} Premium value must be a positive number for Premium selection`);
     }
   }
   
-  // Validate straddle premium criteria for CLOSEST_STRADDLE_PREMIUM method
-  if (leg.selectionMethod === 'CLOSEST_STRADDLE_PREMIUM') {
+  // Validate straddle premium criteria for PERCENTAGE_OF_STRADDLE_PREMIUM method
+  if (leg.selectionMethod === 'PERCENTAGE_OF_STRADDLE_PREMIUM') {
     if (!leg.straddlePremiumOperator) {
-      errors.push(`${prefix} Straddle premium operator is required for Closest Straddle Premium selection`);
+      errors.push(`${prefix} Straddle premium operator is required for Percentage of Straddle Premium selection`);
     }
     
     if (leg.straddlePremiumPercentage === undefined || leg.straddlePremiumPercentage < 5 || leg.straddlePremiumPercentage > 60) {
