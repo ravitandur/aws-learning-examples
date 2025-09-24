@@ -15,7 +15,7 @@ import basketService from '../../services/basketService';
 import strategyService from '../../services/strategyService';
 import CreateBasketDialog from './CreateBasketDialog';
 import StrategyWizardDialog from './StrategyWizardDialog';
-import StrategyCard from '../strategy/StrategyCard';
+import StrategyTable from '../strategy/StrategyTable';
 
 interface BasketWithStrategies extends Omit<Basket, 'strategies'> {
   strategies?: Strategy[]; // Make strategies optional initially
@@ -41,6 +41,11 @@ const TabbedBasketManager: React.FC = () => {
     isOpen: boolean;
     basket: BasketWithStrategies | null;
   }>({ isOpen: false, basket: null });
+
+  const [deleteStrategyConfirmDialog, setDeleteStrategyConfirmDialog] = useState<{
+    isOpen: boolean;
+    strategy: Strategy | null;
+  }>({ isOpen: false, strategy: null });
 
   // Load baskets on component mount 
   useEffect(() => {
@@ -469,6 +474,54 @@ const TabbedBasketManager: React.FC = () => {
     }
   };
 
+  const handleDeleteStrategy = (strategy: Strategy) => {
+    // Show confirmation dialog
+    setDeleteStrategyConfirmDialog({
+      isOpen: true,
+      strategy: strategy
+    });
+  };
+
+  const confirmDeleteStrategy = async () => {
+    if (!deleteStrategyConfirmDialog.strategy) return;
+
+    try {
+      setLoadingEditStrategy(true);
+
+      // Delete the strategy
+      await strategyService.deleteStrategy(deleteStrategyConfirmDialog.strategy.strategyId);
+
+      showSuccess(`Strategy "${deleteStrategyConfirmDialog.strategy.strategyName}" deleted successfully`);
+
+      // Refresh the strategy list
+      if (selectedBasket) {
+        const strategies = await strategyService.getBasketStrategies(selectedBasket.basket_id);
+
+        // Update selected basket with refreshed strategies
+        setSelectedBasket(prev => prev ? {
+          ...prev,
+          strategies: strategies,
+          strategyCount: strategies.length
+        } : null);
+
+        // Update baskets list
+        setBaskets(prev => prev.map(basket =>
+          basket.basket_id === selectedBasket.basket_id
+            ? { ...basket, strategies: strategies, strategyCount: strategies.length }
+            : basket
+        ));
+      }
+
+      // Close the confirmation dialog
+      setDeleteStrategyConfirmDialog({ isOpen: false, strategy: null });
+    } catch (error) {
+      console.error('Error deleting strategy:', error);
+      showError(error instanceof Error ? error.message : 'Failed to delete strategy');
+    } finally {
+      setLoadingEditStrategy(false);
+    }
+  };
+
   const filteredBaskets = baskets.filter(basket =>
     (basket.basket_name && basket.basket_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (basket.description && basket.description.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -659,16 +712,12 @@ const TabbedBasketManager: React.FC = () => {
                             </div>
                           </div>
                         ) : selectedBasket.strategies && selectedBasket.strategies.length > 0 ? (
-                          <div className="space-y-3">
-                            {selectedBasket.strategies.map(strategy => (
-                              <StrategyCard
-                                key={strategy.strategyId}
-                                strategy={strategy}
-                                onEdit={handleEditStrategy}
-                                isLoading={loadingEditStrategy}
-                              />
-                            ))}
-                          </div>
+                          <StrategyTable
+                            strategies={selectedBasket.strategies}
+                            onEdit={handleEditStrategy}
+                            onDelete={handleDeleteStrategy}
+                            isLoading={loadingEditStrategy}
+                          />
                         ) : (
                           <div className="text-center py-8">
                             <div className="text-sm font-medium text-gray-500 mb-4">Details</div>
@@ -900,7 +949,7 @@ const TabbedBasketManager: React.FC = () => {
         />
       )}
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Basket Confirmation Dialog */}
       <ConfirmDialog
         isOpen={deleteConfirmDialog.isOpen}
         onClose={() => setDeleteConfirmDialog({ isOpen: false, basket: null })}
@@ -909,6 +958,19 @@ const TabbedBasketManager: React.FC = () => {
         message={`Are you sure you want to delete the basket "${deleteConfirmDialog.basket?.basket_name || 'this basket'}"? This action cannot be undone. All associated strategies and data will be permanently removed.`}
         confirmText="Delete Basket"
         cancelText="Keep Basket"
+        variant="danger"
+        icon={<Trash2 className="h-6 w-6 text-red-600" />}
+      />
+
+      {/* Delete Strategy Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteStrategyConfirmDialog.isOpen}
+        onClose={() => setDeleteStrategyConfirmDialog({ isOpen: false, strategy: null })}
+        onConfirm={confirmDeleteStrategy}
+        title="Delete Strategy"
+        message={`Are you sure you want to delete the strategy "${deleteStrategyConfirmDialog.strategy?.strategyName || 'this strategy'}"? This action cannot be undone. All strategy configurations and data will be permanently removed.`}
+        confirmText="Delete Strategy"
+        cancelText="Keep Strategy"
         variant="danger"
         icon={<Trash2 className="h-6 w-6 text-red-600" />}
       />
