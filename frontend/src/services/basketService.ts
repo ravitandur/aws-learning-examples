@@ -246,6 +246,26 @@ class BasketService {
       throw new Error(error.response?.data?.message || 'Failed to stop basket');
     }
   }
+
+  /**
+   * Update basket status (enable/disable)
+   */
+  async updateBasketStatus(basketId: string, status: 'ACTIVE' | 'INACTIVE' | 'PAUSED'): Promise<Basket> {
+    try {
+      const response = await optionsApiClient.put<ApiResponse<Basket>>(
+        `/options/baskets/${basketId}`,
+        { status }
+      );
+
+      if (!response.success || !response.data) {
+        throw new Error(response.message || 'Failed to update basket status');
+      }
+
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to update basket status');
+    }
+  }
 }
 
 const basketService = new BasketService();

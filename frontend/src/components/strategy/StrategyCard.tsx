@@ -3,20 +3,24 @@ import { Strategy } from '../../types';
 import { Card, CardContent } from '../ui/Card';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
-import { Edit3, Trash2, Zap } from 'lucide-react';
+import { Edit3, Trash2, Zap, Power, RefreshCw } from 'lucide-react';
 
 interface StrategyCardProps {
   strategy: Strategy;
   onEdit: (strategy: Strategy) => void;
   onDelete?: (strategy: Strategy) => void;
+  onStatusToggle?: (strategy: Strategy) => void;
   isLoading?: boolean;
+  isUpdating?: boolean;
 }
 
 const StrategyCard: React.FC<StrategyCardProps> = ({
   strategy,
   onEdit,
   onDelete,
-  isLoading = false
+  onStatusToggle,
+  isLoading = false,
+  isUpdating = false
 }) => {
   // Format days array to readable string
   const formatDays = (days?: string[]): string => {
@@ -106,7 +110,7 @@ const StrategyCard: React.FC<StrategyCardProps> = ({
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow duration-200">
+    <Card className="hover:shadow-lg transition-all duration-200 border border-gray-100 dark:border-gray-700/50 bg-gradient-to-r from-white to-gray-50/30 dark:from-gray-800 dark:to-gray-800/70 border-l-4 border-l-blue-500/30 hover:border-l-blue-500/60">
       <CardContent className="p-4">
         {/* Header Row: Strategy Name + Status */}
         <div className="flex items-center justify-between mb-3">
@@ -151,7 +155,7 @@ const StrategyCard: React.FC<StrategyCardProps> = ({
         </div>
 
         {/* Timing Data Row with Enhanced Organization */}
-        <div className="bg-gray-50 dark:bg-gray-700/30 rounded-lg p-3 mb-3">
+        <div className="bg-gray-50/70 dark:bg-gray-700/40 rounded-lg p-3 mb-3 border border-gray-200/50 dark:border-gray-600/30">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
             <div className="flex flex-col">
               <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Entry Days</div>
@@ -193,18 +197,39 @@ const StrategyCard: React.FC<StrategyCardProps> = ({
               variant="ghost"
               size="sm"
               onClick={() => onEdit(strategy)}
-              disabled={isLoading}
+              disabled={isLoading || isUpdating}
               className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
             >
               <Edit3 className="h-4 w-4 mr-1" />
               Edit
             </Button>
+            {onStatusToggle && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onStatusToggle(strategy)}
+                disabled={isLoading || isUpdating}
+                className={`${
+                  strategy.status === 'ACTIVE'
+                    ? 'text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20'
+                    : 'text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20'
+                } disabled:opacity-50`}
+                title={strategy.status === 'ACTIVE' ? 'Disable' : 'Enable'}
+              >
+                {isUpdating ? (
+                  <RefreshCw className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Power className="h-4 w-4 mr-1" />
+                )}
+                {strategy.status === 'ACTIVE' ? 'Disable' : 'Enable'}
+              </Button>
+            )}
             {onDelete && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onDelete(strategy)}
-                disabled={isLoading}
+                disabled={isLoading || isUpdating}
                 className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
               >
                 <Trash2 className="h-4 w-4 mr-1" />

@@ -615,6 +615,7 @@ def handle_update_strategy(event, user_id, strategy_id, table):
         current_time = datetime.now(timezone.utc).isoformat()
         update_expression_parts = []
         expression_attribute_values = {}
+        expression_attribute_names = {}
 
         # Only allow updates to specific fields
         # Phase 4: Added missing fields to updatable fields
@@ -643,7 +644,14 @@ def handle_update_strategy(event, user_id, strategy_id, table):
 
         for field in updatable_fields:
             if field in body:
-                update_expression_parts.append(f"{field} = :{field}")
+                # Handle reserved keywords with ExpressionAttributeNames
+                if field == "status":
+                    field_name = "#status_field"
+                    expression_attribute_names["#status_field"] = "status"
+                else:
+                    field_name = field
+
+                update_expression_parts.append(f"{field_name} = :{field}")
                 expression_attribute_values[f":{field}"] = body[field]
 
                 # Phase 1: Removed leg_count update logic (derived field calculated on-demand)
@@ -656,11 +664,17 @@ def handle_update_strategy(event, user_id, strategy_id, table):
         expression_attribute_values[":one"] = 1
 
         if update_expression_parts:
-            table.update_item(
-                Key={"user_id": user_id, "sort_key": f"STRATEGY#{strategy_id}"},
-                UpdateExpression="SET " + ", ".join(update_expression_parts),
-                ExpressionAttributeValues=expression_attribute_values,
-            )
+            update_params = {
+                "Key": {"user_id": user_id, "sort_key": f"STRATEGY#{strategy_id}"},
+                "UpdateExpression": "SET " + ", ".join(update_expression_parts),
+                "ExpressionAttributeValues": expression_attribute_values,
+            }
+
+            # Only add ExpressionAttributeNames if we have reserved keywords
+            if expression_attribute_names:
+                update_params["ExpressionAttributeNames"] = expression_attribute_names
+
+            table.update_item(**update_params)
 
         log_user_action(
             logger, user_id, "strategy_updated", {"strategy_id": strategy_id}

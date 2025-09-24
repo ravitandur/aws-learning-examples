@@ -426,15 +426,16 @@ def handle_update_basket(event, user_id, basket_id, table):
         current_time = datetime.now(timezone.utc).isoformat()
         update_expression_parts = []
         expression_attribute_values = {}
-        
+        expression_attribute_names = {}
+
         # Only allow updates to specific fields
         updatable_fields = ['basket_name', 'description', 'status']
-        
+
         # Check for basket_name uniqueness if it's being updated
         if 'basket_name' in body:
             new_basket_name = body['basket_name'].strip()
             current_basket_name = response['Item'].get('basket_name')
-            
+
             # Only check if the name is actually changing
             if new_basket_name != current_basket_name:
                 existing_check = table.query(
@@ -447,7 +448,7 @@ def handle_update_basket(event, user_id, basket_id, table):
                     },
                     Select='COUNT'
                 )
-                
+
                 if existing_check['Count'] > 0:
                     return {
                         'statusCode': 400,
@@ -460,29 +461,64 @@ def handle_update_basket(event, user_id, basket_id, table):
                             'message': f'A basket with the name "{new_basket_name}" already exists. Please choose a different name.'
                         })
                     }
-        
+
         for field in updatable_fields:
             if field in body:
-                update_expression_parts.append(f'{field} = :{field}')
+                # Handle reserved keywords with ExpressionAttributeNames
+                if field == 'status':
+                    field_name = '#status_field'
+                    expression_attribute_names['#status_field'] = 'status'
+                else:
+                    field_name = field
+
+                update_expression_parts.append(f'{field_name} = :{field}')
                 expression_attribute_values[f':{field}'] = body[field]
-        
+
         # Always update the updated_at timestamp and increment version
         update_expression_parts.extend(['updated_at = :updated_at', 'version = version + :one'])
         expression_attribute_values[':updated_at'] = current_time
         expression_attribute_values[':one'] = 1
-        
+
         if update_expression_parts:
-            table.update_item(
-                Key={
+            update_params = {
+                'Key': {
                     'user_id': user_id,
                     'sort_key': f'BASKET#{basket_id}'
                 },
-                UpdateExpression='SET ' + ', '.join(update_expression_parts),
-                ExpressionAttributeValues=expression_attribute_values
-            )
-        
+                'UpdateExpression': 'SET ' + ', '.join(update_expression_parts),
+                'ExpressionAttributeValues': expression_attribute_values
+            }
+
+            # Only add ExpressionAttributeNames if we have reserved keywords
+            if expression_attribute_names:
+                update_params['ExpressionAttributeNames'] = expression_attribute_names
+
+            table.update_item(**update_params)
+
+        # Fetch the updated basket to return to the frontend
+        updated_response = table.get_item(
+            Key={
+                'user_id': user_id,
+                'sort_key': f'BASKET#{basket_id}'
+            }
+        )
+
+        if 'Item' not in updated_response:
+            return {
+                'statusCode': 404,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({
+                    'error': 'Basket not found after update'
+                })
+            }
+
+        updated_basket = updated_response['Item']
+
         log_user_action(logger, user_id, "basket_updated", {"basket_id": basket_id})
-        
+
         return {
             'statusCode': 200,
             'headers': {
@@ -491,9 +527,9 @@ def handle_update_basket(event, user_id, basket_id, table):
             },
             'body': json.dumps({
                 'success': True,
-                'message': 'Basket updated successfully',
-                'basket_id': basket_id
-            })
+                'data': updated_basket,
+                'message': 'Basket updated successfully'
+            }, cls=DecimalEncoder)
         }
         
     except Exception as e:

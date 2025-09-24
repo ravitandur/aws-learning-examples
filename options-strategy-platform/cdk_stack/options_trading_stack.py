@@ -446,6 +446,28 @@ class OptionsTradeStack(Stack):
 
         # Basket allocation endpoints - Industry Best Practice: Basket-Level Allocation
         basket_id_resource = baskets_resource.add_resource("{basket_id}")
+
+        # PUT /options/baskets/{basket_id} - Update basket (including status updates)
+        basket_id_resource.add_method("PUT",
+                                     apigateway.LambdaIntegration(self.lambda_functions['basket-manager']),
+                                     authorization_type=apigateway.AuthorizationType.COGNITO,
+                                     authorizer=authorizer
+                                     )
+
+        # GET /options/baskets/{basket_id} - Get specific basket details
+        basket_id_resource.add_method("GET",
+                                     apigateway.LambdaIntegration(self.lambda_functions['basket-manager']),
+                                     authorization_type=apigateway.AuthorizationType.COGNITO,
+                                     authorizer=authorizer
+                                     )
+
+        # DELETE /options/baskets/{basket_id} - Delete basket
+        basket_id_resource.add_method("DELETE",
+                                     apigateway.LambdaIntegration(self.lambda_functions['basket-manager']),
+                                     authorization_type=apigateway.AuthorizationType.COGNITO,
+                                     authorizer=authorizer
+                                     )
+
         allocations_resource = basket_id_resource.add_resource("allocations")
         
         # GET /options/baskets/{basket_id}/allocations - List basket allocations

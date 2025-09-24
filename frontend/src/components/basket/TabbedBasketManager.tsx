@@ -8,7 +8,7 @@ import ConfirmDialog from '../common/ConfirmDialog';
 import {
   Plus, Search, TrendingUp,
   Activity, BarChart3,
-  Trash2, Target, Zap
+  Trash2, Target, Zap, Power, RefreshCw
 } from 'lucide-react';
 import { Basket, Strategy, CreateBasket } from '../../types';
 import basketService from '../../services/basketService';
@@ -38,6 +38,8 @@ const TabbedBasketManager: React.FC = () => {
   const [editingStrategy, setEditingStrategy] = useState<Strategy | null>(null);
   const [loadingEditStrategy, setLoadingEditStrategy] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'performance' | 'allocation'>('details');
+  const [updatingBasket, setUpdatingBasket] = useState<string | null>(null);
+  const [updatingStrategy, setUpdatingStrategy] = useState<string | null>(null);
   const [deleteConfirmDialog, setDeleteConfirmDialog] = useState<{
     isOpen: boolean;
     basket: BasketWithStrategies | null;
@@ -266,6 +268,35 @@ const TabbedBasketManager: React.FC = () => {
     }
   };
 
+  // Handle basket status toggle (enable/disable)
+  const handleBasketStatusToggle = async (basket: BasketWithStrategies) => {
+    const newStatus = basket.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    try {
+      setUpdatingBasket(basket.basket_id);
+      await basketService.updateBasketStatus(basket.basket_id, newStatus);
+
+      // Update local state
+      setBaskets(prev =>
+        prev.map(b =>
+          b.basket_id === basket.basket_id
+            ? { ...b, status: newStatus }
+            : b
+        )
+      );
+
+      // Update selected basket if it's the one being updated
+      if (selectedBasket?.basket_id === basket.basket_id) {
+        setSelectedBasket(prev => prev ? { ...prev, status: newStatus } : null);
+      }
+
+      showSuccess(`Basket ${newStatus.toLowerCase()} successfully`);
+    } catch (error: any) {
+      showError(error.message || 'Failed to update basket status');
+    } finally {
+      setUpdatingBasket(null);
+    }
+  };
+
   const handleCreateBasket = async (basketData: CreateBasket) => {
     try {
       const createdBasket = await basketService.createBasket(basketData);
@@ -475,6 +506,40 @@ const TabbedBasketManager: React.FC = () => {
     }
   };
 
+  // Handle strategy status toggle (enable/disable)
+  const handleStrategyStatusToggle = async (strategy: Strategy) => {
+    const newStatus: 'ACTIVE' | 'PAUSED' | 'COMPLETED' = strategy.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+    try {
+      setUpdatingStrategy(strategy.strategyId);
+      await strategyService.updateStrategyStatus(strategy.strategyId, newStatus);
+
+      // Update local state
+      const updatedStrategies = selectedBasket?.strategies?.map(s =>
+        s.strategyId === strategy.strategyId
+          ? { ...s, status: newStatus as Strategy['status'] }
+          : s
+      ) || [];
+
+      // Update selected basket
+      if (selectedBasket) {
+        setSelectedBasket(prev => prev ? { ...prev, strategies: updatedStrategies } : null);
+      }
+
+      // Update baskets list
+      setBaskets(prev => prev.map(basket =>
+        basket.basket_id === selectedBasket?.basket_id
+          ? { ...basket, strategies: updatedStrategies }
+          : basket
+      ));
+
+      showSuccess(`Strategy ${newStatus.toLowerCase()} successfully`);
+    } catch (error: any) {
+      showError(error.message || 'Failed to update strategy status');
+    } finally {
+      setUpdatingStrategy(null);
+    }
+  };
+
   const handleDeleteStrategy = (strategy: Strategy) => {
     // Show confirmation dialog
     setDeleteStrategyConfirmDialog({
@@ -616,6 +681,25 @@ const TabbedBasketManager: React.FC = () => {
                         <div className={`px-2 py-1 rounded-full text-xs ${getStatusColor(basket.status)}`}>
                           {basket.status}
                         </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleBasketStatusToggle(basket);
+                          }}
+                          disabled={updatingBasket === basket.basket_id}
+                          className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded transition-colors ${
+                            basket.status === 'ACTIVE'
+                              ? 'text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20'
+                              : 'text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20'
+                          } disabled:opacity-50`}
+                          title={basket.status === 'ACTIVE' ? 'Disable' : 'Enable'}
+                        >
+                          {updatingBasket === basket.basket_id ? (
+                            <RefreshCw className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Power className="h-3 w-3" />
+                          )}
+                        </button>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -643,9 +727,18 @@ const TabbedBasketManager: React.FC = () => {
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div>
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {selectedBasket ? (selectedBasket.basket_name || 'Unnamed Basket') : 'Select a Basket'}
-                </h3>
+                <div className="flex items-center gap-3">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {selectedBasket ? (selectedBasket.basket_name || 'Unnamed Basket') : 'Select a Basket'}
+                  </h3>
+                  {selectedBasket && (
+                    <Badge
+                      variant={selectedBasket.status === 'ACTIVE' ? 'success' : selectedBasket.status === 'PAUSED' ? 'warning' : 'default'}
+                    >
+                      {selectedBasket.status}
+                    </Badge>
+                  )}
+                </div>
               </div>
               {selectedBasket ? (
                 <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -707,7 +800,12 @@ const TabbedBasketManager: React.FC = () => {
                   <Card>
                     <CardHeader>
                       <div className="flex items-center justify-between">
-                        <CardTitle>Strategies</CardTitle>
+                        <div className="flex items-center gap-3">
+                          <CardTitle>Strategies</CardTitle>
+                          <Badge variant="info" size="sm">
+                            {selectedBasket.strategies?.length || 0}
+                          </Badge>
+                        </div>
                         <Button
                           onClick={() => setShowStrategyWizard(true)}
                           leftIcon={<Plus className="h-4 w-4" />}
@@ -733,7 +831,9 @@ const TabbedBasketManager: React.FC = () => {
                                 strategy={strategy}
                                 onEdit={handleEditStrategy}
                                 onDelete={handleDeleteStrategy}
+                                onStatusToggle={handleStrategyStatusToggle}
                                 isLoading={loadingEditStrategy}
+                                isUpdating={updatingStrategy === strategy.strategyId}
                               />
                             ))}
                           </div>

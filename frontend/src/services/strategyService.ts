@@ -373,6 +373,30 @@ class StrategyService {
       throw new Error(error.response?.data?.message || 'Failed to fetch strategy templates');
     }
   }
+
+  /**
+   * Update strategy status (enable/disable)
+   */
+  async updateStrategyStatus(strategyId: string, status: 'ACTIVE' | 'PAUSED' | 'COMPLETED'): Promise<any> {
+    try {
+      const response = await optionsApiClient.put<ApiResponse<any>>(
+        `/options/strategies/${strategyId}`,
+        { status }
+      );
+
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to update strategy status');
+      }
+
+      return {
+        success: true,
+        strategyId: (response as any).strategy_id || strategyId,
+        message: response.message || 'Strategy status updated successfully'
+      };
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to update strategy status');
+    }
+  }
 }
 
 const strategyService = new StrategyService();
