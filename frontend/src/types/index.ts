@@ -118,6 +118,27 @@ export interface Strategy {
   strategyType: string;
   status: 'ACTIVE' | 'PAUSED' | 'COMPLETED';
   legs: number;
+  legsArray?: any[]; // For editing mode - preserves actual legs data
+
+  // Phase 2: Add missing field definitions for proper transformation
+  moveSlToCost?: boolean;
+  rangeBreakout?: boolean;
+  tradingType?: string;
+  intradayExitMode?: string;
+
+  // Additional configuration fields that might be needed
+  underlying?: string;
+  expiryType?: string;
+  product?: string;
+  description?: string;
+  entryTime?: string;
+  exitTime?: string;
+  entryDays?: string[];
+  exitDays?: string[];
+
+  // On-demand derived fields (calculated instead of stored)
+  legCount?: number;
+  isIntraDay?: boolean;
 }
 
 export interface Basket {

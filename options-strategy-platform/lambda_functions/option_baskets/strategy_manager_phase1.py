@@ -188,6 +188,12 @@ def handle_create_strategy(event, user_id, basket_id, table):
         )
         legs = body.get("legs", [])  # List of leg configurations
 
+        # Extract missing fields (Phase 2: Add missing field storage)
+        move_sl_to_cost = body.get("move_sl_to_cost", False)
+        range_breakout = body.get("range_breakout", False)
+        trading_type = body.get("trading_type", "").upper()
+        intraday_exit_mode = body.get("intraday_exit_mode", "SAME_DAY").upper()
+
         # Validate required fields
         if not strategy_name or not underlying or not product or not legs:
             return {
@@ -275,14 +281,18 @@ def handle_create_strategy(event, user_id, basket_id, table):
             "underlying": underlying,  # NIFTY, BANKNIFTY, etc.
             "expiry_type": expiry_type,  # weekly, monthly
             "product": product,  # NRML (positional) or MIS (intraday)
-            "is_intra_day": (product == "MIS"),  # Derived from product
+            # Phase 1: Removed derived fields (leg_count, is_intra_day) - calculated on-demand
+            # Phase 2: Add missing fields from payload
+            "move_sl_to_cost": move_sl_to_cost,
+            "range_breakout": range_breakout,
+            "trading_type": trading_type,
+            "intraday_exit_mode": intraday_exit_mode,
             # Timing Configuration
             "entry_time": entry_time,
             "exit_time": exit_time,
             "entry_days": entry_days,
             "exit_days": exit_days,
             # Leg Information
-            "leg_count": len(enhanced_legs),
             "legs": enhanced_legs,  # Store enhanced legs with lots configuration
             # Performance Metrics (initialized)
             "total_return": Decimal("0"),
@@ -599,7 +609,8 @@ def handle_update_strategy(event, user_id, strategy_id, table):
         update_expression_parts = []
         expression_attribute_values = {}
 
-        # Only allow updates to specific fields (no underlying or product changes in Phase 1)
+        # Only allow updates to specific fields
+        # Phase 4: Added missing fields to updatable fields
         updatable_fields = [
             "strategy_name",
             "description",
@@ -609,6 +620,18 @@ def handle_update_strategy(event, user_id, strategy_id, table):
             "exit_days",
             "legs",
             "status",
+            # Phase 4: Add missing fields from payload
+            "move_sl_to_cost",
+            "range_breakout",
+            "trading_type",
+            "intraday_exit_mode",
+            "product",  # Allow product type updates (MIS/NRML)
+            "underlying",  # Allow underlying updates (NIFTY/BANKNIFTY/etc)
+            "expiry_type",  # Allow expiry type updates (weekly/monthly)
+            "entry_trading_days_before_expiry",  # POSITIONAL trading entry days
+            "exit_trading_days_before_expiry",   # POSITIONAL trading exit days
+            "target_profit",     # Strategy-level target profit {type, value}
+            "mtm_stop_loss",     # Strategy-level stop loss {type, value}
         ]
 
         for field in updatable_fields:
@@ -616,10 +639,7 @@ def handle_update_strategy(event, user_id, strategy_id, table):
                 update_expression_parts.append(f"{field} = :{field}")
                 expression_attribute_values[f":{field}"] = body[field]
 
-                # Update derived fields
-                if field == "legs":
-                    update_expression_parts.append("leg_count = :leg_count")
-                    expression_attribute_values[":leg_count"] = len(body[field])
+                # Phase 1: Removed leg_count update logic (derived field calculated on-demand)
 
         # Always update the updated_at timestamp and increment version
         update_expression_parts.extend(

@@ -91,6 +91,7 @@ interface FrontendStrategyConfig {
 }
 
 interface FrontendStrategyData {
+  strategyId?: string;  // Optional - undefined for creation, defined for editing
   basketId: string;
   strategyName: string;
   index: string;
@@ -471,6 +472,7 @@ class StrategyTransformationService {
     };
     
     return {
+      strategyId: backendData.strategy_id || undefined,  // Only include if exists
       basketId,
       strategyName: name || strategy_name || 'Imported Strategy',
       index: underlying || 'NIFTY',

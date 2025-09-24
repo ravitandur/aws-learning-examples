@@ -120,7 +120,15 @@ class StrategyService {
         throw new Error(response.message || 'Failed to fetch strategy details');
       }
 
-      return response.data;
+      // Use full transformation for editing mode - properly transforms legs from snake_case to camelCase
+      const basketId = response.data.basket_id || 'unknown-basket';
+      const transformed = strategyTransformationService.transformToFrontend(response.data, basketId);
+
+      return {
+        ...response.data,  // Preserve original structure
+        ...transformed,    // Add properly transformed fields including config
+        legsArray: transformed.legs  // Properly transformed legs for editing
+      };
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch strategy details');
     }
@@ -136,11 +144,16 @@ class StrategyService {
         updates
       );
 
-      if (!response.success || !response.data) {
+      if (!response.success) {
         throw new Error(response.message || 'Failed to update strategy');
       }
 
-      return response.data;
+      // Return the response info (backend doesn't return data field for updates)
+      return {
+        success: true,
+        strategyId: (response as any).strategy_id || strategyId, // Use provided strategyId as fallback
+        message: response.message
+      };
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to update strategy');
     }

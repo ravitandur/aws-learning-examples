@@ -66,12 +66,40 @@ export const useStrategyForm = ({
     return strategy?.strategyName || strategy?.strategy_name || '';
   };
 
+  // Extract config from flat strategy structure for editing mode
+  const getStrategyConfig = (strategy: any): StrategyConfig => {
+    if (!strategy) return DEFAULT_STRATEGY_CONFIG;
+
+    // If strategy has nested config, use it (for backward compatibility)
+    if (strategy.config) return strategy.config;
+
+    // Otherwise, extract config fields from flat strategy structure
+    return {
+      entryTimeHour: strategy.entryTime?.split(':')[0] || DEFAULT_STRATEGY_CONFIG.entryTimeHour,
+      entryTimeMinute: strategy.entryTime?.split(':')[1] || DEFAULT_STRATEGY_CONFIG.entryTimeMinute,
+      exitTimeHour: strategy.exitTime?.split(':')[0] || DEFAULT_STRATEGY_CONFIG.exitTimeHour,
+      exitTimeMinute: strategy.exitTime?.split(':')[1] || DEFAULT_STRATEGY_CONFIG.exitTimeMinute,
+      rangeBreakout: strategy.rangeBreakout ?? DEFAULT_STRATEGY_CONFIG.rangeBreakout,
+      rangeBreakoutTimeHour: DEFAULT_STRATEGY_CONFIG.rangeBreakoutTimeHour,
+      rangeBreakoutTimeMinute: DEFAULT_STRATEGY_CONFIG.rangeBreakoutTimeMinute,
+      moveSlToCost: strategy.moveSlToCost ?? DEFAULT_STRATEGY_CONFIG.moveSlToCost,
+      expiryType: strategy.expiryType || DEFAULT_STRATEGY_CONFIG.expiryType,
+      productType: strategy.product || DEFAULT_STRATEGY_CONFIG.productType,
+      tradingType: strategy.tradingType || DEFAULT_STRATEGY_CONFIG.tradingType,
+      intradayExitMode: strategy.intradayExitMode || DEFAULT_STRATEGY_CONFIG.intradayExitMode,
+      entryTradingDaysBeforeExpiry: strategy.entryDays || DEFAULT_STRATEGY_CONFIG.entryTradingDaysBeforeExpiry,
+      exitTradingDaysBeforeExpiry: strategy.exitDays || DEFAULT_STRATEGY_CONFIG.exitTradingDaysBeforeExpiry,
+      targetProfit: DEFAULT_STRATEGY_CONFIG.targetProfit,
+      mtmStopLoss: DEFAULT_STRATEGY_CONFIG.mtmStopLoss,
+    };
+  };
+
   const [strategyName, setStrategyName] = useState(getStrategyName(editingStrategy));
   const [strategyIndex, setStrategyIndex] = useState(editingStrategy?.index || 'NIFTY');
   const [strategyConfig, setStrategyConfig] = useState<StrategyConfig>(
-    editingStrategy?.config || DEFAULT_STRATEGY_CONFIG
+    getStrategyConfig(editingStrategy)
   );
-  const [legs, setLegs] = useState<StrategyLeg[]>(editingStrategy?.legs || []);
+  const [legs, setLegs] = useState<StrategyLeg[]>(editingStrategy?.legsArray || editingStrategy?.legs || []);
 
   // UI state
   const [error, setError] = useState<string | null>(null);
@@ -88,15 +116,16 @@ export const useStrategyForm = ({
         resolvedStrategyName: resolvedStrategyName,
         index: editingStrategy.index,
         configKeys: editingStrategy.config ? Object.keys(editingStrategy.config) : [],
-        legsCount: Array.isArray(editingStrategy.legs) ? editingStrategy.legs.length : editingStrategy.legs,
+        legsCount: Array.isArray(editingStrategy.legsArray) ? editingStrategy.legsArray.length :
+                  Array.isArray(editingStrategy.legs) ? editingStrategy.legs.length : editingStrategy.legs,
         availableKeys: Object.keys(editingStrategy),
         fullData: editingStrategy
       });
 
       setStrategyName(resolvedStrategyName);
       setStrategyIndex(editingStrategy.index || 'NIFTY');
-      setStrategyConfig(editingStrategy.config || DEFAULT_STRATEGY_CONFIG);
-      setLegs(editingStrategy.legs || []);
+      setStrategyConfig(getStrategyConfig(editingStrategy));
+      setLegs(editingStrategy.legsArray || editingStrategy.legs || []);
     }
   }, [editingStrategy]);
   

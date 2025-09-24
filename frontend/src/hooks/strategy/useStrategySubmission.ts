@@ -101,10 +101,14 @@ export const useStrategySubmission = ({
     try {
       setIsSubmitting(true);
 
+      // Determine if we're editing or creating
+      const isEditing = !!editingStrategy;
+
       // Prepare strategy data in frontend format
       const strategyData: FrontendStrategyData = {
         basketId: formData.basketId,
         strategyName: formData.strategyName,
+        strategyId: isEditing ? editingStrategy.strategyId : 'temp-id', // Required field
         index: formData.index,
         config: formData.config,
         legs: formData.legs.map((leg, index) => {
@@ -143,8 +147,6 @@ export const useStrategySubmission = ({
         })
       };
 
-      // Determine if we're editing or creating
-      const isEditing = !!editingStrategy;
       console.log(`🔄 [DEBUG] ${isEditing ? 'Updating' : 'Creating'} strategy:`, {
         isEditing,
         strategyId: isEditing ? editingStrategy.strategyId : 'new',
@@ -213,21 +215,35 @@ export const useStrategySubmission = ({
       }
 
       if (result.success) {
-        // Show success notification
+        // Both editing and creation: API already done in hook, parent handles UI updates only
+        if (isEditing) {
+          // Pass the updated strategy data to parent for UI state management
+          onSubmit({
+            success: true,
+            data: result,
+            message: result.message || 'Strategy updated successfully',
+            updatedStrategy: strategyData // Include the strategy data for UI updates
+          });
+        } else {
+          // For creation, pass the real API result to parent for UI updates only
+          onSubmit({
+            success: true,
+            data: result,
+            message: result.message || 'Strategy created successfully',
+            createdStrategy: result.data // Real strategy data from API
+          });
+        }
+
+        // Show success message and close dialog
         const actionText = isEditing ? 'updated' : 'created';
         showSuccess(`Strategy "${strategyName.trim()}" ${actionText} successfully!`);
-
-        // Call the parent onSubmit handler with the result
-        await onSubmit(result);
-        // Close dialog on success
         onClose();
       } else {
         const actionText = isEditing ? 'update' : 'create';
         throw new Error(result.message || `Failed to ${actionText} strategy`);
       }
     } catch (error: any) {
-      const isEditing = !!editingStrategy;
-      const actionText = isEditing ? 'update' : 'create';
+      const actionText = !!editingStrategy ? 'update' : 'create';
       console.error(`Strategy ${actionText} error:`, error);
       showError(error.message || `Failed to ${actionText} strategy. Please try again.`);
     } finally {

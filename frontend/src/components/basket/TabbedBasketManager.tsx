@@ -312,36 +312,57 @@ const TabbedBasketManager: React.FC = () => {
     }
   };
 
-  const handleAddStrategy = async (strategyData: any) => {
+  const handleAddStrategy = async (createResult: any) => {
     try {
-      if (!selectedBasket) return;
-      
-      const newStrategy: Strategy = {
-        strategyId: `strategy-${Date.now()}`,
-        strategyName: strategyData.name,
-        strategyType: strategyData.type,
-        status: 'ACTIVE',
-        legs: strategyData.legs?.length || 1
-      };
-      
+      if (!selectedBasket || !createResult.success) {
+        if (!createResult.success) {
+          throw new Error(createResult.message || 'Failed to create strategy');
+        }
+        return;
+      }
+
+      console.log('🔄 [DEBUG] Handling strategy creation UI updates:', {
+        basketId: selectedBasket.basket_id,
+        createResult
+      });
+
+      // Extract the real strategy data from API response
+      const realStrategyData = createResult.createdStrategy;
+
+      if (!realStrategyData) {
+        throw new Error('No strategy data received from API');
+      }
+
+      // Transform the backend strategy to frontend format using our existing utility
+      const { transformStrategyFields } = await import('../../utils/transformStrategyFields');
+      const newStrategy = transformStrategyFields(realStrategyData);
+
+      console.log('✅ [DEBUG] Real strategy data transformed:', {
+        originalData: realStrategyData,
+        transformedStrategy: newStrategy,
+        strategyId: newStrategy.strategyId,
+        strategyName: newStrategy.strategyName
+      });
+
       const updatedBasket = {
         ...selectedBasket,
         strategies: [...(selectedBasket.strategies || []), newStrategy],
         strategyCount: (selectedBasket.strategyCount || 0) + 1
       };
-      
-      setBaskets(prev => 
-        prev.map(basket => 
+
+      setBaskets(prev =>
+        prev.map(basket =>
           basket.basket_id === selectedBasket.basket_id ? updatedBasket : basket
         )
       );
-      
+
       setSelectedBasket(updatedBasket);
       setShowStrategyWizard(false);
-      // Note: Success notification already shown by useStrategySubmission hook
-      
+
+      console.log('✅ [DEBUG] Strategy creation UI state updated successfully');
+
     } catch (error: any) {
-      console.error('Failed to add strategy:', error);
+      console.error('❌ [DEBUG] Failed to handle strategy creation UI:', error);
       showError(error.message || 'Failed to add strategy. Please try again.');
     }
   };
@@ -390,55 +411,56 @@ const TabbedBasketManager: React.FC = () => {
     }
   };
 
-  const handleUpdateStrategy = async (strategyData: any) => {
+  const handleUpdateStrategy = async (updateResult: any) => {
     try {
-      if (!editingStrategy) return;
+      if (!editingStrategy || !updateResult.success) {
+        if (!updateResult.success) {
+          throw new Error(updateResult.message || 'Failed to update strategy');
+        }
+        return;
+      }
 
-      console.log('🔄 [DEBUG] Updating strategy:', {
+      console.log('🔄 [DEBUG] Handling strategy update UI changes:', {
         strategyId: editingStrategy.strategyId,
-        updateData: strategyData
+        updateResult
       });
 
-      // Update strategy via API
-      const result = await strategyService.updateStrategy(editingStrategy.strategyId, strategyData);
+      // Extract the updated strategy data
+      const updatedStrategyData = updateResult.updatedStrategy;
+      const updatedStrategy = { ...editingStrategy, ...updatedStrategyData };
 
-      if (result.success) {
-        // Update local state
-        const updatedStrategy = { ...editingStrategy, ...strategyData };
+      // Update in baskets list
+      setBaskets(prev =>
+        prev.map(basket =>
+          basket.basket_id === selectedBasket?.basket_id
+            ? {
+                ...basket,
+                strategies: basket.strategies?.map(s =>
+                  s.strategyId === editingStrategy.strategyId ? updatedStrategy : s
+                ) || []
+              }
+            : basket
+        )
+      );
 
-        // Update in baskets list
-        setBaskets(prev =>
-          prev.map(basket =>
-            basket.basket_id === selectedBasket?.basket_id
-              ? {
-                  ...basket,
-                  strategies: basket.strategies?.map(s =>
-                    s.strategyId === editingStrategy.strategyId ? updatedStrategy : s
-                  ) || []
-                }
-              : basket
-          )
-        );
-
-        // Update selected basket
-        if (selectedBasket) {
-          setSelectedBasket(prev => prev ? {
-            ...prev,
-            strategies: prev.strategies?.map(s =>
-              s.strategyId === editingStrategy.strategyId ? updatedStrategy : s
-            ) || []
-          } : null);
-        }
-
-        setShowEditStrategyDialog(false);
-        setEditingStrategy(null);
-        showSuccess(`Strategy "${strategyData.strategyName || editingStrategy.strategyName}" updated successfully!`);
-
-      } else {
-        throw new Error(result.message || 'Failed to update strategy');
+      // Update selected basket
+      if (selectedBasket) {
+        setSelectedBasket(prev => prev ? {
+          ...prev,
+          strategies: prev.strategies?.map(s =>
+            s.strategyId === editingStrategy.strategyId ? updatedStrategy : s
+          ) || []
+        } : null);
       }
+
+      // Clean up edit state
+      setShowEditStrategyDialog(false);
+      setEditingStrategy(null);
+
+      console.log('✅ [DEBUG] Strategy UI state updated successfully');
+
     } catch (error: any) {
-      console.error('Failed to update strategy:', error);
+      console.error('❌ [DEBUG] Failed to handle strategy update UI:', error);
       showError(error.message || 'Failed to update strategy. Please try again.');
     }
   };
