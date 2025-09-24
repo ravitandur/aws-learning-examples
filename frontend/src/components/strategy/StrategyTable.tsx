@@ -1,32 +1,35 @@
 import React from 'react';
 import { Strategy } from '../../types';
 import Badge from '../ui/Badge';
-import Button from '../ui/Button';
-import { Edit3, Trash2, Play, Pause, MoreHorizontal } from 'lucide-react';
+import { Edit3, Trash2, Power, RefreshCw } from 'lucide-react';
 
 interface StrategyTableProps {
   strategies: Strategy[];
   onEdit: (strategy: Strategy) => void;
-  onDelete?: (strategy: Strategy) => void;
-  isLoading?: boolean;
+  onDelete: (strategy: Strategy) => void;
+  onStatusToggle: (strategy: Strategy) => void;
+  loadingEditStrategy: boolean;
+  updatingStrategy: string | null;
 }
 
 const StrategyTable: React.FC<StrategyTableProps> = ({
   strategies,
   onEdit,
   onDelete,
-  isLoading = false
+  onStatusToggle,
+  loadingEditStrategy,
+  updatingStrategy
 }) => {
   // Format days array to readable string
   const formatDays = (days?: string[]): string => {
     if (!days || days.length === 0) return 'Not set';
 
     const dayMap: { [key: string]: string } = {
-      'MONDAY': 'Mon', 'TUESDAY': 'Tue', 'WEDNESDAY': 'Wed',
-      'THURSDAY': 'Thu', 'FRIDAY': 'Fri', 'SATURDAY': 'Sat', 'SUNDAY': 'Sun'
+      'MONDAY': 'MON', 'TUESDAY': 'TUE', 'WEDNESDAY': 'WED',
+      'THURSDAY': 'THU', 'FRIDAY': 'FRI', 'SATURDAY': 'SAT', 'SUNDAY': 'SUN'
     };
 
-    return days.map(day => dayMap[day.toUpperCase()] || day).join(', ');
+    return days.map(day => dayMap[day.toUpperCase()] || day.toUpperCase()).join(', ');
   };
 
   // Format time to readable format
@@ -61,7 +64,7 @@ const StrategyTable: React.FC<StrategyTableProps> = ({
   };
 
   // Generate features display
-  const getFeatures = (strategy: Strategy) => {
+  const getAdvancedFeatures = (strategy: Strategy): string => {
     const features = [];
 
     if (strategy.moveSlToCost) features.push('MSLC');
@@ -91,11 +94,7 @@ const StrategyTable: React.FC<StrategyTableProps> = ({
       features.push(displayText);
     }
 
-    if (features.length === 0) {
-      return strategy.tradingType || 'Standard';
-    }
-
-    return features.join(', ');
+    return features.length > 0 ? features.join(', ') : 'None';
   };
 
   if (strategies.length === 0) {
@@ -107,66 +106,47 @@ const StrategyTable: React.FC<StrategyTableProps> = ({
   }
 
   return (
-    <div className="relative">
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        <thead className="bg-gray-50 dark:bg-gray-700">
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+        <thead className="bg-gray-50 dark:bg-gray-800">
           <tr>
-            <th className="px-2 md:px-3 lg:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider min-w-[140px]">
-              Strategy
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              Strategy Details
             </th>
-            <th className="hidden sm:table-cell px-2 md:px-3 lg:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider min-w-[90px]">
-              Type & Product
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              Entry Schedule
             </th>
-            <th className="hidden lg:table-cell px-2 md:px-3 lg:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider min-w-[130px]">
-              Timing
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              Exit Schedule
             </th>
-            <th className="hidden lg:table-cell px-2 md:px-3 lg:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider min-w-[90px]">
-              Features
-            </th>
-            <th className="px-2 md:px-3 lg:px-6 py-2 md:py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider min-w-[60px]">
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Status
             </th>
-            <th className="sticky right-0 bg-gray-50 dark:bg-gray-700 px-2 md:px-3 lg:px-6 py-2 md:py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider border-l border-gray-200 dark:border-gray-600 shadow-lg z-10 min-w-[120px]">
+            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Actions
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-          {strategies.map(strategy => (
-            <tr key={strategy.strategyId} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-              {/* Strategy Name & Details */}
-              <td className="px-2 md:px-3 lg:px-6 py-3 md:py-4">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 h-6 w-6 sm:h-8 sm:w-8 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
-                    <Play className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
-                  </div>
-                  <div className="ml-2 sm:ml-3 min-w-0">
-                    <div className="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
-                      {strategy.strategyName}
-                    </div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      {Array.isArray(strategy.legsArray) ? strategy.legsArray.length : strategy.legs} legs
-                      {/* Show critical info on mobile when columns are hidden */}
-                      <span className="sm:hidden">
-                        {strategy.underlying && ` • ${strategy.underlying}`}
-                        {strategy.product && ` • ${strategy.product}`}
-                      </span>
-                    </div>
-                    {/* Show features on medium screens when Features column is hidden */}
-                    <div className="text-xs text-gray-500 dark:text-gray-400 lg:hidden mt-1 truncate">
-                      {getFeatures(strategy)}
-                    </div>
-                  </div>
+        <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+          {strategies.map((strategy) => (
+            <tr
+              key={strategy.strategyId}
+              className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              {/* Strategy Details */}
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                  {strategy.strategyName}
                 </div>
-              </td>
-
-              {/* Type & Product */}
-              <td className="hidden sm:table-cell px-2 md:px-3 lg:px-6 py-3 md:py-4 whitespace-nowrap">
-                <div className="space-y-1">
-                  {strategy.underlying && (
-                    <Badge variant="default" size="sm">
-                      {strategy.underlying}
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  {strategy.strategyId}
+                </div>
+                <div className="flex flex-wrap gap-1 mb-2">
+                  <Badge variant="info" size="sm">{strategy.strategyType}</Badge>
+                  <Badge variant="default" size="sm">{strategy.legs || 0} legs</Badge>
+                  {strategy.expiryType && (
+                    <Badge variant="info" size="sm">
+                      {strategy.expiryType.toUpperCase()}
                     </Badge>
                   )}
                   {strategy.product && (
@@ -175,75 +155,88 @@ const StrategyTable: React.FC<StrategyTableProps> = ({
                     </Badge>
                   )}
                 </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400 border-t pt-1">
+                  <span className="font-medium">Features:</span> {getAdvancedFeatures(strategy)}
+                </div>
               </td>
 
-              {/* Timing */}
-              <td className="hidden lg:table-cell px-2 md:px-3 lg:px-6 py-3 md:py-4">
-                <div className="text-xs space-y-1">
-                  <div className="flex">
-                    <span className="text-gray-500 dark:text-gray-400 w-12">Entry:</span>
-                    <span className="text-gray-900 dark:text-white truncate">
-                      {formatDays(strategy.entryDays)} {formatTime(strategy.entryTime)}
-                    </span>
+              {/* Entry Schedule */}
+              <td className="px-6 py-4">
+                <div className="text-sm">
+                  <div className="text-gray-600 dark:text-gray-400 text-xs mb-1">Days:</div>
+                  <div className="text-gray-900 dark:text-white font-medium mb-2">
+                    {formatDays(strategy.entryDays)}
                   </div>
-                  <div className="flex">
-                    <span className="text-gray-500 dark:text-gray-400 w-12">Exit:</span>
-                    <span className="text-gray-900 dark:text-white truncate">
-                      {formatDays(strategy.exitDays)} {formatTime(strategy.exitTime)}
-                    </span>
+                  <div className="text-gray-600 dark:text-gray-400 text-xs mb-1">Time:</div>
+                  <div className="text-gray-900 dark:text-white font-medium">
+                    {formatTime(strategy.entryTime)}
                   </div>
                 </div>
               </td>
 
-              {/* Features */}
-              <td className="hidden lg:table-cell px-2 md:px-3 lg:px-6 py-3 md:py-4">
-                <div className="text-xs text-gray-900 dark:text-white truncate max-w-[80px]">
-                  {getFeatures(strategy)}
+              {/* Exit Schedule */}
+              <td className="px-6 py-4">
+                <div className="text-sm">
+                  <div className="text-gray-600 dark:text-gray-400 text-xs mb-1">Days:</div>
+                  <div className="text-gray-900 dark:text-white font-medium mb-2">
+                    {formatDays(strategy.exitDays)}
+                  </div>
+                  <div className="text-gray-600 dark:text-gray-400 text-xs mb-1">Time:</div>
+                  <div className="text-gray-900 dark:text-white font-medium">
+                    {formatTime(strategy.exitTime)}
+                  </div>
                 </div>
               </td>
 
               {/* Status */}
-              <td className="px-2 md:px-3 lg:px-6 py-3 md:py-4 whitespace-nowrap">
+              <td className="px-6 py-4 whitespace-nowrap">
                 <Badge
-                  variant={getStatusBadgeVariant(strategy.status)}
-                  size="sm"
+                  variant={strategy.status === 'ACTIVE' ? 'success' : strategy.status === 'PAUSED' ? 'warning' : 'default'}
                 >
                   {strategy.status}
                 </Badge>
               </td>
 
               {/* Actions */}
-              <td className="sticky right-0 bg-white dark:bg-gray-800 px-2 md:px-3 lg:px-6 py-3 md:py-4 whitespace-nowrap text-right text-sm font-medium border-l border-gray-200 dark:border-gray-600 shadow-lg z-10 min-w-[120px]">
-                <div className="flex items-center justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
+              <td className="px-6 py-4 whitespace-nowrap text-right">
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => onStatusToggle(strategy)}
+                    disabled={updatingStrategy === strategy.strategyId}
+                    className={`p-1 rounded transition-colors ${
+                      strategy.status === 'ACTIVE'
+                        ? 'text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20'
+                        : 'text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20'
+                    } disabled:opacity-50`}
+                    title={strategy.status === 'ACTIVE' ? 'Disable' : 'Enable'}
+                  >
+                    {updatingStrategy === strategy.strategyId ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Power className="h-4 w-4" />
+                    )}
+                  </button>
+                  <button
                     onClick={() => onEdit(strategy)}
-                    disabled={isLoading}
-                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 px-1 md:px-2"
+                    disabled={loadingEditStrategy}
+                    className="p-1 rounded text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50"
+                    title="Edit strategy"
                   >
                     <Edit3 className="h-4 w-4" />
-                    <span className="sr-only">Edit</span>
-                  </Button>
-                  {onDelete && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDelete(strategy)}
-                      disabled={isLoading}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 px-1 md:px-2"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Delete</span>
-                    </Button>
-                  )}
+                  </button>
+                  <button
+                    onClick={() => onDelete(strategy)}
+                    className="p-1 rounded text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                    title="Delete strategy"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </td>
             </tr>
           ))}
         </tbody>
-        </table>
-      </div>
+      </table>
     </div>
   );
 };

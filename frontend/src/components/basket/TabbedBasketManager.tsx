@@ -8,7 +8,7 @@ import ConfirmDialog from '../common/ConfirmDialog';
 import {
   Plus, Search, TrendingUp,
   Activity, BarChart3,
-  Trash2, Target, Zap, Power, RefreshCw
+  Trash2, Target, Zap, Power, RefreshCw, Grid3x3, List, Edit3, Save, X
 } from 'lucide-react';
 import { Basket, Strategy, CreateBasket } from '../../types';
 import basketService from '../../services/basketService';
@@ -16,6 +16,7 @@ import strategyService from '../../services/strategyService';
 import CreateBasketDialog from './CreateBasketDialog';
 import StrategyWizardDialog from './StrategyWizardDialog';
 import StrategyCard from '../strategy/StrategyCard';
+import StrategyTable from '../strategy/StrategyTable';
 import BasketAllocation from './BasketAllocation';
 
 interface BasketWithStrategies extends Omit<Basket, 'strategies'> {
@@ -38,6 +39,7 @@ const TabbedBasketManager: React.FC = () => {
   const [editingStrategy, setEditingStrategy] = useState<Strategy | null>(null);
   const [loadingEditStrategy, setLoadingEditStrategy] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'performance' | 'allocation'>('details');
+  const [strategyView, setStrategyView] = useState<'cards' | 'table'>('cards');
   const [updatingBasket, setUpdatingBasket] = useState<string | null>(null);
   const [updatingStrategy, setUpdatingStrategy] = useState<string | null>(null);
   const [deleteConfirmDialog, setDeleteConfirmDialog] = useState<{
@@ -613,6 +615,7 @@ const TabbedBasketManager: React.FC = () => {
     return 'text-gray-600';
   };
 
+
   return (
     <>
       {/* Main Content Card with Split Pane */}
@@ -806,13 +809,40 @@ const TabbedBasketManager: React.FC = () => {
                             {selectedBasket.strategies?.length || 0}
                           </Badge>
                         </div>
-                        <Button
-                          onClick={() => setShowStrategyWizard(true)}
-                          leftIcon={<Plus className="h-4 w-4" />}
-                          size="sm"
-                        >
-                          Add Strategy
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          {/* View Toggle Buttons */}
+                          <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+                            <button
+                              onClick={() => setStrategyView('cards')}
+                              className={`p-2 transition-colors ${
+                                strategyView === 'cards'
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                              }`}
+                              title="Card View"
+                            >
+                              <Grid3x3 className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => setStrategyView('table')}
+                              className={`p-2 border-l border-gray-300 dark:border-gray-600 transition-colors ${
+                                strategyView === 'table'
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-white dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600'
+                              }`}
+                              title="Table View"
+                            >
+                              <List className="h-4 w-4" />
+                            </button>
+                          </div>
+                          <Button
+                            onClick={() => setShowStrategyWizard(true)}
+                            leftIcon={<Plus className="h-4 w-4" />}
+                            size="sm"
+                          >
+                            Add Strategy
+                          </Button>
+                        </div>
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -824,19 +854,36 @@ const TabbedBasketManager: React.FC = () => {
                             </div>
                           </div>
                         ) : selectedBasket.strategies && selectedBasket.strategies.length > 0 ? (
-                          <div className="space-y-4">
-                            {selectedBasket.strategies.map(strategy => (
-                              <StrategyCard
-                                key={strategy.strategyId}
-                                strategy={strategy}
+                          <>
+                            {/* Card View */}
+                            {strategyView === 'cards' && (
+                              <div className="space-y-4">
+                                {selectedBasket.strategies.map(strategy => (
+                                  <StrategyCard
+                                    key={strategy.strategyId}
+                                    strategy={strategy}
+                                    onEdit={handleEditStrategy}
+                                    onDelete={handleDeleteStrategy}
+                                    onStatusToggle={handleStrategyStatusToggle}
+                                    isLoading={loadingEditStrategy}
+                                    isUpdating={updatingStrategy === strategy.strategyId}
+                                  />
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Table View */}
+                            {strategyView === 'table' && (
+                              <StrategyTable
+                                strategies={selectedBasket.strategies}
                                 onEdit={handleEditStrategy}
                                 onDelete={handleDeleteStrategy}
                                 onStatusToggle={handleStrategyStatusToggle}
-                                isLoading={loadingEditStrategy}
-                                isUpdating={updatingStrategy === strategy.strategyId}
+                                loadingEditStrategy={loadingEditStrategy}
+                                updatingStrategy={updatingStrategy}
                               />
-                            ))}
-                          </div>
+                            )}
+                          </>
                         ) : (
                           <div className="text-center py-8">
                             <div className="text-sm font-medium text-gray-500 mb-4">Details</div>
