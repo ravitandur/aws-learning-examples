@@ -652,13 +652,6 @@ const TabbedBasketManager: React.FC = () => {
                   <span className="text-sm text-gray-600 dark:text-gray-300">
                     {selectedBasket.strategies?.length || 0} strategies
                   </span>
-                  <span className="text-gray-400">•</span>
-                  <button
-                    onClick={() => setActiveTab('allocation')}
-                    className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors font-medium"
-                  >
-                    Manage Broker Allocation
-                  </button>
                 </div>
               ) : (
                 <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
@@ -678,17 +671,7 @@ const TabbedBasketManager: React.FC = () => {
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
-                  Details & Strategies
-                </button>
-                <button
-                  onClick={() => setActiveTab('performance')}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    activeTab === 'performance'
-                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
-                >
-                  Performance
+                  Strategies
                 </button>
                 <button
                   onClick={() => setActiveTab('allocation')}
@@ -700,6 +683,16 @@ const TabbedBasketManager: React.FC = () => {
                 >
                   Broker Allocation
                 </button>
+                <button
+                  onClick={() => setActiveTab('performance')}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    activeTab === 'performance'
+                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  Performance
+                </button>
               </div>
             )}
           </div>
@@ -708,56 +701,55 @@ const TabbedBasketManager: React.FC = () => {
           <div className="flex-1 overflow-y-auto p-6">
             {selectedBasket ? (
               <div className="space-y-6">
-                {activeTab === 'details' ? (
-                  /* Details Tab */
-                  <>
-                    {/* Strategies Section */}
-                    <Card>
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle>Strategies</CardTitle>
-                          <Button
-                            onClick={() => setShowStrategyWizard(true)}
-                            leftIcon={<Plus className="h-4 w-4" />}
-                            size="sm"
-                          >
-                            Add Strategy
-                          </Button>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                          {strategiesLoading ? (
-                            <div className="flex items-center justify-center py-8">
-                              <div className="text-center">
-                                <Activity className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
-                                <p className="text-sm text-gray-600">Loading strategies...</p>
-                              </div>
+                {/* Strategies Tab */}
+                <div className={activeTab === 'details' ? 'block' : 'hidden'}>
+                  {/* Strategies Section */}
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle>Strategies</CardTitle>
+                        <Button
+                          onClick={() => setShowStrategyWizard(true)}
+                          leftIcon={<Plus className="h-4 w-4" />}
+                          size="sm"
+                        >
+                          Add Strategy
+                        </Button>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                        {strategiesLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="text-center">
+                              <Activity className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
+                              <p className="text-sm text-gray-600">Loading strategies...</p>
                             </div>
-                          ) : selectedBasket.strategies && selectedBasket.strategies.length > 0 ? (
-                            <div className="space-y-4">
-                              {selectedBasket.strategies.map(strategy => (
-                                <StrategyCard
-                                  key={strategy.strategyId}
-                                  strategy={strategy}
-                                  onEdit={handleEditStrategy}
-                                  onDelete={handleDeleteStrategy}
-                                  isLoading={loadingEditStrategy}
-                                />
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-center py-8">
-                              <div className="text-sm font-medium text-gray-500 mb-4">Details</div>
-                              <h3 className="text-lg font-medium mb-2">No Strategies Yet</h3>
-                              <p className="text-gray-600 mb-4">Use the "Add Strategy" button above to start building this basket</p>
-                            </div>
-                          )}
-                      </CardContent>
-                    </Card>
+                          </div>
+                        ) : selectedBasket.strategies && selectedBasket.strategies.length > 0 ? (
+                          <div className="space-y-4">
+                            {selectedBasket.strategies.map(strategy => (
+                              <StrategyCard
+                                key={strategy.strategyId}
+                                strategy={strategy}
+                                onEdit={handleEditStrategy}
+                                onDelete={handleDeleteStrategy}
+                                isLoading={loadingEditStrategy}
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <div className="text-sm font-medium text-gray-500 mb-4">Details</div>
+                            <h3 className="text-lg font-medium mb-2">No Strategies Yet</h3>
+                            <p className="text-gray-600 mb-4">Use the "Add Strategy" button above to start building this basket</p>
+                          </div>
+                        )}
+                    </CardContent>
+                  </Card>
+                </div>
 
-                  </>
-                ) : activeTab === 'allocation' ? (
-                  /* Broker Allocation Tab */
+                {/* Broker Allocation Tab */}
+                <div className={activeTab === 'allocation' ? 'block' : 'hidden'}>
                   <BasketAllocation
                     basket={{
                       ...selectedBasket,
@@ -769,9 +761,10 @@ const TabbedBasketManager: React.FC = () => {
                       setActiveTab('details');
                     }}
                   />
-                ) : (
-                  /* Performance Tab */
-                  <>
+                </div>
+
+                {/* Performance Tab */}
+                <div className={activeTab === 'performance' ? 'block' : 'hidden'}>
                     {/* Performance Overview */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <Card className="hover:shadow-md transition-shadow">
@@ -876,8 +869,7 @@ const TabbedBasketManager: React.FC = () => {
                         </div>
                       </CardContent>
                     </Card>
-                  </>
-                )}
+                </div>
               </div>
             ) : (
               /* Empty State */
