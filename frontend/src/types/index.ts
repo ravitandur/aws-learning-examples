@@ -136,6 +136,18 @@ export interface Strategy {
   entryDays?: string[];
   exitDays?: string[];
 
+  // Strategy-level risk management
+  targetProfit?: {
+    enabled?: boolean;
+    type?: string;
+    value?: number;
+  };
+  stopLoss?: {
+    enabled?: boolean;
+    type?: string;
+    value?: number;
+  };
+
   // On-demand derived fields (calculated instead of stored)
   legCount?: number;
   isIntraDay?: boolean;

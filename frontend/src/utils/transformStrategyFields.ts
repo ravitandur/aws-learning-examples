@@ -29,6 +29,18 @@ export function transformStrategyFields(backendStrategy: any): Strategy {
     entryDays: backendStrategy.entry_days,
     exitDays: backendStrategy.exit_days,
 
+    // Strategy-level risk management
+    targetProfit: backendStrategy.target_profit ? {
+      enabled: true,
+      type: backendStrategy.target_profit.type || 'PERCENTAGE',
+      value: backendStrategy.target_profit.value || 0
+    } : undefined,
+    stopLoss: backendStrategy.mtm_stop_loss ? {
+      enabled: true,
+      type: (backendStrategy.mtm_stop_loss)?.type || 'PERCENTAGE',
+      value: (backendStrategy.mtm_stop_loss)?.value || 0
+    } : undefined,
+
     // On-demand derived fields (calculated instead of stored)
     legCount: backendStrategy.legs?.length || 0,
     isIntraDay: backendStrategy.product === 'MIS',

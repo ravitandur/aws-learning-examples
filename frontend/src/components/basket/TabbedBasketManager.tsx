@@ -5,16 +5,17 @@ import Input from '../ui/Input';
 import Badge from '../ui/Badge';
 import { useToast } from '../common/ToastContainer';
 import ConfirmDialog from '../common/ConfirmDialog';
-import { 
-  Plus, Settings, Search, TrendingUp, 
-  Activity, BarChart3, 
-  Edit, Trash2, Target, Zap
+import {
+  Plus, Settings, Search, TrendingUp,
+  Activity, BarChart3,
+  Trash2, Target, Zap
 } from 'lucide-react';
 import { Basket, Strategy, CreateBasket } from '../../types';
 import basketService from '../../services/basketService';
 import strategyService from '../../services/strategyService';
 import CreateBasketDialog from './CreateBasketDialog';
 import StrategyWizardDialog from './StrategyWizardDialog';
+import StrategyCard from '../strategy/StrategyCard';
 
 interface BasketWithStrategies extends Omit<Basket, 'strategies'> {
   strategies?: Strategy[]; // Make strategies optional initially
@@ -425,32 +426,35 @@ const TabbedBasketManager: React.FC = () => {
         updateResult
       });
 
-      // Extract the updated strategy data
-      const updatedStrategyData = updateResult.updatedStrategy;
-      const updatedStrategy = { ...editingStrategy, ...updatedStrategyData };
-
-      // Update in baskets list
-      setBaskets(prev =>
-        prev.map(basket =>
-          basket.basket_id === selectedBasket?.basket_id
-            ? {
-                ...basket,
-                strategies: basket.strategies?.map(s =>
-                  s.strategyId === editingStrategy.strategyId ? updatedStrategy : s
-                ) || []
-              }
-            : basket
-        )
-      );
-
-      // Update selected basket
+      // Instead of local state merging, refresh complete strategy list from API
+      // This ensures we get fresh data including updated TP/SL values
       if (selectedBasket) {
-        setSelectedBasket(prev => prev ? {
-          ...prev,
-          strategies: prev.strategies?.map(s =>
-            s.strategyId === editingStrategy.strategyId ? updatedStrategy : s
-          ) || []
-        } : null);
+        console.log('🔄 [DEBUG] Refreshing strategy list to get updated data...');
+
+        try {
+          const strategies = await strategyService.getBasketStrategies(selectedBasket.basket_id);
+
+          // Update selected basket with fresh strategies
+          setSelectedBasket(prev => prev ? {
+            ...prev,
+            strategies: strategies,
+            strategyCount: strategies.length
+          } : null);
+
+          // Update baskets list with fresh strategies
+          setBaskets(prev =>
+            prev.map(basket =>
+              basket.basket_id === selectedBasket.basket_id
+                ? { ...basket, strategies: strategies, strategyCount: strategies.length }
+                : basket
+            )
+          );
+
+          console.log('✅ [DEBUG] Strategy list refreshed with fresh data from API');
+        } catch (refreshError) {
+          console.error('❌ [DEBUG] Failed to refresh strategies after update:', refreshError);
+          // Don't throw - the update was successful, just the refresh failed
+        }
       }
 
       // Clean up edit state
@@ -588,8 +592,8 @@ const TabbedBasketManager: React.FC = () => {
                 {selectedBasket ? (selectedBasket.basket_name || 'Unnamed Basket') : 'Select a Basket'}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                {selectedBasket 
-                  ? 'Manage strategies and monitor performance' 
+                {selectedBasket
+                  ? `${selectedBasket.strategies?.length || 0} strategies configured`
                   : 'Choose a basket from the left panel to view details'
                 }
               </p>
@@ -657,41 +661,12 @@ const TabbedBasketManager: React.FC = () => {
                         ) : selectedBasket.strategies && selectedBasket.strategies.length > 0 ? (
                           <div className="space-y-3">
                             {selectedBasket.strategies.map(strategy => (
-                              <div
+                              <StrategyCard
                                 key={strategy.strategyId}
-                                className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg"
-                              >
-                                <div className="flex items-center gap-4">
-                                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
-                                    <Zap className="h-5 w-5 text-blue-600" />
-                                  </div>
-                                  <div>
-                                    <h4 className="font-medium">{strategy.strategyName}</h4>
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                      <Badge variant="default" size="sm">{strategy.strategyType}</Badge>
-                                      <span>•</span>
-                                      <span>{Array.isArray(strategy.legs) ? strategy.legs.length : strategy.legs} legs</span>
-                                      <span>•</span>
-                                      <Badge variant={strategy.status === 'ACTIVE' ? 'success' : 'default'} size="sm">
-                                        {strategy.status}
-                                      </Badge>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleEditStrategy(strategy)}
-                                    disabled={loadingEditStrategy}
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </Button>
-                                  <Button variant="ghost" size="sm" className="text-red-600">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
+                                strategy={strategy}
+                                onEdit={handleEditStrategy}
+                                isLoading={loadingEditStrategy}
+                              />
                             ))}
                           </div>
                         ) : (
@@ -885,10 +860,7 @@ const TabbedBasketManager: React.FC = () => {
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
                   <div className="text-sm font-medium text-gray-500 mb-6">No baskets</div>
-                  <h3 className="text-xl font-semibold mb-4">Welcome to Basket Management</h3>
-                  <p className="text-gray-600 mb-8 max-w-md">
-                    Create and manage your strategy baskets with revolutionary multi-broker allocation and performance tracking.
-                  </p>
+                  <h3 className="text-xl font-semibold mb-8">Welcome to Basket Management</h3>
                   <Button onClick={() => setShowCreateDialog(true)} leftIcon={<Plus className="h-4 w-4" />}>
                     Create Your First Basket
                   </Button>

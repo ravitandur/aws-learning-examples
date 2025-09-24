@@ -38,9 +38,8 @@ const BasketsPage: React.FC = () => {
 
   return (
     <StandardLayout>
-      <PageHeader 
-        title="Basket Management" 
-        description="Create and manage your strategy baskets with revolutionary multi-broker allocation and performance tracking."
+      <PageHeader
+        title="Basket Management"
         pageType="management"
         breadcrumbs={[
           { label: 'Home', href: '/', icon: <Home className="w-4 h-4" /> },

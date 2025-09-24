@@ -194,6 +194,10 @@ def handle_create_strategy(event, user_id, basket_id, table):
         trading_type = body.get("trading_type", "").upper()
         intraday_exit_mode = body.get("intraday_exit_mode", "SAME_DAY").upper()
 
+        # Extract strategy-level risk management fields (Phase 3: Target Profit & Stop Loss)
+        target_profit = body.get("target_profit")  # {enabled: bool, type: str, value: number}
+        mtm_stop_loss = body.get("mtm_stop_loss")  # {enabled: bool, type: str, value: number}
+
         # Validate required fields
         if not strategy_name or not underlying or not product or not legs:
             return {
@@ -311,6 +315,9 @@ def handle_create_strategy(event, user_id, basket_id, table):
             # GSI attributes for execution schedule (CRITICAL FOR PERFORMANCE)
             # NOTE: Main strategy record no longer has execution_schedule_key
             # Weekday-specific schedule entries are created separately below
+            # Strategy-level risk management (Phase 3: TP/SL Storage)
+            "target_profit": target_profit,
+            "mtm_stop_loss": mtm_stop_loss,
         }
 
         # Store main strategy in single table

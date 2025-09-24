@@ -320,7 +320,7 @@ const EnhancedBasketManagement: React.FC = () => {
           <div>
             <h1 className="text-2xl font-bold">🧺 Revolutionary Basket Management</h1>
             <p className="text-gray-600 dark:text-gray-300">
-              Manage strategy baskets with revolutionary multi-broker allocation
+              Manage your options trading strategy baskets
             </p>
           </div>
         </div>

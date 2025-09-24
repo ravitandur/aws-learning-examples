@@ -111,7 +111,7 @@ const StrategyCreator: React.FC = () => {
       });
       
       if (response.ok) {
-        alert('Strategy created successfully with revolutionary multi-broker allocation!');
+        alert('Strategy created successfully!');
       }
     } catch (error) {
       console.error('Failed to create strategy:', error);
@@ -124,7 +124,7 @@ const StrategyCreator: React.FC = () => {
         <CardHeader>
           <CardTitle>Strategy Creator</CardTitle>
           <p className="text-sm text-gray-600">
-            Create strategies with revolutionary multi-broker allocation
+            Create and configure your options trading strategies
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
