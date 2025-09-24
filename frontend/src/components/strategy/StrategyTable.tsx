@@ -120,6 +120,9 @@ const StrategyTable: React.FC<StrategyTableProps> = ({
               Exit Schedule
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              Features
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Status
             </th>
             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -135,13 +138,10 @@ const StrategyTable: React.FC<StrategyTableProps> = ({
             >
               {/* Strategy Details */}
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                <div className="text-sm font-medium text-gray-900 dark:text-white mb-2">
                   {strategy.strategyName}
                 </div>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                  {strategy.strategyId}
-                </div>
-                <div className="flex flex-wrap gap-1 mb-2">
+                <div className="flex flex-wrap gap-1">
                   <Badge variant="info" size="sm">{strategy.strategyType}</Badge>
                   <Badge variant="default" size="sm">{strategy.legs || 0} legs</Badge>
                   {strategy.expiryType && (
@@ -155,19 +155,14 @@ const StrategyTable: React.FC<StrategyTableProps> = ({
                     </Badge>
                   )}
                 </div>
-                <div className="text-xs text-gray-600 dark:text-gray-400 border-t pt-1">
-                  <span className="font-medium">Features:</span> {getAdvancedFeatures(strategy)}
-                </div>
               </td>
 
               {/* Entry Schedule */}
               <td className="px-6 py-4">
                 <div className="text-sm">
-                  <div className="text-gray-600 dark:text-gray-400 text-xs mb-1">Days:</div>
                   <div className="text-gray-900 dark:text-white font-medium mb-2">
                     {formatDays(strategy.entryDays)}
                   </div>
-                  <div className="text-gray-600 dark:text-gray-400 text-xs mb-1">Time:</div>
                   <div className="text-gray-900 dark:text-white font-medium">
                     {formatTime(strategy.entryTime)}
                   </div>
@@ -177,14 +172,19 @@ const StrategyTable: React.FC<StrategyTableProps> = ({
               {/* Exit Schedule */}
               <td className="px-6 py-4">
                 <div className="text-sm">
-                  <div className="text-gray-600 dark:text-gray-400 text-xs mb-1">Days:</div>
                   <div className="text-gray-900 dark:text-white font-medium mb-2">
                     {formatDays(strategy.exitDays)}
                   </div>
-                  <div className="text-gray-600 dark:text-gray-400 text-xs mb-1">Time:</div>
                   <div className="text-gray-900 dark:text-white font-medium">
                     {formatTime(strategy.exitTime)}
                   </div>
+                </div>
+              </td>
+
+              {/* Features */}
+              <td className="px-6 py-4">
+                <div className="text-xs text-gray-600 dark:text-gray-400">
+                  {getAdvancedFeatures(strategy)}
                 </div>
               </td>
 
