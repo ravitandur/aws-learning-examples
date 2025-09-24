@@ -17,6 +17,7 @@ import Input from "../../ui/Input";
 interface StrategyHeaderProps {
   strategyName: string;
   positionCount: number;
+  isEditing?: boolean; // New prop to determine if we're editing
   onStrategyNameChange: (name: string) => void;
   onAddPosition: () => void;
   onClose: () => void;
@@ -25,6 +26,7 @@ interface StrategyHeaderProps {
 const StrategyHeader: React.FC<StrategyHeaderProps> = ({
   strategyName,
   positionCount,
+  isEditing = false,
   onStrategyNameChange,
   onAddPosition,
   onClose,
@@ -36,7 +38,7 @@ const StrategyHeader: React.FC<StrategyHeaderProps> = ({
           id="strategy-dialog-title"
           className="text-2xl font-bold text-gray-900 dark:text-white"
         >
-          Create Strategy
+          {isEditing ? 'Edit Strategy' : 'Create Strategy'}
         </h2>
         <button
           onClick={onClose}

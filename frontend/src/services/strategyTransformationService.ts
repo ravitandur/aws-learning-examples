@@ -8,18 +8,16 @@
 
 import strategyValidationService from './strategyValidationService';
 import { parseStrikeValue, validateStrikeFormat, formatStrikeForDisplay } from '../utils/strategy/strikeValueParser';
-import { isValidProductType, getProductTypeValidationError, autoCorrectProductType } from '../utils/strategy/productTypeValidation';
+import { getProductTypeValidationError, autoCorrectProductType, isValidProductType } from '../utils/strategy/productTypeValidation';
 import { SelectionMethod } from '../types/strategy';
 
 // Frontend types from StrategyWizardDialog
 interface FrontendStrategyLeg {
   id: string;
-  index: string;
   optionType: 'CE' | 'PE';
   actionType: 'BUY' | 'SELL';
   strikePrice: string;
   totalLots: number;
-  expiryType: 'weekly' | 'monthly';
   selectionMethod: SelectionMethod;
   
   // Premium selection fields
@@ -73,13 +71,15 @@ interface FrontendStrategyConfig {
   rangeBreakoutTimeHour: string;
   rangeBreakoutTimeMinute: string;
   moveSlToCost: boolean;
-  // Product type configuration  
+  // Product type configuration
   productType: 'MIS' | 'NRML';
   // New trading type configuration
   tradingType: 'INTRADAY' | 'POSITIONAL';
   intradayExitMode: 'SAME_DAY' | 'NEXT_DAY_BTST';
   entryTradingDaysBeforeExpiry: number;
   exitTradingDaysBeforeExpiry: number;
+  // Strategy-level expiry type (NEW)
+  expiryType: 'weekly' | 'monthly';
   targetProfit: {
     type: 'TOTAL_MTM' | 'COMBINED_PREMIUM_PERCENT';
     value: number;
@@ -102,22 +102,16 @@ interface FrontendStrategyData {
 interface BackendStrategyLeg {
   option_type: 'CE' | 'PE';
   action: 'BUY' | 'SELL';
-  strike: number | string; // Backend handles both numeric strikes and ATM references
   lots: number;
-  expiry?: string;
+
+  // Dynamic strike selection criteria (flat structure)
+  selection_method: SelectionMethod;
+  selection_value?: number;        // Numeric value for all methods
+  selection_operator?: 'CLOSEST' | 'GTE' | 'LTE'; // For premium methods only
+
+  // Optional fields
   symbol?: string;
   description?: string;
-  
-  // Extended backend fields for advanced features
-  selection_method?: string;
-  premium_criteria?: {
-    operator: string;
-    value: number;
-  };
-  straddle_premium_criteria?: {
-    operator: string;
-    percentage: number;
-  };
   
   // Flattened risk management fields (conditional based on enabled state)
   stop_loss?: {
@@ -156,7 +150,8 @@ interface BackendStrategyLeg {
 interface BackendStrategyData {
   name: string;
   description: string;
-  underlying: string;
+  underlying: string;              // Strategy-level: NIFTY/BANKNIFTY
+  expiry_type: 'weekly' | 'monthly'; // Strategy-level: weekly/monthly
   product: 'NRML' | 'MIS';
   entry_time: string;
   exit_time: string;
@@ -189,9 +184,16 @@ interface BackendStrategyData {
 class StrategyTransformationService {
   /**
    * Transform frontend StrategyWizardDialog data to backend API format
+   * @param frontendData - Strategy data from frontend
+   * @param strategyIndex - Strategy-level index selection (NIFTY/BANKNIFTY)
+   * @param expiryType - Strategy-level expiry type selection (weekly/monthly)
    */
-  transformToBackend(frontendData: FrontendStrategyData): BackendStrategyData {
-    const { basketId, strategyName, index, config, legs } = frontendData;
+  transformToBackend(
+    frontendData: FrontendStrategyData,
+    strategyIndex: string,
+    expiryType: 'weekly' | 'monthly'
+  ): BackendStrategyData {
+    const { strategyName, index, config, legs } = frontendData;
     
     // Validate product type against trading configuration
     const productTypeError = getProductTypeValidationError(
@@ -216,50 +218,57 @@ class StrategyTransformationService {
       config.productType = validatedProductType;
     }
     
-    // Transform legs with advanced mappings
+    // Transform legs with flat selection criteria (no strategy-level duplication)
     const backendLegs: BackendStrategyLeg[] = legs.map(leg => {
       const backendLeg: BackendStrategyLeg = {
         option_type: leg.optionType,  // Direct pass-through: CE → CE, PE → PE
         action: leg.actionType,
-        strike: this.transformStrike(leg.strikePrice, leg.selectionMethod),
         lots: leg.totalLots,
-        selection_method: leg.selectionMethod
+
+        // Dynamic strike selection criteria (flat structure)
+        selection_method: leg.selectionMethod,
+        selection_value: undefined,
+        selection_operator: undefined,
       };
-      
-      // Add premium criteria for PREMIUM method
-      if (leg.selectionMethod === 'PREMIUM' && leg.premiumOperator && leg.premiumValue !== undefined) {
-        backendLeg.premium_criteria = {
-          operator: leg.premiumOperator,
-          value: leg.premiumValue
-        };
+
+      // Map selection criteria to flat structure based on method
+      switch (leg.selectionMethod) {
+        case 'ATM_POINTS':
+        case 'ATM_PERCENT':
+          const parsedValue = parseStrikeValue(leg.strikePrice, leg.selectionMethod);
+          backendLeg.selection_value = typeof parsedValue === 'number' ? parsedValue : parseFloat(parsedValue.toString());
+          // selection_operator remains undefined for ATM methods
+          break;
+
+        case 'PREMIUM':
+          backendLeg.selection_value = leg.premiumValue || undefined;
+          backendLeg.selection_operator = leg.premiumOperator || undefined;
+          break;
+
+        case 'PERCENTAGE_OF_STRADDLE_PREMIUM':
+          backendLeg.selection_value = leg.straddlePremiumPercentage || undefined;
+          backendLeg.selection_operator = leg.straddlePremiumOperator || undefined;
+          break;
       }
       
-      // Add straddle premium criteria for PERCENTAGE_OF_STRADDLE_PREMIUM method
-      if (leg.selectionMethod === 'PERCENTAGE_OF_STRADDLE_PREMIUM' && leg.straddlePremiumOperator && leg.straddlePremiumPercentage !== undefined) {
-        backendLeg.straddle_premium_criteria = {
-          operator: leg.straddlePremiumOperator,
-          percentage: leg.straddlePremiumPercentage
-        };
-      }
-      
-      // Add flattened risk management fields conditionally
-      if (leg.stopLoss.enabled) {
+      // Add flattened risk management fields conditionally (with defensive checks)
+      if (leg.stopLoss?.enabled) {
         backendLeg.stop_loss = {
           enabled: true,
           type: leg.stopLoss.type,
           value: leg.stopLoss.value
         };
       }
-      
-      if (leg.targetProfit.enabled) {
+
+      if (leg.targetProfit?.enabled) {
         backendLeg.target_profit = {
           enabled: true,
           type: leg.targetProfit.type,
           value: leg.targetProfit.value
         };
       }
-      
-      if (leg.trailingStopLoss.enabled) {
+
+      if (leg.trailingStopLoss?.enabled) {
         backendLeg.trailing_stop_loss = {
           enabled: true,
           type: leg.trailingStopLoss.type,
@@ -267,24 +276,24 @@ class StrategyTransformationService {
           stop_loss_move_value: leg.trailingStopLoss.stopLossMoveValue
         };
       }
-      
-      if (leg.waitAndTrade.enabled) {
+
+      if (leg.waitAndTrade?.enabled) {
         backendLeg.wait_and_trade = {
           enabled: true,
           type: leg.waitAndTrade.type,
           value: leg.waitAndTrade.value
         };
       }
-      
-      if (leg.reEntry.enabled) {
+
+      if (leg.reEntry?.enabled) {
         backendLeg.re_entry = {
           enabled: true,
           type: leg.reEntry.type,
           count: leg.reEntry.count
         };
       }
-      
-      if (leg.reExecute.enabled) {
+
+      if (leg.reExecute?.enabled) {
         backendLeg.re_execute = {
           enabled: true,
           type: leg.reExecute.type,
@@ -305,7 +314,8 @@ class StrategyTransformationService {
     const backendData: BackendStrategyData = {
       name: strategyName,
       description: `${index} strategy with ${legs.length} legs`,
-      underlying: index, // NIFTY, BANKNIFTY, etc.
+      underlying: index, // NIFTY, BANKNIFTY, etc. (strategy-level)
+      expiry_type: expiryType, // weekly/monthly (strategy-level)
       product: config.productType, // Use user-selected product type
       entry_time: entryTime,
       exit_time: exitTime,
@@ -329,13 +339,13 @@ class StrategyTransformationService {
       range_breakout: config.rangeBreakout,
       range_breakout_time: config.rangeBreakout ? `${config.rangeBreakoutTimeHour}:${config.rangeBreakoutTimeMinute}` : undefined,
       move_sl_to_cost: config.moveSlToCost,
-      target_profit: config.targetProfit.value > 0 ? {
-        type: config.targetProfit.type,
-        value: config.targetProfit.value
+      target_profit: (config.targetProfit?.value || 0) > 0 ? {
+        type: config.targetProfit?.type || 'POINTS',
+        value: config.targetProfit?.value || 0
       } : undefined,
-      mtm_stop_loss: config.mtmStopLoss.value > 0 ? {
-        type: config.mtmStopLoss.type,
-        value: config.mtmStopLoss.value
+      mtm_stop_loss: (config.mtmStopLoss?.value || 0) > 0 ? {
+        type: config.mtmStopLoss?.type || 'POINTS',
+        value: config.mtmStopLoss?.value || 0
       } : undefined
     };
     
@@ -376,21 +386,17 @@ class StrategyTransformationService {
     const frontendLegs: FrontendStrategyLeg[] = legs.map((backendLeg: any, index: number) => {
       const leg: FrontendStrategyLeg = {
         id: `leg-${index}`,
-        index: underlying || 'NIFTY',
         optionType: backendLeg.option_type,  // Direct pass-through: CE → CE, PE → PE
         actionType: backendLeg.action,
-        strikePrice: formatStrikeForDisplay(backendLeg.strike, backendLeg.selection_method || 'ATM_POINTS'),
+        strikePrice: formatStrikeForDisplay(backendLeg.selection_value || 0, backendLeg.selection_method || 'ATM_POINTS'),
         totalLots: backendLeg.lots || 1,
-        expiryType: 'weekly', // Default, can be enhanced later
         selectionMethod: backendLeg.selection_method || 'ATM_POINTS',
         
-        // Premium selection fields
-        premiumOperator: backendLeg.premium_criteria?.operator || 'CLOSEST',
-        premiumValue: backendLeg.premium_criteria?.value || 0,
-        
-        // Straddle premium fields
-        straddlePremiumOperator: backendLeg.straddle_premium_criteria?.operator || 'CLOSEST',
-        straddlePremiumPercentage: backendLeg.straddle_premium_criteria?.percentage || 5,
+        // Method-specific field mapping from new selection_value/selection_operator architecture
+        premiumOperator: backendLeg.selection_method === 'PREMIUM' ? (backendLeg.selection_operator || 'CLOSEST') : 'CLOSEST',
+        premiumValue: backendLeg.selection_method === 'PREMIUM' ? (backendLeg.selection_value || 0) : 0,
+        straddlePremiumOperator: backendLeg.selection_method === 'PERCENTAGE_OF_STRADDLE_PREMIUM' ? (backendLeg.selection_operator || 'CLOSEST') : 'CLOSEST',
+        straddlePremiumPercentage: backendLeg.selection_method === 'PERCENTAGE_OF_STRADDLE_PREMIUM' ? (backendLeg.selection_value || 5) : 5,
         
         // Risk Management Fields - transform from flattened backend structure
         stopLoss: {
@@ -438,7 +444,7 @@ class StrategyTransformationService {
       '30'
     );
     
-    // Transform strategy configuration
+    // Transform strategy configuration (includes expiryType)
     const config: FrontendStrategyConfig = {
       entryTimeHour: entryHour,
       entryTimeMinute: entryMinute,
@@ -448,6 +454,7 @@ class StrategyTransformationService {
       rangeBreakoutTimeHour: rangeBreakoutHour,
       rangeBreakoutTimeMinute: rangeBreakoutMinute,
       moveSlToCost: backendData.move_sl_to_cost || false,
+      expiryType: backendData.expiry_type || 'weekly',
       productType: backendData.product || 'MIS',
       tradingType: backendData.trading_type || 'INTRADAY',
       intradayExitMode: backendData.intraday_exit_mode || 'SAME_DAY',
@@ -567,14 +574,19 @@ class StrategyTransformationService {
   /**
    * Create a strategy creation API call payload
    */
-  createApiPayload(_basketId: string, frontendData: FrontendStrategyData): BackendStrategyData {
+  createApiPayload(
+    _basketId: string,
+    frontendData: FrontendStrategyData,
+    strategyIndex: string,
+    expiryType: 'weekly' | 'monthly'
+  ): BackendStrategyData {
     const validation = this.validateFrontendData(frontendData);
-    
+
     if (!validation.isValid) {
       throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
     }
-    
-    return this.transformToBackend(frontendData);
+
+    return this.transformToBackend(frontendData, strategyIndex, expiryType);
   }
 }
 

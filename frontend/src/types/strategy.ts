@@ -64,7 +64,6 @@ export interface ReExecuteConfig {
 // Main Strategy Leg interface
 export interface StrategyLeg {
   id: string;
-  index: string;
   optionType: OptionType;
   actionType: ActionType;
   strikePrice: string;
@@ -136,6 +135,7 @@ export interface StrategyFormData {
 // Component Props interfaces
 export interface StrategyWizardDialogProps {
   basketId: string;
+  editingStrategy?: any; // Optional strategy data for editing mode
   onClose: () => void;
   onSubmit: (strategyData: any) => void;
 }

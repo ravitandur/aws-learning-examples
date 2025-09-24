@@ -17,8 +17,12 @@ interface ReExecuteControlProps {
 }
 
 const ReExecuteControl: React.FC<ReExecuteControlProps> = ({ leg, onUpdate }) => {
-  const canEnable = canEnableReExecute(leg.targetProfit);
-  const disabledReason = getTargetProfitInvalidReason(leg.targetProfit);
+  // Provide default values if properties are undefined
+  const targetProfit = leg.targetProfit || { enabled: false, type: 'POINTS' as const, value: 0 };
+  const reExecute = leg.reExecute || { enabled: false, type: 'TP_REEXEC' as const, count: 1 };
+
+  const canEnable = canEnableReExecute(targetProfit);
+  const disabledReason = getTargetProfitInvalidReason(targetProfit);
 
   const handleEnabledChange = (enabled: boolean) => {
     // Only allow enabling if Target Profit is valid
@@ -26,19 +30,19 @@ const ReExecuteControl: React.FC<ReExecuteControlProps> = ({ leg, onUpdate }) =>
       return;
     }
     onUpdate({
-      reExecute: { ...leg.reExecute, enabled }
+      reExecute: { ...reExecute, enabled }
     });
   };
 
   const handleTypeChange = (type: 'TP_REEXEC') => {
     onUpdate({
-      reExecute: { ...leg.reExecute, type, count: 1 }
+      reExecute: { ...reExecute, type, count: 1 }
     });
   };
 
   const handleCountChange = (count: number) => {
     onUpdate({
-      reExecute: { ...leg.reExecute, count }
+      reExecute: { ...reExecute, count }
     });
   };
 
@@ -48,17 +52,17 @@ const ReExecuteControl: React.FC<ReExecuteControlProps> = ({ leg, onUpdate }) =>
         <input
           type="checkbox"
           id={`reExecute-${leg.id}`}
-          checked={leg.reExecute.enabled}
+          checked={reExecute.enabled}
           disabled={!canEnable}
           onChange={(e) => handleEnabledChange(e.target.checked)}
           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
           title={!canEnable ? disabledReason || 'Requires valid Target Profit configuration' : ''}
         />
-        <label 
-          htmlFor={`reExecute-${leg.id}`} 
+        <label
+          htmlFor={`reExecute-${leg.id}`}
           className={`text-sm font-medium ${
-            !canEnable 
-              ? 'text-gray-400' 
+            !canEnable
+              ? 'text-gray-400'
               : 'text-gray-700 dark:text-gray-200'
           }`}
           title={!canEnable ? disabledReason || 'Requires valid Target Profit configuration' : ''}
@@ -66,17 +70,17 @@ const ReExecuteControl: React.FC<ReExecuteControlProps> = ({ leg, onUpdate }) =>
           Re-Execute (TP)
         </label>
       </div>
-      
-      {leg.reExecute.enabled && canEnable && (
+
+      {reExecute.enabled && canEnable && (
         <div className="space-y-2">
           <Select
-            value={leg.reExecute.type}
+            value={reExecute.type}
             onChange={(e) => handleTypeChange(e.target.value as 'TP_REEXEC')}
             options={RE_EXECUTE_TYPE_OPTIONS}
             className="h-8 text-sm"
           />
           <Select
-            value={leg.reExecute.count.toString()}
+            value={reExecute.count.toString()}
             onChange={(e) => handleCountChange(parseInt(e.target.value))}
             options={COUNT_OPTIONS}
             className="h-8 text-sm"

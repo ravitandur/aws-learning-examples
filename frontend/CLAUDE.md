@@ -11,14 +11,14 @@ This file provides **frontend-specific guidance** for the Quantleap Analytics tr
 **Status**: ✅ Updated with both deployed stack endpoints
 
 #### **API Endpoints**:
-- **User Authentication & Broker Management**: `https://4fhetaydtg.execute-api.ap-south-1.amazonaws.com/dev/`
-- **Options Trading Platform**: `https://2f8bmi4edb.execute-api.ap-south-1.amazonaws.com/dev/`
+- **User Authentication & Broker Management**: `https://fx43f0dnr4.execute-api.ap-south-1.amazonaws.com/dev/`
+- **Options Trading Platform**: `https://vrd3rrtyx4.execute-api.ap-south-1.amazonaws.com/dev/`
 
 #### **Environment Variables** (`.env`):
 ```env
 REACT_APP_ENVIRONMENT=dev
-REACT_APP_API_URL_DEV=https://4fhetaydtg.execute-api.ap-south-1.amazonaws.com/dev
-REACT_APP_OPTIONS_API_URL_DEV=https://2f8bmi4edb.execute-api.ap-south-1.amazonaws.com/dev
+REACT_APP_API_URL_DEV=https://fx43f0dnr4.execute-api.ap-south-1.amazonaws.com/dev
+REACT_APP_OPTIONS_API_URL_DEV=https://vrd3rrtyx4.execute-api.ap-south-1.amazonaws.com/dev
 REACT_APP_DEBUG=true
 REACT_APP_AUTH_STACK_NAME=ql-algo-trading-dev-auth-broker-stack
 REACT_APP_OPTIONS_STACK_NAME=ql-algo-trading-dev-options-trading-stack

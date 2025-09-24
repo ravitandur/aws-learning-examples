@@ -7,40 +7,36 @@
 
 import { useCallback } from 'react';
 import { StrategyLeg, PositionActions } from '../../types/strategy';
-import { 
-  createNewPosition, 
-  clonePosition, 
-  updatePositionInArray, 
+import {
+  createNewPosition,
+  clonePosition,
+  updatePositionInArray,
   removePositionFromArray,
-  updateAllPositionsIndex,
   autoCorrectPositionInterdependencies
 } from '../../utils/strategy';
 
 interface UsePositionManagementProps {
   legs: StrategyLeg[];
   setLegs: React.Dispatch<React.SetStateAction<StrategyLeg[]>>;
-  strategyIndex: string;
   showError: (message: string) => void;
 }
 
 interface UsePositionManagementReturn {
   actions: PositionActions;
-  updateIndex: (newIndex: string) => void;
   updatePosition: (legId: string, updates: Partial<StrategyLeg>) => void;
 }
 
 export const usePositionManagement = ({
   legs,
   setLegs,
-  strategyIndex,
   showError
 }: UsePositionManagementProps): UsePositionManagementReturn => {
-  
+
   // Add new position
   const addPosition = useCallback(() => {
-    const newPosition = createNewPosition(strategyIndex);
+    const newPosition = createNewPosition();
     setLegs(prev => [...prev, newPosition]);
-  }, [strategyIndex, setLegs]);
+  }, [setLegs]);
   
   // Remove position
   const removePosition = useCallback((legId: string) => {
@@ -67,11 +63,6 @@ export const usePositionManagement = ({
     });
   }, [setLegs]);
   
-  // Update index for all positions
-  const updateIndex = useCallback((newIndex: string) => {
-    setLegs(prev => updateAllPositionsIndex(prev, newIndex));
-  }, [setLegs]);
-  
   // Position actions object
   const actions: PositionActions = {
     add: addPosition,
@@ -79,10 +70,9 @@ export const usePositionManagement = ({
     copy: copyPosition,
     update: updatePosition
   };
-  
+
   return {
     actions,
-    updateIndex,
     updatePosition
   };
 };

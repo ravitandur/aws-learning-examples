@@ -501,6 +501,24 @@ class OptionsTradeStack(Stack):
                                        authorizer=authorizer
                                        )
 
+        # Individual strategy endpoints (secured with Cognito authorizer)
+        strategy_id_resource = strategies_resource.add_resource("{strategy_id}")
+        strategy_id_resource.add_method("GET",
+                                       apigateway.LambdaIntegration(self.lambda_functions['strategy-manager']),
+                                       authorization_type=apigateway.AuthorizationType.COGNITO,
+                                       authorizer=authorizer
+                                       )
+        strategy_id_resource.add_method("PUT",
+                                       apigateway.LambdaIntegration(self.lambda_functions['strategy-manager']),
+                                       authorization_type=apigateway.AuthorizationType.COGNITO,
+                                       authorizer=authorizer
+                                       )
+        strategy_id_resource.add_method("DELETE",
+                                       apigateway.LambdaIntegration(self.lambda_functions['strategy-manager']),
+                                       authorization_type=apigateway.AuthorizationType.COGNITO,
+                                       authorizer=authorizer
+                                       )
+
         # Execution endpoints (secured with Cognito authorizer)
         execution_resource = options_resource.add_resource("execution")
         execution_resource.add_method("POST",

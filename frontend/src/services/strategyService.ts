@@ -1,6 +1,7 @@
 import optionsApiClient from './optionsApiClient';
 import strategyTransformationService, { FrontendStrategyData, BackendStrategyData } from './strategyTransformationService';
 import { ApiResponse, Strategy } from '../types';
+import { transformStrategyFields } from '../utils/transformStrategyFields';
 
 interface StrategyCreationResponse {
   success: boolean;
@@ -43,8 +44,21 @@ class StrategyService {
         console.warn('Strategy creation warnings:', validation.warnings);
       }
       
-      // Transform frontend data to backend format
-      const backendPayload = strategyTransformationService.createApiPayload(basketId, strategyData);
+      // Extract strategy-level context
+      const strategyIndex = strategyData.index;
+      const expiryType = strategyData.config.expiryType;
+
+      if (!strategyIndex || !expiryType) {
+        throw new Error('Strategy index and expiry type are required');
+      }
+
+      // Transform frontend data to backend format with strategy context
+      const backendPayload = strategyTransformationService.createApiPayload(
+        basketId,
+        strategyData,
+        strategyIndex,
+        expiryType
+      );
       
       // Make API call to create strategy
       const response = await optionsApiClient.post<ApiResponse<any>>(
@@ -78,7 +92,7 @@ class StrategyService {
    */
   async getBasketStrategies(basketId: string): Promise<Strategy[]> {
     try {
-      const response = await optionsApiClient.get<ApiResponse<Strategy[]>>(
+      const response = await optionsApiClient.get<ApiResponse<any[]>>(
         `/options/baskets/${basketId}/strategies`
       );
 
@@ -86,7 +100,8 @@ class StrategyService {
         throw new Error(response.message || 'Failed to fetch basket strategies');
       }
 
-      return response.data;
+      // Transform backend strategy fields to frontend format
+      return response.data.map(transformStrategyFields);
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch basket strategies');
     }

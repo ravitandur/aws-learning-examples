@@ -17,21 +17,24 @@ interface WaitAndTradeControlProps {
 }
 
 const WaitAndTradeControl: React.FC<WaitAndTradeControlProps> = ({ leg, onUpdate }) => {
+  // Provide default values if properties are undefined
+  const waitAndTrade = leg.waitAndTrade || { enabled: false, type: 'POINTS' as const, value: 0 };
+
   const handleEnabledChange = (enabled: boolean) => {
     onUpdate({
-      waitAndTrade: { ...leg.waitAndTrade, enabled }
+      waitAndTrade: { ...waitAndTrade, enabled }
     });
   };
 
   const handleTypeChange = (type: 'POINTS' | 'PERCENTAGE') => {
     onUpdate({
-      waitAndTrade: { ...leg.waitAndTrade, type, value: 0 }
+      waitAndTrade: { ...waitAndTrade, type, value: 0 }
     });
   };
 
   const handleValueChange = (value: number) => {
     onUpdate({
-      waitAndTrade: { ...leg.waitAndTrade, value }
+      waitAndTrade: { ...waitAndTrade, value }
     });
   };
 
@@ -41,22 +44,22 @@ const WaitAndTradeControl: React.FC<WaitAndTradeControlProps> = ({ leg, onUpdate
         <input
           type="checkbox"
           id={`waitAndTrade-${leg.id}`}
-          checked={leg.waitAndTrade.enabled}
+          checked={waitAndTrade.enabled}
           onChange={(e) => handleEnabledChange(e.target.checked)}
           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
         />
-        <label 
-          htmlFor={`waitAndTrade-${leg.id}`} 
+        <label
+          htmlFor={`waitAndTrade-${leg.id}`}
           className="text-sm font-medium text-gray-700 dark:text-gray-200"
         >
           Wait & Trade
         </label>
       </div>
-      
-      {leg.waitAndTrade.enabled && (
+
+      {waitAndTrade.enabled && (
         <div className="space-y-2">
           <Select
-            value={leg.waitAndTrade.type}
+            value={waitAndTrade.type}
             onChange={(e) => handleTypeChange(e.target.value as 'POINTS' | 'PERCENTAGE')}
             options={TARGET_PROFIT_TYPE_OPTIONS}
             className="h-8 text-sm"
@@ -65,7 +68,7 @@ const WaitAndTradeControl: React.FC<WaitAndTradeControlProps> = ({ leg, onUpdate
             type="number"
             min="0"
             step="0.1"
-            value={leg.waitAndTrade.value}
+            value={waitAndTrade.value}
             onChange={(e) => handleValueChange(parseFloat(e.target.value) || 0)}
             placeholder="Wait & trade value"
             className="h-8 text-sm"

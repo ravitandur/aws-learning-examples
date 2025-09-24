@@ -18,39 +18,44 @@ interface StopLossControlProps {
 }
 
 const StopLossControl: React.FC<StopLossControlProps> = ({ leg, onUpdate }) => {
+  // Provide default values if stopLoss is undefined
+  const stopLoss = leg.stopLoss || { enabled: false, type: 'POINTS' as const, value: 0 };
+  const trailingStopLoss = leg.trailingStopLoss || { enabled: false, type: 'POINTS' as const, instrumentMoveValue: 0, stopLossMoveValue: 0 };
+  const reEntry = leg.reEntry || { enabled: false, type: 'SL_REENTRY' as const, count: 1 };
+
   const handleEnabledChange = (enabled: boolean) => {
-    const newStopLoss = { ...leg.stopLoss, enabled };
+    const newStopLoss = { ...stopLoss, enabled };
     const isValid = enabled && isValidStopLoss(newStopLoss);
-    
+
     onUpdate({
       stopLoss: newStopLoss,
       // Disable dependent controls if stop loss becomes invalid
-      trailingStopLoss: isValid ? leg.trailingStopLoss : { ...leg.trailingStopLoss, enabled: false },
-      reEntry: isValid ? leg.reEntry : { ...leg.reEntry, enabled: false }
+      trailingStopLoss: isValid ? trailingStopLoss : { ...trailingStopLoss, enabled: false },
+      reEntry: isValid ? reEntry : { ...reEntry, enabled: false }
     });
   };
 
   const handleTypeChange = (type: 'POINTS' | 'PERCENTAGE' | 'RANGE') => {
-    const newStopLoss = { ...leg.stopLoss, type, value: 0 };
+    const newStopLoss = { ...stopLoss, type, value: 0 };
     const isValid = isValidStopLoss(newStopLoss);
-    
+
     onUpdate({
       stopLoss: newStopLoss,
       // Disable dependent controls if stop loss becomes invalid
-      trailingStopLoss: isValid ? leg.trailingStopLoss : { ...leg.trailingStopLoss, enabled: false },
-      reEntry: isValid ? leg.reEntry : { ...leg.reEntry, enabled: false }
+      trailingStopLoss: isValid ? trailingStopLoss : { ...trailingStopLoss, enabled: false },
+      reEntry: isValid ? reEntry : { ...reEntry, enabled: false }
     });
   };
 
   const handleValueChange = (value: number) => {
-    const newStopLoss = { ...leg.stopLoss, value };
+    const newStopLoss = { ...stopLoss, value };
     const isValid = isValidStopLoss(newStopLoss);
-    
+
     onUpdate({
       stopLoss: newStopLoss,
       // Disable dependent controls if stop loss becomes invalid
-      trailingStopLoss: isValid ? leg.trailingStopLoss : { ...leg.trailingStopLoss, enabled: false },
-      reEntry: isValid ? leg.reEntry : { ...leg.reEntry, enabled: false }
+      trailingStopLoss: isValid ? trailingStopLoss : { ...trailingStopLoss, enabled: false },
+      reEntry: isValid ? reEntry : { ...reEntry, enabled: false }
     });
   };
 
@@ -60,22 +65,22 @@ const StopLossControl: React.FC<StopLossControlProps> = ({ leg, onUpdate }) => {
         <input
           type="checkbox"
           id={`stopLoss-${leg.id}`}
-          checked={leg.stopLoss.enabled}
+          checked={stopLoss.enabled}
           onChange={(e) => handleEnabledChange(e.target.checked)}
           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
         />
-        <label 
-          htmlFor={`stopLoss-${leg.id}`} 
+        <label
+          htmlFor={`stopLoss-${leg.id}`}
           className="text-sm font-medium text-gray-700 dark:text-gray-200"
         >
           Stop Loss
         </label>
       </div>
-      
-      {leg.stopLoss.enabled && (
+
+      {stopLoss.enabled && (
         <div className="space-y-2">
           <Select
-            value={leg.stopLoss.type}
+            value={stopLoss.type}
             onChange={(e) => handleTypeChange(e.target.value as 'POINTS' | 'PERCENTAGE' | 'RANGE')}
             options={RISK_MANAGEMENT_TYPE_OPTIONS}
             className="h-8 text-sm"
@@ -84,7 +89,7 @@ const StopLossControl: React.FC<StopLossControlProps> = ({ leg, onUpdate }) => {
             type="number"
             min="0"
             step="0.1"
-            value={leg.stopLoss.value}
+            value={stopLoss.value}
             onChange={(e) => handleValueChange(parseFloat(e.target.value) || 0)}
             placeholder="Stop loss value"
             className="h-8 text-sm"

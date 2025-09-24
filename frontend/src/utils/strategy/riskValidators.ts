@@ -12,9 +12,10 @@ import { StopLossConfig, TargetProfitConfig, TrailingStopLossConfig } from '../.
  * @param stopLoss - Stop Loss configuration to validate
  * @returns true if Stop Loss is enabled with valid settings
  */
-export const isValidStopLoss = (stopLoss: StopLossConfig): boolean => {
-  return stopLoss.enabled && 
-         stopLoss.value > 0 && 
+export const isValidStopLoss = (stopLoss: StopLossConfig | undefined): boolean => {
+  if (!stopLoss) return false;
+  return stopLoss.enabled &&
+         stopLoss.value > 0 &&
          (stopLoss.type !== 'PERCENTAGE' || stopLoss.value <= 100);
 };
 
@@ -23,9 +24,10 @@ export const isValidStopLoss = (stopLoss: StopLossConfig): boolean => {
  * @param targetProfit - Target Profit configuration to validate
  * @returns true if Target Profit is enabled with valid settings
  */
-export const isValidTargetProfit = (targetProfit: TargetProfitConfig): boolean => {
-  return targetProfit.enabled && 
-         targetProfit.value > 0 && 
+export const isValidTargetProfit = (targetProfit: TargetProfitConfig | undefined): boolean => {
+  if (!targetProfit) return false;
+  return targetProfit.enabled &&
+         targetProfit.value > 0 &&
          (targetProfit.type !== 'PERCENTAGE' || targetProfit.value <= 1000); // Allow higher percentages for profit
 };
 
@@ -34,7 +36,10 @@ export const isValidTargetProfit = (targetProfit: TargetProfitConfig): boolean =
  * @param stopLoss - Stop Loss configuration to check
  * @returns string describing the issue, or null if valid
  */
-export const getStopLossInvalidReason = (stopLoss: StopLossConfig): string | null => {
+export const getStopLossInvalidReason = (stopLoss: StopLossConfig | undefined): string | null => {
+  if (!stopLoss) {
+    return 'Stop Loss configuration is missing';
+  }
   if (!stopLoss.enabled) {
     return 'Stop Loss must be enabled';
   }
@@ -53,7 +58,7 @@ export const getStopLossInvalidReason = (stopLoss: StopLossConfig): string | nul
  * @param trailingStopLoss - Trailing Stop Loss configuration
  * @returns true if Trailing Stop Loss is valid
  */
-export const canEnableTrailingStopLoss = (stopLoss: StopLossConfig, trailingStopLoss: TrailingStopLossConfig): boolean => {
+export const canEnableTrailingStopLoss = (stopLoss: StopLossConfig | undefined, trailingStopLoss: TrailingStopLossConfig | undefined): boolean => {
   return isValidStopLoss(stopLoss);
 };
 
@@ -62,7 +67,7 @@ export const canEnableTrailingStopLoss = (stopLoss: StopLossConfig, trailingStop
  * @param stopLoss - Stop Loss configuration
  * @returns true if Re Entry can be enabled
  */
-export const canEnableReEntry = (stopLoss: StopLossConfig): boolean => {
+export const canEnableReEntry = (stopLoss: StopLossConfig | undefined): boolean => {
   return isValidStopLoss(stopLoss);
 };
 
@@ -71,7 +76,10 @@ export const canEnableReEntry = (stopLoss: StopLossConfig): boolean => {
  * @param targetProfit - Target Profit configuration to check
  * @returns string describing the issue, or null if valid
  */
-export const getTargetProfitInvalidReason = (targetProfit: TargetProfitConfig): string | null => {
+export const getTargetProfitInvalidReason = (targetProfit: TargetProfitConfig | undefined): string | null => {
+  if (!targetProfit) {
+    return 'Target Profit configuration is missing';
+  }
   if (!targetProfit.enabled) {
     return 'Target Profit must be enabled';
   }
@@ -89,6 +97,6 @@ export const getTargetProfitInvalidReason = (targetProfit: TargetProfitConfig): 
  * @param targetProfit - Target Profit configuration
  * @returns true if Re Execute can be enabled
  */
-export const canEnableReExecute = (targetProfit: TargetProfitConfig): boolean => {
+export const canEnableReExecute = (targetProfit: TargetProfitConfig | undefined): boolean => {
   return isValidTargetProfit(targetProfit);
 };

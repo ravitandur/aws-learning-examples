@@ -6,15 +6,18 @@
  */
 
 import { useCallback, useState } from 'react';
-import { StrategyFormData, ValidationResult } from '../../types/strategy';
+import { StrategyFormData } from '../../types/strategy';
 import { FrontendStrategyData } from '../../services/strategyTransformationService';
 import strategyService from '../../services/strategyService';
+import strategyTransformationService from '../../services/strategyTransformationService';
 
 interface UseStrategySubmissionProps {
   basketId: string;
   strategyName: string;
+  strategyIndex: string;  // NEW: Strategy-level index selection
   legs: any[];
   strategyConfig: any;
+  editingStrategy?: any; // Optional strategy data for edit mode
   onSubmit: (strategyData: any) => void;
   onClose: () => void;
   showError: (message: string) => void;
@@ -32,8 +35,10 @@ interface UseStrategySubmissionReturn {
 export const useStrategySubmission = ({
   basketId,
   strategyName,
+  strategyIndex,  // NEW: Strategy-level index
   legs,
   strategyConfig,
+  editingStrategy, // NEW: Strategy data for edit mode
   onSubmit,
   onClose,
   showError,
@@ -48,11 +53,10 @@ export const useStrategySubmission = ({
     const formData: StrategyFormData = {
       basketId,
       strategyName: strategyName.trim(),
-      index: 'NIFTY', // Default index
+      index: strategyIndex, // Use actual strategy-level index
       config: strategyConfig,
       legs: legs.map(leg => ({
         id: leg.id,
-        index: leg.index,
         optionType: leg.optionType,
         actionType: leg.actionType,
         strikePrice: leg.strikePrice,
@@ -73,16 +77,26 @@ export const useStrategySubmission = ({
     };
 
     // Validate form data
+    console.log('🔍 [DEBUG] Form data validation:', {
+      formData,
+      hasValidation: !!validation,
+      validateMethod: typeof validation.validateAndSetError
+    });
+
     // Create wrapper function to convert showError to setError signature
     const setErrorWrapper = (error: string | null) => {
       if (error) {
+        console.error('🚨 [VALIDATION ERROR]:', error);
         showError(error);
       }
     };
-    
+
     if (!validation.validateAndSetError(formData, setErrorWrapper)) {
+      console.error('❌ [VALIDATION] Form validation failed');
       return;
     }
+
+    console.log('✅ [VALIDATION] Form validation passed');
 
     try {
       setIsSubmitting(true);
@@ -93,49 +107,133 @@ export const useStrategySubmission = ({
         strategyName: formData.strategyName,
         index: formData.index,
         config: formData.config,
-        legs: formData.legs.map(leg => ({
-          id: leg.id,
-          index: leg.index,
-          optionType: leg.optionType,
-          actionType: leg.actionType,
-          strikePrice: leg.strikePrice,
-          totalLots: leg.totalLots,
-          expiryType: strategyConfig.expiryType,
-          selectionMethod: leg.selectionMethod,
-          premiumOperator: leg.premiumOperator,
-          premiumValue: leg.premiumValue,
-          straddlePremiumOperator: leg.straddlePremiumOperator,
-          straddlePremiumPercentage: leg.straddlePremiumPercentage,
-          stopLoss: leg.stopLoss,
-          targetProfit: leg.targetProfit,
-          trailingStopLoss: leg.trailingStopLoss,
-          waitAndTrade: leg.waitAndTrade,
-          reEntry: leg.reEntry,
-          reExecute: leg.reExecute
-        }))
+        legs: formData.legs.map((leg, index) => {
+          // Handle property name variations and provide defaults
+          const optionType = leg.optionType || (leg as any).option_type || 'CE';
+          const actionType = leg.actionType || (leg as any).action_type || 'BUY';
+          const selectionMethod = leg.selectionMethod || (leg as any).selection_method || 'ATM_POINTS';
+
+          console.log(`🔍 [DEBUG] Processing leg ${index + 1} for submission:`, {
+            originalLeg: leg,
+            resolvedOptionType: optionType,
+            resolvedActionType: actionType,
+            resolvedSelectionMethod: selectionMethod,
+            availableKeys: Object.keys(leg)
+          });
+
+          return {
+            id: leg.id,
+            optionType: optionType,
+            actionType: actionType,
+            strikePrice: leg.strikePrice,
+            totalLots: leg.totalLots,
+            expiryType: strategyConfig.expiryType,
+            selectionMethod: selectionMethod,
+            premiumOperator: leg.premiumOperator,
+            premiumValue: leg.premiumValue,
+            straddlePremiumOperator: leg.straddlePremiumOperator,
+            straddlePremiumPercentage: leg.straddlePremiumPercentage,
+            stopLoss: leg.stopLoss,
+            targetProfit: leg.targetProfit,
+            trailingStopLoss: leg.trailingStopLoss,
+            waitAndTrade: leg.waitAndTrade,
+            reEntry: leg.reEntry,
+            reExecute: leg.reExecute
+          };
+        })
       };
 
-      // Use strategy service to create strategy (includes data transformation)
-      const result = await strategyService.createStrategy(formData.basketId, strategyData);
+      // Determine if we're editing or creating
+      const isEditing = !!editingStrategy;
+      console.log(`🔄 [DEBUG] ${isEditing ? 'Updating' : 'Creating'} strategy:`, {
+        isEditing,
+        strategyId: isEditing ? editingStrategy.strategyId : 'new',
+        strategyName: strategyName.trim(),
+        basketId: formData.basketId
+      });
+
+      let result;
+      if (isEditing) {
+        // For updates, we need to transform the frontend data to backend format
+        // just like the create operation does
+        console.log('🔍 [DEBUG] Strategy data before validation:', {
+          strategyData,
+          legsCount: strategyData.legs.length,
+          firstLeg: strategyData.legs[0],
+          allLegsValid: strategyData.legs.every(leg => leg.optionType && leg.actionType && leg.selectionMethod)
+        });
+
+        console.log('🔍 [DEBUG] Calling validateFrontendDataAdvanced with:', {
+          strategyData,
+          hasTransformationService: !!strategyTransformationService,
+          validateMethod: typeof strategyTransformationService.validateFrontendDataAdvanced
+        });
+
+        const validation = await strategyTransformationService.validateFrontendDataAdvanced(strategyData);
+
+        console.log('🔍 [DEBUG] Advanced validation result:', {
+          isValid: validation.isValid,
+          errorsCount: validation.errors?.length || 0,
+          warningsCount: validation.warnings?.length || 0,
+          errors: validation.errors,
+          warnings: validation.warnings
+        });
+
+        if (!validation.isValid) {
+          const errorMessage = `Validation failed: ${validation.errors.join(', ')}`;
+          if (validation.warnings.length > 0) {
+            console.warn('⚠️ [VALIDATION WARNINGS]:', validation.warnings);
+          }
+          console.error('❌ [ADVANCED VALIDATION] Failed:', errorMessage);
+          throw new Error(errorMessage);
+        }
+
+        console.log('✅ [ADVANCED VALIDATION] Passed successfully');
+
+        // Transform frontend data to backend format for update
+        const backendPayload = strategyTransformationService.createApiPayload(
+          formData.basketId,
+          strategyData,
+          strategyData.index,
+          strategyData.config.expiryType
+        );
+
+        // Use the standard strategyId property
+        const strategyId = editingStrategy.strategyId;
+
+        if (!strategyId) {
+          throw new Error('Strategy ID not found in editing strategy. Available properties: ' + Object.keys(editingStrategy).join(', '));
+        }
+
+        // Update existing strategy with transformed backend data
+        result = await strategyService.updateStrategy(strategyId, backendPayload);
+      } else {
+        // Create new strategy (this already handles transformation internally)
+        result = await strategyService.createStrategy(formData.basketId, strategyData);
+      }
 
       if (result.success) {
         // Show success notification
-        showSuccess(`Strategy "${strategyName.trim()}" created successfully!`);
-        
+        const actionText = isEditing ? 'updated' : 'created';
+        showSuccess(`Strategy "${strategyName.trim()}" ${actionText} successfully!`);
+
         // Call the parent onSubmit handler with the result
         await onSubmit(result);
         // Close dialog on success
         onClose();
       } else {
-        throw new Error(result.message || 'Failed to create strategy');
+        const actionText = isEditing ? 'update' : 'create';
+        throw new Error(result.message || `Failed to ${actionText} strategy`);
       }
     } catch (error: any) {
-      console.error('Strategy creation error:', error);
-      showError(error.message || 'Failed to create strategy. Please try again.');
+      const isEditing = !!editingStrategy;
+      const actionText = isEditing ? 'update' : 'create';
+      console.error(`Strategy ${actionText} error:`, error);
+      showError(error.message || `Failed to ${actionText} strategy. Please try again.`);
     } finally {
       setIsSubmitting(false);
     }
-  }, [basketId, strategyName, legs, strategyConfig, onSubmit, onClose, showError, showSuccess, validation]);
+  }, [basketId, strategyName, strategyIndex, legs, strategyConfig, editingStrategy, onSubmit, onClose, showError, showSuccess, validation]);
   
   return {
     handleSubmit,

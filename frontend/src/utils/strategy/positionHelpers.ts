@@ -19,8 +19,8 @@ export const generateStableId = (): string => `leg-${++legIdCounter}-${Date.now(
 /**
  * Create a new position with default values
  */
-export const createNewPosition = (index: string): StrategyLeg => {
-  const template = createDefaultPositionTemplate(index);
+export const createNewPosition = (): StrategyLeg => {
+  const template = createDefaultPositionTemplate();
   return {
     id: generateStableId(),
     ...template
@@ -60,15 +60,7 @@ export const removePositionFromArray = (
   return positions.filter(position => position.id !== positionId);
 };
 
-/**
- * Update all positions with new index
- */
-export const updateAllPositionsIndex = (
-  positions: StrategyLeg[], 
-  newIndex: string
-): StrategyLeg[] => {
-  return positions.map(position => ({ ...position, index: newIndex }));
-};
+// updateAllPositionsIndex function removed - index is now strategy-level only
 
 /**
  * Get expiry text from strategy config
@@ -94,12 +86,12 @@ export const getDefaultPositionalValues = () => DEFAULT_POSITIONAL_VALUES;
  * Check if position has enabled risk management
  */
 export const hasEnabledRiskManagement = (position: StrategyLeg): boolean => {
-  return position.stopLoss.enabled ||
-         position.targetProfit.enabled ||
-         position.trailingStopLoss.enabled ||
-         position.waitAndTrade.enabled ||
-         position.reEntry.enabled ||
-         position.reExecute.enabled;
+  return (position.stopLoss?.enabled || false) ||
+         (position.targetProfit?.enabled || false) ||
+         (position.trailingStopLoss?.enabled || false) ||
+         (position.waitAndTrade?.enabled || false) ||
+         (position.reEntry?.enabled || false) ||
+         (position.reExecute?.enabled || false);
 };
 
 /**
@@ -134,12 +126,12 @@ export const getPositionSummary = (positions: StrategyLeg[]) => {
  */
 export const validatePositionInterdependencies = (position: StrategyLeg): string[] => {
   const errors: string[] = [];
-  
+
   // Trailing stop loss requires stop loss to be enabled
-  if (position.trailingStopLoss.enabled && !position.stopLoss.enabled) {
+  if ((position.trailingStopLoss?.enabled || false) && !(position.stopLoss?.enabled || false)) {
     errors.push('Trailing stop loss requires stop loss to be enabled');
   }
-  
+
   return errors;
 };
 
@@ -148,12 +140,32 @@ export const validatePositionInterdependencies = (position: StrategyLeg): string
  */
 export const autoCorrectPositionInterdependencies = (position: StrategyLeg): StrategyLeg => {
   const correctedPosition = { ...position };
-  
+
+  // Provide default values if risk management objects are undefined
+  if (!correctedPosition.stopLoss) {
+    correctedPosition.stopLoss = { enabled: false, type: 'POINTS', value: 0 };
+  }
+  if (!correctedPosition.trailingStopLoss) {
+    correctedPosition.trailingStopLoss = { enabled: false, type: 'POINTS', instrumentMoveValue: 0, stopLossMoveValue: 0 };
+  }
+  if (!correctedPosition.targetProfit) {
+    correctedPosition.targetProfit = { enabled: false, type: 'POINTS', value: 0 };
+  }
+  if (!correctedPosition.waitAndTrade) {
+    correctedPosition.waitAndTrade = { enabled: false, type: 'POINTS', value: 0 };
+  }
+  if (!correctedPosition.reEntry) {
+    correctedPosition.reEntry = { enabled: false, type: 'SL_REENTRY', count: 1 };
+  }
+  if (!correctedPosition.reExecute) {
+    correctedPosition.reExecute = { enabled: false, type: 'TP_REEXEC', count: 1 };
+  }
+
   // Disable trailing stop loss if stop loss is disabled
   if (!correctedPosition.stopLoss.enabled && correctedPosition.trailingStopLoss.enabled) {
     correctedPosition.trailingStopLoss.enabled = false;
   }
-  
+
   return correctedPosition;
 };
 

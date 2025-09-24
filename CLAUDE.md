@@ -464,7 +464,7 @@ def calculate_next_minute_wait_seconds(current_ist: datetime) -> int:
 | **Scalability** | Unlimited users | High cost scaling | Platform limits |
 
 #### **Current Deployment Status**:
-- **Options Trading API**: `https://ukcl86ose8.execute-api.ap-south-1.amazonaws.com/dev/`
+- **Options Trading API**: `https://vrd3rrtyx4.execute-api.ap-south-1.amazonaws.com/dev/`
 - **Step Functions ARN**: `arn:aws:states:ap-south-1:142649403032:stateMachine:ql-algo-trading-dev-master-precision-timer`
 - **Precision Timer**: Auto-starts daily at 9:00 AM IST, runs full market session
 - **Event Handlers**: 4 specialized Lambda functions with market phase intelligence
@@ -485,13 +485,13 @@ def calculate_next_minute_wait_seconds(current_ist: datetime) -> int:
 #### **Stack 1: User Authentication & Broker Management**
 - **Status**: ✅ Deployed and operational
 - **Stack Name**: `ql-algo-trading-dev-auth-broker-stack`
-- **API Gateway**: `https://4fhetaydtg.execute-api.ap-south-1.amazonaws.com/dev/`
+- **API Gateway**: `https://fx43f0dnr4.execute-api.ap-south-1.amazonaws.com/dev/`
 - **Infrastructure**: 9 Lambda functions, 2 DynamoDB tables, Cognito User Pool, Secrets Manager
 
 #### **Stack 2: Options Strategy Platform**
 - **Status**: ✅ Deployed and operational
 - **Stack Name**: `ql-algo-trading-dev-options-trading-stack`
-- **API Gateway**: `https://2f8bmi4edb.execute-api.ap-south-1.amazonaws.com/dev/`
+- **API Gateway**: `https://vrd3rrtyx4.execute-api.ap-south-1.amazonaws.com/dev/`
 - **Infrastructure**: 16 Lambda functions, 9 DynamoDB tables, cross-stack integration
 
 #### **Enterprise Reliability Fixes Applied**:

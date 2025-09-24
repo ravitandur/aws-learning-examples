@@ -27,24 +27,35 @@ interface PositionConfigProps {
   strategyProductType: ProductType;
 }
 
-const PositionConfig: React.FC<PositionConfigProps> = ({ 
-  leg, 
-  index, 
-  onUpdate, 
-  onRemove, 
+const PositionConfig: React.FC<PositionConfigProps> = ({
+  leg,
+  index,
+  onUpdate,
+  onRemove,
   onCopy,
   strategyIndex,
   strategyExpiryType,
   strategyProductType
 }) => {
+  // Provide default values and handle property name variations from API
+  const optionType = leg.optionType || (leg as any).option_type || 'CE';
+  const actionType = leg.actionType || (leg as any).action_type || 'BUY';
+
+  console.log('🔍 [DEBUG] PositionConfig leg data:', {
+    legId: leg.id,
+    optionType: optionType,
+    actionType: actionType,
+    rawLeg: leg,
+    legKeys: Object.keys(leg)
+  });
 
   const handleOptionTypeToggle = () => {
-    const newOptionType = leg.optionType === 'CE' ? 'PE' : 'CE';
+    const newOptionType = optionType === 'CE' ? 'PE' : 'CE';
     onUpdate({ optionType: newOptionType });
   };
 
   const handleActionTypeToggle = () => {
-    const newActionType = leg.actionType === 'BUY' ? 'SELL' : 'BUY';
+    const newActionType = actionType === 'BUY' ? 'SELL' : 'BUY';
     onUpdate({ actionType: newActionType });
   };
 
@@ -105,12 +116,12 @@ const PositionConfig: React.FC<PositionConfigProps> = ({
               type="button"
               onClick={handleOptionTypeToggle}
               className={`h-9 w-full px-3 py-1 text-sm font-medium rounded-md border transition-colors ${
-                leg.optionType === 'CE'
+                optionType === 'CE'
                   ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300 dark:border-green-600'
                   : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-300 dark:border-red-600'
               }`}
             >
-              {leg.optionType}
+              {optionType}
             </button>
           </div>
 
@@ -123,12 +134,12 @@ const PositionConfig: React.FC<PositionConfigProps> = ({
               type="button"
               onClick={handleActionTypeToggle}
               className={`h-9 w-full px-3 py-1 text-sm font-medium rounded-md border transition-colors ${
-                leg.actionType === 'BUY'
+                actionType === 'BUY'
                   ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-600'
                   : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-600'
               }`}
             >
-              {leg.actionType}
+              {actionType}
             </button>
           </div>
 

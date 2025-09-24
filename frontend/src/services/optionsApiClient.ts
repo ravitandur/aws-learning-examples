@@ -85,7 +85,7 @@ class OptionsApiClient {
   // Set base URL for different environments
   public setBaseUrl(environment: 'dev' | 'staging' | 'production') {
     const baseUrls = {
-      dev: process.env.REACT_APP_OPTIONS_API_URL_DEV || 'https://2f8bmi4edb.execute-api.ap-south-1.amazonaws.com/dev',
+      dev: process.env.REACT_APP_OPTIONS_API_URL_DEV || 'https://vrd3rrtyx4.execute-api.ap-south-1.amazonaws.com/dev',
       staging: process.env.REACT_APP_OPTIONS_API_URL_STAGING || 'https://your-options-api-staging.execute-api.ap-south-1.amazonaws.com/staging',
       production: process.env.REACT_APP_OPTIONS_API_URL_PROD || 'https://your-options-api-prod.execute-api.ap-south-1.amazonaws.com/production'
     };

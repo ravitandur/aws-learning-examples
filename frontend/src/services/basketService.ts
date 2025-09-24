@@ -1,5 +1,6 @@
 import optionsApiClient from './optionsApiClient';
 import { Basket, CreateBasket, UpdateBasket, Strategy, ApiResponse } from '../types';
+import { transformBasket } from '../utils/transformStrategyFields';
 
 class BasketService {
   /**
@@ -7,13 +8,14 @@ class BasketService {
    */
   async getBaskets(): Promise<Basket[]> {
     try {
-      const response = await optionsApiClient.get<ApiResponse<Basket[]>>('/options/baskets');
+      const response = await optionsApiClient.get<ApiResponse<any[]>>('/options/baskets');
 
       if (!response.success || !response.data) {
         throw new Error(response.message || 'Failed to fetch baskets');
       }
 
-      return response.data;
+      // Transform backend data to frontend format
+      return response.data.map(transformBasket);
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch baskets');
     }
@@ -24,13 +26,14 @@ class BasketService {
    */
   async getBasket(basketId: string): Promise<Basket> {
     try {
-      const response = await optionsApiClient.get<ApiResponse<Basket>>(`/options/baskets/${basketId}`);
+      const response = await optionsApiClient.get<ApiResponse<any>>(`/options/baskets/${basketId}`);
 
       if (!response.success || !response.data) {
         throw new Error(response.message || 'Failed to fetch basket');
       }
 
-      return response.data;
+      // Transform backend data to frontend format
+      return transformBasket(response.data);
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch basket');
     }

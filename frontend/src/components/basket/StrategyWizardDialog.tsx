@@ -31,12 +31,14 @@ import { useStrategySubmission } from "../../hooks/strategy/useStrategySubmissio
 
 interface StrategyWizardDialogProps {
   basketId: string;
+  editingStrategy?: any; // Optional strategy data for editing mode
   onClose: () => void;
   onSubmit: (strategyData: any) => void;
 }
 
 const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
   basketId,
+  editingStrategy,
   onClose,
   onSubmit,
 }) => {
@@ -53,21 +55,13 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
     setLegs,
     strategyConfig,
     setStrategyConfig,
-  } = useStrategyForm({ basketId, onClose });
+  } = useStrategyForm({ basketId, editingStrategy, onClose });
 
-  const { actions, updateIndex, updatePosition } = usePositionManagement({
+  const { actions, updatePosition } = usePositionManagement({
     legs,
     setLegs,
-    strategyIndex,
     showError,
   });
-
-  // Sync all positions when global index changes
-  useEffect(() => {
-    if (legs.length > 0) {
-      updateIndex(strategyIndex);
-    }
-  }, [strategyIndex, updateIndex, legs.length]);
 
   // Sync expiry type changes across the strategy
   useEffect(() => {
@@ -81,8 +75,10 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
   const { handleSubmit, isSubmitting } = useStrategySubmission({
     basketId,
     strategyName,
+    strategyIndex,  // Pass the strategy-level index
     legs,
     strategyConfig,
+    editingStrategy, // Pass editing strategy for update mode
     onSubmit,
     onClose,
     showError,
@@ -112,6 +108,7 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
           <StrategyHeader
             strategyName={strategyName}
             positionCount={legs.length}
+            isEditing={!!editingStrategy}
             onStrategyNameChange={setStrategyName}
             onAddPosition={actions.add}
             onClose={onClose}
@@ -174,7 +171,10 @@ const StrategyWizardDialog: React.FC<StrategyWizardDialogProps> = ({
                     disabled={isSubmitting || legs.length === 0}
                     className="bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]"
                   >
-                    {isSubmitting ? "Creating..." : "Create Strategy"}
+                    {isSubmitting
+                      ? (editingStrategy ? "Updating..." : "Creating...")
+                      : (editingStrategy ? "Update Strategy" : "Create Strategy")
+                    }
                   </Button>
                 </div>
               </div>

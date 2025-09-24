@@ -17,8 +17,12 @@ interface ReEntryControlProps {
 }
 
 const ReEntryControl: React.FC<ReEntryControlProps> = ({ leg, onUpdate }) => {
-  const canEnable = canEnableReEntry(leg.stopLoss);
-  const disabledReason = getStopLossInvalidReason(leg.stopLoss);
+  // Provide default values if properties are undefined
+  const stopLoss = leg.stopLoss || { enabled: false, type: 'POINTS' as const, value: 0 };
+  const reEntry = leg.reEntry || { enabled: false, type: 'SL_REENTRY' as const, count: 1 };
+
+  const canEnable = canEnableReEntry(stopLoss);
+  const disabledReason = getStopLossInvalidReason(stopLoss);
 
   const handleEnabledChange = (enabled: boolean) => {
     // Only allow enabling if Stop Loss is valid
@@ -26,19 +30,19 @@ const ReEntryControl: React.FC<ReEntryControlProps> = ({ leg, onUpdate }) => {
       return;
     }
     onUpdate({
-      reEntry: { ...leg.reEntry, enabled }
+      reEntry: { ...reEntry, enabled }
     });
   };
 
   const handleTypeChange = (type: 'SL_REENTRY' | 'SL_RECOST' | 'SL_REEXEC') => {
     onUpdate({
-      reEntry: { ...leg.reEntry, type, count: 1 }
+      reEntry: { ...reEntry, type, count: 1 }
     });
   };
 
   const handleCountChange = (count: number) => {
     onUpdate({
-      reEntry: { ...leg.reEntry, count }
+      reEntry: { ...reEntry, count }
     });
   };
 
@@ -48,17 +52,17 @@ const ReEntryControl: React.FC<ReEntryControlProps> = ({ leg, onUpdate }) => {
         <input
           type="checkbox"
           id={`reEntry-${leg.id}`}
-          checked={leg.reEntry.enabled}
+          checked={reEntry.enabled}
           disabled={!canEnable}
           onChange={(e) => handleEnabledChange(e.target.checked)}
           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
           title={!canEnable ? disabledReason || 'Requires valid Stop Loss configuration' : ''}
         />
-        <label 
-          htmlFor={`reEntry-${leg.id}`} 
+        <label
+          htmlFor={`reEntry-${leg.id}`}
           className={`text-sm font-medium ${
-            !canEnable 
-              ? 'text-gray-400' 
+            !canEnable
+              ? 'text-gray-400'
               : 'text-gray-700 dark:text-gray-200'
           }`}
           title={!canEnable ? disabledReason || 'Requires valid Stop Loss configuration' : ''}
@@ -66,17 +70,17 @@ const ReEntryControl: React.FC<ReEntryControlProps> = ({ leg, onUpdate }) => {
           Re-Entry (SL)
         </label>
       </div>
-      
-      {leg.reEntry.enabled && canEnable && (
+
+      {reEntry.enabled && canEnable && (
         <div className="space-y-2">
           <Select
-            value={leg.reEntry.type}
+            value={reEntry.type}
             onChange={(e) => handleTypeChange(e.target.value as 'SL_REENTRY' | 'SL_RECOST' | 'SL_REEXEC')}
             options={RE_ENTRY_TYPE_OPTIONS}
             className="h-8 text-sm"
           />
           <Select
-            value={leg.reEntry.count.toString()}
+            value={reEntry.count.toString()}
             onChange={(e) => handleCountChange(parseInt(e.target.value))}
             options={COUNT_OPTIONS}
             className="h-8 text-sm"

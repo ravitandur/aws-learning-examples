@@ -130,10 +130,7 @@ export const DEFAULT_STRATEGY_CONFIG: StrategyConfig = {
 };
 
 // Default position template (without ID)
-export const createDefaultPositionTemplate = (
-  index: string
-): Omit<StrategyLeg, "id"> => ({
-  index,
+export const createDefaultPositionTemplate = (): Omit<StrategyLeg, "id"> => ({
   optionType: "CE",
   actionType: "BUY",
   strikePrice: "ATM",

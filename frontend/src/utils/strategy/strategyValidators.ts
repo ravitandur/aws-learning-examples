@@ -97,44 +97,44 @@ export const validateSinglePosition = (leg: StrategyLeg, positionNumber: number)
 export const validateRiskManagement = (leg: StrategyLeg, positionNumber: number): string[] => {
   const errors: string[] = [];
   const prefix = `Position ${positionNumber}:`;
-  
-  // Validate stop loss
-  if (leg.stopLoss.enabled && leg.stopLoss.value <= 0) {
+
+  // Validate stop loss (with defensive checks)
+  if (leg.stopLoss?.enabled && (leg.stopLoss?.value || 0) <= 0) {
     errors.push(`${prefix} Stop loss value must be greater than 0 when enabled`);
   }
-  
-  // Validate target profit
-  if (leg.targetProfit.enabled && leg.targetProfit.value <= 0) {
+
+  // Validate target profit (with defensive checks)
+  if (leg.targetProfit?.enabled && (leg.targetProfit?.value || 0) <= 0) {
     errors.push(`${prefix} Target profit value must be greater than 0 when enabled`);
   }
   
-  // Validate trailing stop loss
-  if (leg.trailingStopLoss.enabled) {
-    if (!leg.stopLoss.enabled) {
+  // Validate trailing stop loss (with defensive checks)
+  if (leg.trailingStopLoss?.enabled) {
+    if (!leg.stopLoss?.enabled) {
       errors.push(`${prefix} Trailing stop loss requires stop loss to be enabled`);
     }
-    
-    if (leg.trailingStopLoss.instrumentMoveValue <= 0) {
+
+    if ((leg.trailingStopLoss?.instrumentMoveValue || 0) <= 0) {
       errors.push(`${prefix} Instrument move value must be greater than 0 for trailing stop loss`);
     }
-    
-    if (leg.trailingStopLoss.stopLossMoveValue <= 0) {
+
+    if ((leg.trailingStopLoss?.stopLossMoveValue || 0) <= 0) {
       errors.push(`${prefix} Stop loss move value must be greater than 0 for trailing stop loss`);
     }
   }
-  
-  // Validate wait and trade
-  if (leg.waitAndTrade.enabled && leg.waitAndTrade.value <= 0) {
+
+  // Validate wait and trade (with defensive checks)
+  if (leg.waitAndTrade?.enabled && (leg.waitAndTrade?.value || 0) <= 0) {
     errors.push(`${prefix} Wait & trade value must be greater than 0 when enabled`);
   }
   
-  // Validate re-entry count
-  if (leg.reEntry.enabled && (leg.reEntry.count < 1 || leg.reEntry.count > 5)) {
+  // Validate re-entry count (with defensive checks)
+  if (leg.reEntry?.enabled && ((leg.reEntry?.count || 0) < 1 || (leg.reEntry?.count || 0) > 5)) {
     errors.push(`${prefix} Re-entry count must be between 1 and 5`);
   }
-  
-  // Validate re-execute count
-  if (leg.reExecute.enabled && (leg.reExecute.count < 1 || leg.reExecute.count > 5)) {
+
+  // Validate re-execute count (with defensive checks)
+  if (leg.reExecute?.enabled && ((leg.reExecute?.count || 0) < 1 || (leg.reExecute?.count || 0) > 5)) {
     errors.push(`${prefix} Re-execute count must be between 1 and 5`);
   }
   

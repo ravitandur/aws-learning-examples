@@ -18,36 +18,40 @@ interface TargetProfitControlProps {
 }
 
 const TargetProfitControl: React.FC<TargetProfitControlProps> = ({ leg, onUpdate }) => {
+  // Provide default values if properties are undefined
+  const targetProfit = leg.targetProfit || { enabled: false, type: 'POINTS' as const, value: 0 };
+  const reExecute = leg.reExecute || { enabled: false, type: 'TP_REEXEC' as const, count: 1 };
+
   const handleEnabledChange = (enabled: boolean) => {
-    const newTargetProfit = { ...leg.targetProfit, enabled };
+    const newTargetProfit = { ...targetProfit, enabled };
     const isValid = enabled && isValidTargetProfit(newTargetProfit);
-    
+
     onUpdate({
       targetProfit: newTargetProfit,
       // Disable Re Execute if Target Profit becomes invalid
-      reExecute: isValid ? leg.reExecute : { ...leg.reExecute, enabled: false }
+      reExecute: isValid ? reExecute : { ...reExecute, enabled: false }
     });
   };
 
   const handleTypeChange = (type: 'POINTS' | 'PERCENTAGE') => {
-    const newTargetProfit = { ...leg.targetProfit, type, value: 0 };
+    const newTargetProfit = { ...targetProfit, type, value: 0 };
     const isValid = isValidTargetProfit(newTargetProfit);
-    
+
     onUpdate({
       targetProfit: newTargetProfit,
       // Disable Re Execute if Target Profit becomes invalid
-      reExecute: isValid ? leg.reExecute : { ...leg.reExecute, enabled: false }
+      reExecute: isValid ? reExecute : { ...reExecute, enabled: false }
     });
   };
 
   const handleValueChange = (value: number) => {
-    const newTargetProfit = { ...leg.targetProfit, value };
+    const newTargetProfit = { ...targetProfit, value };
     const isValid = isValidTargetProfit(newTargetProfit);
-    
+
     onUpdate({
       targetProfit: newTargetProfit,
       // Disable Re Execute if Target Profit becomes invalid
-      reExecute: isValid ? leg.reExecute : { ...leg.reExecute, enabled: false }
+      reExecute: isValid ? reExecute : { ...reExecute, enabled: false }
     });
   };
 
@@ -57,22 +61,22 @@ const TargetProfitControl: React.FC<TargetProfitControlProps> = ({ leg, onUpdate
         <input
           type="checkbox"
           id={`targetProfit-${leg.id}`}
-          checked={leg.targetProfit.enabled}
+          checked={targetProfit.enabled}
           onChange={(e) => handleEnabledChange(e.target.checked)}
           className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
         />
-        <label 
-          htmlFor={`targetProfit-${leg.id}`} 
+        <label
+          htmlFor={`targetProfit-${leg.id}`}
           className="text-sm font-medium text-gray-700 dark:text-gray-200"
         >
           Target Profit
         </label>
       </div>
-      
-      {leg.targetProfit.enabled && (
+
+      {targetProfit.enabled && (
         <div className="space-y-2">
           <Select
-            value={leg.targetProfit.type}
+            value={targetProfit.type}
             onChange={(e) => handleTypeChange(e.target.value as 'POINTS' | 'PERCENTAGE')}
             options={TARGET_PROFIT_TYPE_OPTIONS}
             className="h-8 text-sm"
@@ -81,7 +85,7 @@ const TargetProfitControl: React.FC<TargetProfitControlProps> = ({ leg, onUpdate
             type="number"
             min="0"
             step="0.1"
-            value={leg.targetProfit.value}
+            value={targetProfit.value}
             onChange={(e) => handleValueChange(parseFloat(e.target.value) || 0)}
             placeholder="Target profit value"
             className="h-8 text-sm"

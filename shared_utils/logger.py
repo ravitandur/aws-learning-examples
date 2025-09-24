@@ -71,13 +71,19 @@ class StructuredFormatter(logging.Formatter):
         if record.exc_info:
             log_obj['exception'] = self.formatException(record.exc_info)
             
-        # Add extra fields
+        # Add extra fields (avoid overwriting existing log_obj keys)
+        excluded_keys = {
+            'name', 'msg', 'args', 'levelname', 'levelno',
+            'pathname', 'filename', 'module', 'lineno',
+            'funcName', 'created', 'msecs', 'relativeCreated',
+            'thread', 'threadName', 'processName', 'process',
+            'getMessage', 'exc_info', 'exc_text', 'stack_info',
+            # Also exclude keys that are already in log_obj to prevent overwrites
+            'timestamp', 'level', 'logger', 'message', 'function', 'line'
+        }
+
         for key, value in record.__dict__.items():
-            if key not in ['name', 'msg', 'args', 'levelname', 'levelno', 
-                          'pathname', 'filename', 'module', 'lineno', 
-                          'funcName', 'created', 'msecs', 'relativeCreated',
-                          'thread', 'threadName', 'processName', 'process',
-                          'getMessage', 'exc_info', 'exc_text', 'stack_info']:
+            if key not in excluded_keys:
                 log_obj[key] = value
                 
         return json.dumps(log_obj, default=str)

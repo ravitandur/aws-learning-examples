@@ -12,10 +12,12 @@ import {
 } from 'lucide-react';
 import { Basket, Strategy, CreateBasket } from '../../types';
 import basketService from '../../services/basketService';
+import strategyService from '../../services/strategyService';
 import CreateBasketDialog from './CreateBasketDialog';
 import StrategyWizardDialog from './StrategyWizardDialog';
 
-interface BasketWithStrategies extends Basket {
+interface BasketWithStrategies extends Omit<Basket, 'strategies'> {
+  strategies?: Strategy[]; // Make strategies optional initially
   strategyCount: number;
   totalPnL: number;
   lastExecution?: string;
@@ -26,9 +28,13 @@ const TabbedBasketManager: React.FC = () => {
   const [baskets, setBaskets] = useState<BasketWithStrategies[]>([]);
   const [selectedBasket, setSelectedBasket] = useState<BasketWithStrategies | null>(null);
   const [loading, setLoading] = useState(true);
+  const [strategiesLoading, setStrategiesLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showStrategyWizard, setShowStrategyWizard] = useState(false);
+  const [showEditStrategyDialog, setShowEditStrategyDialog] = useState(false);
+  const [editingStrategy, setEditingStrategy] = useState<Strategy | null>(null);
+  const [loadingEditStrategy, setLoadingEditStrategy] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'performance'>('details');
   const [deleteConfirmDialog, setDeleteConfirmDialog] = useState<{
     isOpen: boolean;
@@ -47,35 +53,206 @@ const TabbedBasketManager: React.FC = () => {
     };
 
     window.addEventListener('openCreateBasketDialog', handleCreateBasketEvent);
-    
+
     return () => {
       window.removeEventListener('openCreateBasketDialog', handleCreateBasketEvent);
     };
   }, []);
 
+  // Load strategies when a basket is selected (with comprehensive debug logging)
+  useEffect(() => {
+    let isCancelled = false;
+
+    const loadBasketStrategies = async (basketId: string) => {
+      console.log('🔍 [DEBUG] Strategy loading triggered for TabbedBasketManager:', {
+        basketId,
+        timestamp: new Date().toISOString(),
+        hasSelectedBasket: !!selectedBasket,
+        selectedBasketId: selectedBasket?.basket_id
+      });
+
+      if (isCancelled) {
+        console.log('⏹️ [DEBUG] Strategy loading cancelled before start');
+        return;
+      }
+
+      try {
+        console.log('⏳ [DEBUG] Setting loading state and clearing errors...');
+        setStrategiesLoading(true);
+
+        console.log('🌐 [DEBUG] Making API call to strategyService.getBasketStrategies...', {
+          endpoint: `/options/baskets/${basketId}/strategies`,
+          basketId
+        });
+
+        const strategies = await strategyService.getBasketStrategies(basketId);
+
+        console.log('✅ [DEBUG] API call successful! Received strategies:', {
+          strategiesCount: strategies.length,
+          firstStrategyKeys: strategies.length > 0 ? Object.keys(strategies[0]) : [],
+          firstStrategyFull: strategies.length > 0 ? strategies[0] : null,
+          strategiesData: strategies.map(s => ({
+            fullObject: s,
+            objectKeys: Object.keys(s),
+            id: s.strategyId,
+            name: s.strategyName,
+            type: s.strategyType,
+            status: s.status,
+            legs: s.legs
+          }))
+        });
+
+        if (isCancelled) {
+          console.log('⏹️ [DEBUG] Strategy loading cancelled after API call');
+          return;
+        }
+
+        // Update the selected basket with fetched strategies (prevent infinite loop)
+        setSelectedBasket(prev => {
+          if (!prev || prev.basket_id !== basketId) {
+            console.log('⚠️ [DEBUG] Basket mismatch, not updating:', {
+              prevBasketId: prev?.basket_id,
+              targetBasketId: basketId
+            });
+            return prev;
+          }
+
+          const updatedBasket = {
+            ...prev,
+            strategies: strategies,
+            strategyCount: strategies.length
+          };
+
+          console.log('📊 [DEBUG] Successfully updated basket with strategies:', {
+            basketId: basketId,
+            strategiesCount: strategies.length,
+            hasStrategies: strategies.length > 0,
+            updatedBasket: {
+              id: updatedBasket.basket_id,
+              name: updatedBasket.basket_name,
+              strategiesCount: updatedBasket.strategyCount
+            }
+          });
+
+          return updatedBasket;
+        });
+
+        // Also update the basket in the baskets list
+        setBaskets(prev =>
+          prev.map(basket =>
+            basket.basket_id === basketId
+              ? { ...basket, strategies: strategies, strategyCount: strategies.length }
+              : basket
+          )
+        );
+
+        console.log('🎉 [DEBUG] Strategy loading completed successfully!');
+      } catch (error: any) {
+        console.error('❌ [DEBUG] Strategy loading failed with error:', error);
+        console.error('❌ [DEBUG] Comprehensive error analysis:', {
+          errorMessage: error.message,
+          errorStack: error.stack,
+          responseData: error.response?.data,
+          responseStatus: error.response?.status,
+          responseHeaders: error.response?.headers,
+          requestConfig: error.config,
+          basketId,
+          timestamp: new Date().toISOString()
+        });
+
+        if (!isCancelled) {
+          const errorMessage = error.response?.data?.message || error.message || 'Unknown error occurred';
+          showError(`Failed to load strategies: ${errorMessage}`);
+          console.log('🔴 [DEBUG] Error state set in UI:', errorMessage);
+        } else {
+          console.log('⏹️ [DEBUG] Error occurred but request was cancelled, not setting error state');
+        }
+      } finally {
+        if (!isCancelled) {
+          setStrategiesLoading(false);
+          console.log('✨ [DEBUG] Loading state cleared');
+        } else {
+          console.log('⏹️ [DEBUG] Request cancelled, not clearing loading state');
+        }
+      }
+    };
+
+    // Main trigger logic with enhanced debugging
+    if (selectedBasket?.basket_id) {
+      console.log('🚀 [DEBUG] UseEffect triggered - basket selected:', {
+        basketId: selectedBasket.basket_id,
+        basketName: selectedBasket.basket_name,
+        currentStrategyCount: selectedBasket.strategyCount,
+        hasStrategiesArray: Array.isArray(selectedBasket.strategies),
+        useEffectTrigger: 'selectedBasket?.basket_id',
+        dependencyValue: selectedBasket.basket_id
+      });
+      loadBasketStrategies(selectedBasket.basket_id);
+    } else {
+      console.log('📝 [DEBUG] UseEffect triggered - no basket selected:', {
+        selectedBasket: selectedBasket,
+        basketId: selectedBasket?.basket_id,
+        reason: !selectedBasket ? 'No selected basket' : 'Basket has no ID'
+      });
+      setStrategiesLoading(false);
+    }
+
+    return () => {
+      console.log('🧹 [DEBUG] Cleaning up strategy loading effect');
+      isCancelled = true;
+    };
+  }, [selectedBasket?.basket_id, showError]);
+
   const loadBaskets = async () => {
     try {
+      console.log('🔄 [DEBUG] Loading baskets in TabbedBasketManager...');
       setLoading(true);
-      
+
       const basketsData = await basketService.getBaskets();
-      
-      // Enhance baskets with additional data
+      console.log('📦 [DEBUG] Raw baskets data received:', {
+        count: basketsData.length,
+        baskets: basketsData.map(b => ({
+          id: b.basket_id,
+          name: b.basket_name,
+          hasStrategies: !!b.strategies,
+          strategiesCount: b.strategies?.length || 0
+        }))
+      });
+
+      // Enhance baskets with additional data and ensure strategies is properly handled
       const enhancedBaskets: BasketWithStrategies[] = basketsData.map(basket => ({
         ...basket,
+        strategies: basket.strategies || [], // Ensure strategies is always an array
         strategyCount: basket.strategies?.length || 0,
         totalPnL: Math.random() * 2000 - 500, // Mock data
         lastExecution: Math.random() > 0.5 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString() : undefined
       }));
-      
+
+      console.log('✨ [DEBUG] Enhanced baskets created:', {
+        count: enhancedBaskets.length,
+        baskets: enhancedBaskets.map(b => ({
+          id: b.basket_id,
+          name: b.basket_name,
+          strategiesCount: b.strategyCount,
+          hasStrategiesArray: Array.isArray(b.strategies)
+        }))
+      });
+
       setBaskets(enhancedBaskets);
-      
+
       // Auto-select first basket if available
       if (enhancedBaskets.length > 0 && !selectedBasket) {
+        console.log('🎯 [DEBUG] Auto-selecting first basket:', enhancedBaskets[0].basket_id);
         setSelectedBasket(enhancedBaskets[0]);
+      } else {
+        console.log('📝 [DEBUG] No auto-selection:', {
+          basketsCount: enhancedBaskets.length,
+          hasSelectedBasket: !!selectedBasket
+        });
       }
-      
+
     } catch (error: any) {
-      console.error('Failed to load baskets:', error);
+      console.error('❌ [DEBUG] Failed to load baskets:', error);
       showError('Failed to load baskets. Please try again.');
     } finally {
       setLoading(false);
@@ -161,11 +338,108 @@ const TabbedBasketManager: React.FC = () => {
       
       setSelectedBasket(updatedBasket);
       setShowStrategyWizard(false);
-      showSuccess(`Strategy "${strategyData.name}" added successfully!`);
+      // Note: Success notification already shown by useStrategySubmission hook
       
     } catch (error: any) {
       console.error('Failed to add strategy:', error);
       showError(error.message || 'Failed to add strategy. Please try again.');
+    }
+  };
+
+  const handleEditStrategy = async (strategy: Strategy) => {
+    try {
+      console.log('🔍 [DEBUG] Starting strategy edit for:', {
+        fullStrategy: strategy,
+        strategyId: strategy.strategyId,
+        strategyName: strategy.strategyName,
+        objectKeys: Object.keys(strategy),
+        timestamp: new Date().toISOString()
+      });
+
+      setLoadingEditStrategy(true);
+      setEditingStrategy(null);
+
+      // Use the standard strategyId property
+      const strategyId = strategy.strategyId;
+
+      if (!strategyId) {
+        throw new Error('Strategy ID not found. Available properties: ' + Object.keys(strategy).join(', '));
+      }
+
+      // Fetch full strategy details from API
+      console.log('🌐 [DEBUG] Fetching strategy details from API...');
+      const fullStrategyData = await strategyService.getStrategy(strategyId);
+
+      console.log('✅ [DEBUG] Strategy details fetched successfully:', {
+        strategyId: fullStrategyData.strategyId,
+        strategyName: fullStrategyData.strategyName,
+        legsCount: Array.isArray(fullStrategyData.legs) ? fullStrategyData.legs.length : fullStrategyData.legs,
+        hasConfig: !!fullStrategyData.config,
+        fullData: fullStrategyData
+      });
+
+      // Set the editing strategy with full data
+      setEditingStrategy(fullStrategyData);
+      setShowEditStrategyDialog(true);
+
+    } catch (error: any) {
+      console.error('❌ [DEBUG] Failed to fetch strategy for editing:', error);
+      showError(error.message || 'Failed to load strategy for editing. Please try again.');
+    } finally {
+      setLoadingEditStrategy(false);
+    }
+  };
+
+  const handleUpdateStrategy = async (strategyData: any) => {
+    try {
+      if (!editingStrategy) return;
+
+      console.log('🔄 [DEBUG] Updating strategy:', {
+        strategyId: editingStrategy.strategyId,
+        updateData: strategyData
+      });
+
+      // Update strategy via API
+      const result = await strategyService.updateStrategy(editingStrategy.strategyId, strategyData);
+
+      if (result.success) {
+        // Update local state
+        const updatedStrategy = { ...editingStrategy, ...strategyData };
+
+        // Update in baskets list
+        setBaskets(prev =>
+          prev.map(basket =>
+            basket.basket_id === selectedBasket?.basket_id
+              ? {
+                  ...basket,
+                  strategies: basket.strategies?.map(s =>
+                    s.strategyId === editingStrategy.strategyId ? updatedStrategy : s
+                  ) || []
+                }
+              : basket
+          )
+        );
+
+        // Update selected basket
+        if (selectedBasket) {
+          setSelectedBasket(prev => prev ? {
+            ...prev,
+            strategies: prev.strategies?.map(s =>
+              s.strategyId === editingStrategy.strategyId ? updatedStrategy : s
+            ) || []
+          } : null);
+        }
+
+        setShowEditStrategyDialog(false);
+        setEditingStrategy(null);
+        showSuccess(`Strategy "${strategyData.strategyName || editingStrategy.strategyName}" updated successfully!`);
+
+      } else {
+        throw new Error(result.message || 'Failed to update strategy');
+      }
+    } catch (error: any) {
+      console.error('Failed to update strategy:', error);
+      showError(error.message || 'Failed to update strategy. Please try again.');
     }
   };
 
@@ -351,7 +625,14 @@ const TabbedBasketManager: React.FC = () => {
                         </div>
                       </CardHeader>
                       <CardContent>
-                        {selectedBasket.strategies && selectedBasket.strategies.length > 0 ? (
+                        {strategiesLoading ? (
+                          <div className="flex items-center justify-center py-8">
+                            <div className="text-center">
+                              <Activity className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
+                              <p className="text-sm text-gray-600">Loading strategies...</p>
+                            </div>
+                          </div>
+                        ) : selectedBasket.strategies && selectedBasket.strategies.length > 0 ? (
                           <div className="space-y-3">
                             {selectedBasket.strategies.map(strategy => (
                               <div
@@ -367,7 +648,7 @@ const TabbedBasketManager: React.FC = () => {
                                     <div className="flex items-center gap-2 text-sm text-gray-600">
                                       <Badge variant="default" size="sm">{strategy.strategyType}</Badge>
                                       <span>•</span>
-                                      <span>{strategy.legs} legs</span>
+                                      <span>{Array.isArray(strategy.legs) ? strategy.legs.length : strategy.legs} legs</span>
                                       <span>•</span>
                                       <Badge variant={strategy.status === 'ACTIVE' ? 'success' : 'default'} size="sm">
                                         {strategy.status}
@@ -376,7 +657,12 @@ const TabbedBasketManager: React.FC = () => {
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <Button variant="ghost" size="sm">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditStrategy(strategy)}
+                                    disabled={loadingEditStrategy}
+                                  >
                                     <Edit className="h-4 w-4" />
                                   </Button>
                                   <Button variant="ghost" size="sm" className="text-red-600">
@@ -605,6 +891,18 @@ const TabbedBasketManager: React.FC = () => {
           basketId={selectedBasket.basket_id}
           onClose={() => setShowStrategyWizard(false)}
           onSubmit={handleAddStrategy}
+        />
+      )}
+
+      {showEditStrategyDialog && selectedBasket && editingStrategy && (
+        <StrategyWizardDialog
+          basketId={selectedBasket.basket_id}
+          editingStrategy={editingStrategy}
+          onClose={() => {
+            setShowEditStrategyDialog(false);
+            setEditingStrategy(null);
+          }}
+          onSubmit={handleUpdateStrategy}
         />
       )}
 

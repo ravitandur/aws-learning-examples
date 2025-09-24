@@ -20,6 +20,7 @@ import {
 
 interface UseStrategyFormProps {
   basketId: string;
+  editingStrategy?: any; // Optional strategy data for editing mode
   onClose: () => void;
 }
 
@@ -52,22 +53,52 @@ interface UseStrategyFormReturn {
   getFormData: () => StrategyFormData;
 }
 
-export const useStrategyForm = ({ 
-  basketId, 
-  onClose 
+export const useStrategyForm = ({
+  basketId,
+  editingStrategy,
+  onClose
 }: UseStrategyFormProps): UseStrategyFormReturn => {
   // Refs
   const dialogRef = useRef<HTMLDivElement>(null);
   
-  // Form state
-  const [strategyName, setStrategyName] = useState('');
-  const [strategyIndex, setStrategyIndex] = useState('NIFTY');
-  const [strategyConfig, setStrategyConfig] = useState<StrategyConfig>(DEFAULT_STRATEGY_CONFIG);
-  const [legs, setLegs] = useState<StrategyLeg[]>([]);
-  
+  // Form state - initialize with editing data if available (handle property name variations)
+  const getStrategyName = (strategy: any) => {
+    return strategy?.strategyName || strategy?.strategy_name || '';
+  };
+
+  const [strategyName, setStrategyName] = useState(getStrategyName(editingStrategy));
+  const [strategyIndex, setStrategyIndex] = useState(editingStrategy?.index || 'NIFTY');
+  const [strategyConfig, setStrategyConfig] = useState<StrategyConfig>(
+    editingStrategy?.config || DEFAULT_STRATEGY_CONFIG
+  );
+  const [legs, setLegs] = useState<StrategyLeg[]>(editingStrategy?.legs || []);
+
   // UI state
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Initialize form with editing strategy data
+  useEffect(() => {
+    if (editingStrategy) {
+      const resolvedStrategyName = getStrategyName(editingStrategy);
+
+      console.log('🔄 [DEBUG] Initializing form with editing strategy data:', {
+        originalStrategyName: editingStrategy.strategyName,
+        strategyName_snake: editingStrategy.strategy_name,
+        resolvedStrategyName: resolvedStrategyName,
+        index: editingStrategy.index,
+        configKeys: editingStrategy.config ? Object.keys(editingStrategy.config) : [],
+        legsCount: Array.isArray(editingStrategy.legs) ? editingStrategy.legs.length : editingStrategy.legs,
+        availableKeys: Object.keys(editingStrategy),
+        fullData: editingStrategy
+      });
+
+      setStrategyName(resolvedStrategyName);
+      setStrategyIndex(editingStrategy.index || 'NIFTY');
+      setStrategyConfig(editingStrategy.config || DEFAULT_STRATEGY_CONFIG);
+      setLegs(editingStrategy.legs || []);
+    }
+  }, [editingStrategy]);
   
   // Focus management for accessibility
   useEffect(() => {
@@ -100,7 +131,6 @@ export const useStrategyForm = ({
     config: strategyConfig,
     legs: legs.map(leg => ({
       id: leg.id,
-      index: leg.index,
       optionType: leg.optionType,
       actionType: leg.actionType,
       strikePrice: leg.strikePrice,

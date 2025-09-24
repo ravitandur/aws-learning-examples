@@ -141,18 +141,18 @@ class StrategyValidationService {
 
     switch (leg.selectionMethod) {
       case 'ATM_POINTS':
-        if (!leg.strikePrice) {
-          errors.push('Strike price is required for ATM Points method');
+        if (!leg.strikePrice || leg.strikePrice.trim() === '') {
+          errors.push('Strike selection value is required for ATM Points method');
         } else if (!this.isValidATMPointStrike(leg.strikePrice)) {
-          errors.push('Invalid ATM Points strike price format');
+          errors.push('Invalid ATM Points strike price format (use ATM, OTM3, ITM5, etc.)');
         }
         break;
 
       case 'ATM_PERCENT':
-        if (!leg.strikePrice) {
-          errors.push('Strike price is required for ATM Percent method');
+        if (!leg.strikePrice || leg.strikePrice.trim() === '') {
+          errors.push('Strike selection value is required for ATM Percent method');
         } else if (!this.isValidATMPercentStrike(leg.strikePrice)) {
-          errors.push('Invalid ATM Percent strike price format');
+          errors.push('Invalid ATM Percent strike price format (use ATM, ATM+5.00%, ATM-2.50%, etc.)');
         }
         break;
 
@@ -194,63 +194,65 @@ class StrategyValidationService {
     const errors: string[] = [];
     const warnings: string[] = [];
 
-    // Stop Loss validation
-    if (leg.stopLoss.enabled) {
-      if (leg.stopLoss.value <= 0) {
+    // Stop Loss validation (with defensive checks)
+    if (leg.stopLoss?.enabled) {
+      if ((leg.stopLoss?.value || 0) <= 0) {
         errors.push('Stop Loss value must be greater than 0');
-      } else if (leg.stopLoss.type === 'PERCENTAGE' && leg.stopLoss.value > 100) {
+      } else if (leg.stopLoss?.type === 'PERCENTAGE' && (leg.stopLoss?.value || 0) > 100) {
         errors.push('Stop Loss percentage cannot exceed 100%');
-      } else if (leg.stopLoss.type === 'POINTS' && leg.stopLoss.value > 500) {
+      } else if (leg.stopLoss?.type === 'POINTS' && (leg.stopLoss?.value || 0) > 500) {
         warnings.push('Very high Stop Loss points value may not trigger effectively');
       }
     }
 
-    // Target Profit validation
-    if (leg.targetProfit.enabled) {
-      if (leg.targetProfit.value <= 0) {
+    // Target Profit validation (with defensive checks)
+    if (leg.targetProfit?.enabled) {
+      if ((leg.targetProfit?.value || 0) <= 0) {
         errors.push('Target Profit value must be greater than 0');
-      } else if (leg.targetProfit.type === 'PERCENTAGE' && leg.targetProfit.value > 500) {
+      } else if (leg.targetProfit?.type === 'PERCENTAGE' && (leg.targetProfit?.value || 0) > 500) {
         warnings.push('Very high Target Profit percentage may rarely trigger');
       }
     }
 
-    // Trailing Stop Loss validation
-    if (leg.trailingStopLoss.enabled) {
-      if (!leg.stopLoss.enabled) {
+    // Trailing Stop Loss validation (with defensive checks)
+    if (leg.trailingStopLoss?.enabled) {
+      if (!leg.stopLoss?.enabled) {
         errors.push('Trailing Stop Loss requires regular Stop Loss to be enabled');
       }
-      if (leg.trailingStopLoss.instrumentMoveValue <= 0) {
+      if ((leg.trailingStopLoss?.instrumentMoveValue || 0) <= 0) {
         errors.push('Instrument move value must be greater than 0');
       }
-      if (leg.trailingStopLoss.stopLossMoveValue <= 0) {
+      if ((leg.trailingStopLoss?.stopLossMoveValue || 0) <= 0) {
         errors.push('Stop Loss move value must be greater than 0');
       }
-      if (leg.trailingStopLoss.instrumentMoveValue < leg.trailingStopLoss.stopLossMoveValue) {
+      if ((leg.trailingStopLoss?.instrumentMoveValue || 0) < (leg.trailingStopLoss?.stopLossMoveValue || 0)) {
         warnings.push('Stop Loss move value should typically be less than instrument move value');
       }
     }
 
-    // Wait & Trade validation
-    if (leg.waitAndTrade.enabled && leg.waitAndTrade.value <= 0) {
+    // Wait & Trade validation (with defensive checks)
+    if (leg.waitAndTrade?.enabled && (leg.waitAndTrade?.value || 0) <= 0) {
       errors.push('Wait & Trade value must be greater than 0');
     }
 
-    // Re-entry validation
-    if (leg.reEntry.enabled) {
-      if (leg.reEntry.count <= 0 || leg.reEntry.count > 5) {
+    // Re-entry validation (with defensive checks)
+    if (leg.reEntry?.enabled) {
+      const reEntryCount = leg.reEntry?.count || 0;
+      if (reEntryCount <= 0 || reEntryCount > 5) {
         errors.push('Re-entry count must be between 1 and 5');
       }
-      if (leg.reEntry.count > 2) {
+      if (reEntryCount > 2) {
         warnings.push('High re-entry count may lead to significant losses');
       }
     }
 
-    // Re-execute validation
-    if (leg.reExecute.enabled) {
-      if (leg.reExecute.count <= 0 || leg.reExecute.count > 5) {
+    // Re-execute validation (with defensive checks)
+    if (leg.reExecute?.enabled) {
+      const reExecuteCount = leg.reExecute?.count || 0;
+      if (reExecuteCount <= 0 || reExecuteCount > 5) {
         errors.push('Re-execute count must be between 1 and 5');
       }
-      if (!leg.targetProfit.enabled) {
+      if (!leg.targetProfit?.enabled) {
         warnings.push('Re-execute is typically used with Target Profit');
       }
     }
@@ -300,13 +302,16 @@ class StrategyValidationService {
       }
     }
 
-    // Risk management validation
-    if (config.targetProfit.value > 0 && config.mtmStopLoss.value > 0) {
-      const isTPPercent = config.targetProfit.type === 'COMBINED_PREMIUM_PERCENT';
-      const isSLPercent = config.mtmStopLoss.type === 'COMBINED_PREMIUM_PERCENT';
-      
+    // Risk management validation (with defensive checks)
+    const targetProfitValue = config.targetProfit?.value || 0;
+    const mtmStopLossValue = config.mtmStopLoss?.value || 0;
+
+    if (targetProfitValue > 0 && mtmStopLossValue > 0) {
+      const isTPPercent = config.targetProfit?.type === 'COMBINED_PREMIUM_PERCENT';
+      const isSLPercent = config.mtmStopLoss?.type === 'COMBINED_PREMIUM_PERCENT';
+
       if (isTPPercent && isSLPercent) {
-        if (config.targetProfit.value <= config.mtmStopLoss.value) {
+        if (targetProfitValue <= mtmStopLossValue) {
           warnings.push('Target profit should typically be higher than stop loss for better risk-reward ratio');
         }
       }
@@ -358,11 +363,7 @@ class StrategyValidationService {
       warnings.push('Highly unbalanced buy/sell ratio may indicate unusual risk profile');
     }
 
-    // Check for same expiry consistency
-    const expiryTypes = Array.from(new Set(legs.map(leg => leg.expiryType)));
-    if (expiryTypes.length > 1) {
-      warnings.push('Mixed expiry types may complicate strategy management');
-    }
+    // Expiry type is now strategy-level only, so no leg-level consistency check needed
 
     // Detect common strategy patterns and validate
     const strategyPattern = this.detectStrategyPattern(legs);
