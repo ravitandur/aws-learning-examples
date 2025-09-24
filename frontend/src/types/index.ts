@@ -151,6 +151,7 @@ export interface Strategy {
   // On-demand derived fields (calculated instead of stored)
   legCount?: number;
   isIntraDay?: boolean;
+  sequenceNumber?: number;
 }
 
 export interface Basket {
@@ -178,6 +179,7 @@ export interface UpdateBasket {
 
 // Basket-Broker Allocation Types (New Separate System)
 export interface BasketBrokerAllocation {
+  allocation_id: string;
   basket_id: string;
   broker_id: string;
   client_id: string;

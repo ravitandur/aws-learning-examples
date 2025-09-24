@@ -258,6 +258,21 @@ class OptionsTradeStack(Stack):
                 )
             )
 
+            # Grant access to broker accounts table from auth stack
+            function.add_to_role_policy(
+                iam.PolicyStatement(
+                    actions=[
+                        "dynamodb:GetItem",
+                        "dynamodb:Query",
+                        "dynamodb:Scan"
+                    ],
+                    resources=[
+                        f"arn:aws:dynamodb:{self.region}:{self.account}:table/{self.broker_accounts_table_name}",
+                        f"arn:aws:dynamodb:{self.region}:{self.account}:table/{self.broker_accounts_table_name}/*"
+                    ]
+                )
+            )
+
     def _create_parallel_execution_infrastructure(self):
         """
         🚀 REVOLUTIONARY: Create parallel execution infrastructure for unlimited user scalability

@@ -245,7 +245,7 @@ def handle_create_basket_allocation(event, user_id, basket_id, table):
                 'strategies_count': len(basket_strategies),  # Number of strategies that inherit this allocation
                 
                 # ✅ BASKET-LEVEL: Lot Multiplier applies to ALL strategies in basket
-                'lot_multiplier': lot_multiplier,
+                'lot_multiplier': Decimal(str(lot_multiplier)),
                 
                 # Broker Configuration
                 'client_id': client_id,
@@ -524,6 +524,7 @@ def handle_update_basket_allocation(event, user_id, basket_id, allocation_id, ta
         current_time = datetime.now(timezone.utc).isoformat()
         update_expression_parts = []
         expression_attribute_values = {}
+        expression_attribute_names = {}
         
         # Allow updates to operational parameters
         updatable_fields = ['lot_multiplier', 'priority', 'max_lots_per_order', 'risk_limit_per_trade', 
@@ -531,9 +532,15 @@ def handle_update_basket_allocation(event, user_id, basket_id, allocation_id, ta
         
         for field in updatable_fields:
             if field in body:
-                update_expression_parts.append(f'{field} = :{field}')
-                expression_attribute_values[f':{field}'] = body[field]
-                
+                # Handle reserved keyword 'status'
+                if field == 'status':
+                    update_expression_parts.append('#status = :status')
+                    expression_attribute_names['#status'] = 'status'
+                    expression_attribute_values[':status'] = body[field]
+                else:
+                    update_expression_parts.append(f'{field} = :{field}')
+                    expression_attribute_values[f':{field}'] = body[field]
+
                 # Update GSI attribute if priority changes
                 if field == 'priority':
                     new_priority = body[field]
@@ -546,14 +553,20 @@ def handle_update_basket_allocation(event, user_id, basket_id, allocation_id, ta
         expression_attribute_values[':one'] = 1
         
         if update_expression_parts:
-            table.update_item(
-                Key={
+            update_params = {
+                'Key': {
                     'user_id': user_id,
                     'sort_key': f'BASKET_ALLOCATION#{allocation_id}'
                 },
-                UpdateExpression='SET ' + ', '.join(update_expression_parts),
-                ExpressionAttributeValues=expression_attribute_values
-            )
+                'UpdateExpression': 'SET ' + ', '.join(update_expression_parts),
+                'ExpressionAttributeValues': expression_attribute_values
+            }
+
+            # Add ExpressionAttributeNames only if needed (for reserved keywords)
+            if expression_attribute_names:
+                update_params['ExpressionAttributeNames'] = expression_attribute_names
+
+            table.update_item(**update_params)
         
         log_user_action(logger, user_id, "basket_allocation_updated", {
             "allocation_id": allocation_id,

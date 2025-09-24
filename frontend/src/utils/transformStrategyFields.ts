@@ -44,6 +44,7 @@ export function transformStrategyFields(backendStrategy: any): Strategy {
     // On-demand derived fields (calculated instead of stored)
     legCount: backendStrategy.legs?.length || 0,
     isIntraDay: backendStrategy.product === 'MIS',
+    sequenceNumber: backendStrategy.sequence_number || 1,
   };
 }
 

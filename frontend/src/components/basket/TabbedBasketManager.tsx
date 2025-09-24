@@ -16,6 +16,7 @@ import strategyService from '../../services/strategyService';
 import CreateBasketDialog from './CreateBasketDialog';
 import StrategyWizardDialog from './StrategyWizardDialog';
 import StrategyCard from '../strategy/StrategyCard';
+import BasketAllocation from './BasketAllocation';
 
 interface BasketWithStrategies extends Omit<Basket, 'strategies'> {
   strategies?: Strategy[]; // Make strategies optional initially
@@ -36,7 +37,7 @@ const TabbedBasketManager: React.FC = () => {
   const [showEditStrategyDialog, setShowEditStrategyDialog] = useState(false);
   const [editingStrategy, setEditingStrategy] = useState<Strategy | null>(null);
   const [loadingEditStrategy, setLoadingEditStrategy] = useState(false);
-  const [activeTab, setActiveTab] = useState<'details' | 'performance'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'performance' | 'allocation'>('details');
   const [deleteConfirmDialog, setDeleteConfirmDialog] = useState<{
     isOpen: boolean;
     basket: BasketWithStrategies | null;
@@ -661,30 +662,11 @@ const TabbedBasketManager: React.FC = () => {
                     {selectedBasket.strategies?.length || 0} strategies
                   </span>
                   <span className="text-gray-400">•</span>
-
-                  {/* Compact Broker Allocations */}
-                  <div className="flex items-center gap-2">
-                    <div className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 rounded-md px-2 py-1">
-                      <div className="w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold">Z</div>
-                      <span className="text-xs font-medium text-blue-600 dark:text-blue-400">5x</span>
-                    </div>
-                    <div className="inline-flex items-center gap-1 bg-green-50 dark:bg-green-900/20 rounded-md px-2 py-1">
-                      <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">A</div>
-                      <span className="text-xs font-medium text-green-600 dark:text-green-400">3x</span>
-                    </div>
-                    <div className="inline-flex items-center gap-1 bg-purple-50 dark:bg-purple-900/20 rounded-md px-2 py-1">
-                      <div className="w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">F</div>
-                      <span className="text-xs font-medium text-purple-600 dark:text-purple-400">2x</span>
-                    </div>
-                  </div>
-
-                  <span className="text-gray-400">•</span>
                   <button
-                    onClick={() => showSuccess('Broker allocation feature coming soon!')}
-                    className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    onClick={() => setActiveTab('allocation')}
+                    className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors font-medium"
                   >
-                    <Plus className="h-3 w-3" />
-                    Add Broker
+                    Manage Broker Allocation
                   </button>
                 </div>
               ) : (
@@ -716,6 +698,16 @@ const TabbedBasketManager: React.FC = () => {
                   }`}
                 >
                   Performance
+                </button>
+                <button
+                  onClick={() => setActiveTab('allocation')}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    activeTab === 'allocation'
+                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  Broker Allocation
                 </button>
               </div>
             )}
@@ -761,6 +753,19 @@ const TabbedBasketManager: React.FC = () => {
                     </Card>
 
                   </>
+                ) : activeTab === 'allocation' ? (
+                  /* Broker Allocation Tab */
+                  <BasketAllocation
+                    basket={{
+                      ...selectedBasket,
+                      strategies: selectedBasket.strategies || []
+                    }}
+                    onBack={() => setActiveTab('details')}
+                    onAllocationComplete={() => {
+                      showSuccess('Broker allocation updated successfully!');
+                      setActiveTab('details');
+                    }}
+                  />
                 ) : (
                   /* Performance Tab */
                   <>

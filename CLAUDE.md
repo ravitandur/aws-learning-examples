@@ -535,7 +535,7 @@ def calculate_next_minute_wait_seconds(current_ist: datetime) -> int:
 - **TypeScript Compilation**: Clean build with comprehensive type safety
 
 #### **Revolutionary Features Now Available**:
-1. **Strategy-Specific Broker Allocation**: Each strategy can use different brokers with custom lot distributions
+1. **Basket-Level Broker Allocation**: Each basket can use multiple brokers with custom lot distributions across all strategies
 2. **GSI2 Query Optimization**: 401+ queries → 2 queries breakthrough (99.5% reduction)
 3. **0-Second Precision Timing**: EventBridge with dynamic wait calculation for institutional-grade timing
 4. **Weekend Execution Prevention**: Database-level weekend protection with weekday-aware scheduling

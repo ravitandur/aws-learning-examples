@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/Card';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Badge from '../ui/Badge';
-import { ArrowLeft, Plus, Trash2, RefreshCw, AlertCircle, CheckCircle } from 'lucide-react';
+import { useToast } from '../common/ToastContainer';
+import { ArrowLeft, Plus, Trash2, RefreshCw, AlertCircle, Power, Edit3, Save, X } from 'lucide-react';
 import { BrokerAccount, Basket, BasketBrokerAllocation, CreateAllocation } from '../../types';
 import brokerService from '../../services/brokerService';
 import allocationService from '../../services/allocationService';
@@ -25,28 +26,28 @@ const BasketAllocation: React.FC<BasketAllocationProps> = ({
   onBack,
   onAllocationComplete
 }) => {
+  const { showSuccess, showError } = useToast();
   const [brokerAccounts, setBrokerAccounts] = useState<BrokerAccount[]>([]);
   const [existingAllocations, setExistingAllocations] = useState<BasketBrokerAllocation[]>([]);
   const [newAllocations, setNewAllocations] = useState<AllocationFormData[]>([]);
-  
+
   // Loading states
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
-  // Error states
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+
+  // Edit mode state
+  const [editingAllocation, setEditingAllocation] = useState<string | null>(null);
+  const [editLotMultiplier, setEditLotMultiplier] = useState<number>(1);
 
   // Load broker accounts and existing allocations
   const loadData = async () => {
     try {
       setLoading(true);
-      setError(null);
-      
+
       // Load broker accounts
       const accounts = await brokerService.getBrokerAccounts();
       setBrokerAccounts(accounts.filter(account => account.account_status === 'enabled'));
-      
+
       // Load existing allocations for this basket
       try {
         const allocations = await allocationService.getBasketAllocations(basket.basket_id);
@@ -56,10 +57,10 @@ const BasketAllocation: React.FC<BasketAllocationProps> = ({
         // Continue without existing allocations - user can still create new ones
         setExistingAllocations([]);
       }
-      
+
     } catch (error: any) {
       console.error('Failed to load data:', error);
-      setError('Failed to load broker accounts. Please try again.');
+      showError('Failed to load broker accounts. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -99,7 +100,7 @@ const BasketAllocation: React.FC<BasketAllocationProps> = ({
     // Check if all allocations are complete
     for (const allocation of newAllocations) {
       if (!allocation.broker_id || !allocation.client_id || allocation.lot_multiplier <= 0) {
-        setError('Please complete all allocation details with valid lot multipliers (> 0)');
+        showError('Please complete all allocation details with valid lot multipliers (> 0)');
         return false;
       }
     }
@@ -108,31 +109,128 @@ const BasketAllocation: React.FC<BasketAllocationProps> = ({
     const combinations = newAllocations.map(a => `${a.broker_id}-${a.client_id}`);
     const uniqueCombinations = new Set(combinations);
     if (combinations.length !== uniqueCombinations.size) {
-      setError('Duplicate broker-client combinations are not allowed');
+      showError('Duplicate broker-client combinations are not allowed');
       return false;
     }
 
     // Check against existing allocations
-    for (const newAlloc of newAllocations) {
-      const exists = existingAllocations.some(existing => 
-        existing.broker_id === newAlloc.broker_id && existing.client_id === newAlloc.client_id
-      );
-      if (exists) {
-        setError(`Allocation already exists for ${newAlloc.broker_id} - ${newAlloc.client_id}`);
-        return false;
+    if (Array.isArray(existingAllocations)) {
+      for (const newAlloc of newAllocations) {
+        const exists = existingAllocations.some(existing =>
+          existing.broker_id === newAlloc.broker_id && existing.client_id === newAlloc.client_id
+        );
+        if (exists) {
+          showError(`Allocation already exists for ${newAlloc.broker_id} - ${newAlloc.client_id}`);
+          return false;
+        }
       }
     }
 
     return true;
   };
 
+  const handleDeleteAllocation = async (allocation: BasketBrokerAllocation) => {
+    try {
+      setSaving(true);
+
+      await allocationService.deleteAllocation(basket.basket_id, allocation.allocation_id);
+
+      showSuccess(`Successfully deleted allocation for ${allocation.broker_id} - ${allocation.client_id}`);
+
+      // Remove from state locally instead of full reload - much faster!
+      setExistingAllocations(prev =>
+        prev.filter(a => a.allocation_id !== allocation.allocation_id)
+      );
+
+    } catch (error: any) {
+      console.error('Failed to delete allocation:', error);
+      showError(error.message || 'Failed to delete allocation. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleStartEdit = (allocation: BasketBrokerAllocation) => {
+    setEditingAllocation(allocation.allocation_id);
+    setEditLotMultiplier(allocation.lot_multiplier);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingAllocation(null);
+    setEditLotMultiplier(1);
+  };
+
+  const handleSaveEdit = async (allocation: BasketBrokerAllocation) => {
+    try {
+      setSaving(true);
+
+      if (editLotMultiplier <= 0) {
+        showError('Lot multiplier must be greater than 0');
+        return;
+      }
+
+      await allocationService.updateAllocation(basket.basket_id, allocation.allocation_id, {
+        status: allocation.status,
+        lot_multiplier: editLotMultiplier
+      });
+
+      showSuccess(`Successfully updated lot multiplier for ${allocation.broker_id} - ${allocation.client_id}`);
+
+      // Update state locally
+      setExistingAllocations(prev =>
+        prev.map(a =>
+          a.allocation_id === allocation.allocation_id
+            ? { ...a, lot_multiplier: editLotMultiplier }
+            : a
+        )
+      );
+
+      // Exit edit mode
+      setEditingAllocation(null);
+      setEditLotMultiplier(1);
+
+    } catch (error: any) {
+      console.error('Failed to update lot multiplier:', error);
+      showError(error.message || 'Failed to update lot multiplier. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleAllocationStatus = async (allocation: BasketBrokerAllocation) => {
+    try {
+      setSaving(true);
+
+      const newStatus = allocation.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+
+      await allocationService.updateAllocation(basket.basket_id, allocation.allocation_id, {
+        status: newStatus,
+        lot_multiplier: allocation.lot_multiplier
+      });
+
+      showSuccess(`Successfully ${newStatus === 'ACTIVE' ? 'enabled' : 'disabled'} allocation for ${allocation.broker_id} - ${allocation.client_id}`);
+
+      // Update state locally instead of full reload - much faster!
+      setExistingAllocations(prev =>
+        prev.map(a =>
+          a.allocation_id === allocation.allocation_id
+            ? { ...a, status: newStatus }
+            : a
+        )
+      );
+
+    } catch (error: any) {
+      console.error('Failed to update allocation status:', error);
+      showError(error.message || 'Failed to update allocation status. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleSaveAllocations = async () => {
     try {
-      setError(null);
-      setSuccess(null);
-      
       if (newAllocations.length === 0) {
-        setError('Please add at least one broker allocation');
+        showError('Please add at least one broker allocation');
         return;
       }
 
@@ -148,29 +246,34 @@ const BasketAllocation: React.FC<BasketAllocationProps> = ({
 
       // Create basket allocations using the allocation service
       await allocationService.createBasketAllocations(basket.basket_id, createData);
-      
-      setSuccess(`Successfully allocated basket to ${newAllocations.length} broker account(s)`);
+
+      showSuccess(`Successfully allocated basket to ${newAllocations.length} broker account(s)`);
       setNewAllocations([]);
-      
-      // Refresh data to show new allocations
-      await loadData();
-      
-      // Notify parent component
-      setTimeout(() => {
-        onAllocationComplete();
-      }, 2000);
-      
+
+      // Refresh the allocations list to show newly created ones
+      try {
+        const updatedAllocations = await allocationService.getBasketAllocations(basket.basket_id);
+        setExistingAllocations(updatedAllocations);
+      } catch (error) {
+        console.warn('Failed to refresh allocations after create, will reload on next visit');
+      }
+
+      // Don't automatically switch tabs - let user stay on allocation tab to see their new allocations
+
     } catch (error: any) {
       console.error('Failed to create allocations:', error);
-      setError(error.message || 'Failed to create allocations. Please try again.');
+      showError(error.message || 'Failed to create allocations. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
   const calculateTotalMultiplier = (): number => {
-    return newAllocations.reduce((sum, allocation) => sum + allocation.lot_multiplier, 0) +
-           existingAllocations.reduce((sum, allocation) => sum + allocation.lot_multiplier, 0);
+    const newTotal = newAllocations.reduce((sum, allocation) => sum + allocation.lot_multiplier, 0);
+    const existingTotal = Array.isArray(existingAllocations)
+      ? existingAllocations.reduce((sum, allocation) => sum + allocation.lot_multiplier, 0)
+      : 0;
+    return newTotal + existingTotal;
   };
 
   if (loading) {
@@ -198,47 +301,6 @@ const BasketAllocation: React.FC<BasketAllocationProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Success Message */}
-      {success && (
-        <Card className="border-green-200 bg-green-50 dark:bg-green-900/20">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <div className="flex-1">
-                <p className="text-green-800 dark:text-green-200">{success}</p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSuccess(null)}
-              >
-                Dismiss
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Error Message */}
-      {error && (
-        <Card className="border-red-200 bg-red-50 dark:bg-red-900/20">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="h-5 w-5 text-red-600" />
-              <div className="flex-1">
-                <p className="text-red-800 dark:text-red-200">{error}</p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setError(null)}
-              >
-                Dismiss
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -291,16 +353,16 @@ const BasketAllocation: React.FC<BasketAllocationProps> = ({
       </Card>
 
       {/* Existing Allocations */}
-      {existingAllocations.length > 0 && (
+      {Array.isArray(existingAllocations) && existingAllocations.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>🔗 Existing Allocations</CardTitle>
+            <CardTitle>🔗 Existing Allocations ({existingAllocations.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {existingAllocations.map((allocation, index) => (
-                <div key={`${allocation.broker_id}-${allocation.client_id}`} 
-                     className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              {existingAllocations.map((allocation) => (
+                <div key={`${allocation.broker_id}-${allocation.client_id}`}
+                     className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div className="font-medium">
                       {allocation.broker_id.charAt(0).toUpperCase() + allocation.broker_id.slice(1)}
@@ -309,12 +371,85 @@ const BasketAllocation: React.FC<BasketAllocationProps> = ({
                       {allocation.client_id}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Lot Multiplier:</span>
-                    <span className="font-semibold text-blue-600">{allocation.lot_multiplier}</span>
-                    <Badge variant={allocation.status === 'ACTIVE' ? 'success' : 'default'} size="sm">
-                      {allocation.status}
-                    </Badge>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-600">Lot Multiplier:</span>
+                      {editingAllocation === allocation.allocation_id ? (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min="1"
+                            step="1"
+                            value={editLotMultiplier}
+                            onChange={(e) => setEditLotMultiplier(parseFloat(e.target.value) || 1)}
+                            className="w-20"
+                          />
+                        </div>
+                      ) : (
+                        <span className="font-semibold text-blue-600">{allocation.lot_multiplier}</span>
+                      )}
+                      <Badge variant={allocation.status === 'ACTIVE' ? 'success' : 'default'} size="sm">
+                        {allocation.status}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {editingAllocation === allocation.allocation_id ? (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSaveEdit(allocation)}
+                            disabled={saving}
+                            className="text-green-600 hover:text-green-700 border-green-200"
+                          >
+                            <Save className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleCancelEdit}
+                            disabled={saving}
+                            className="text-gray-600 hover:text-gray-700 border-gray-200"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleStartEdit(allocation)}
+                            disabled={saving || editingAllocation !== null}
+                            className="text-blue-600 hover:text-blue-700 border-blue-200"
+                          >
+                            <Edit3 className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleToggleAllocationStatus(allocation)}
+                            disabled={saving || editingAllocation !== null}
+                            className={`${allocation.status === 'ACTIVE'
+                              ? 'text-orange-600 hover:text-orange-700 border-orange-200'
+                              : 'text-green-600 hover:text-green-700 border-green-200'
+                            }`}
+                          >
+                            <Power className="h-3 w-3 mr-1" />
+                            {allocation.status === 'ACTIVE' ? 'Disable' : 'Enable'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteAllocation(allocation)}
+                            disabled={saving || editingAllocation !== null}
+                            className="text-red-600 hover:text-red-700 border-red-200"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -340,10 +475,16 @@ const BasketAllocation: React.FC<BasketAllocationProps> = ({
         </CardHeader>
         <CardContent className="space-y-4">
           {newAllocations.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <div className="text-sm font-medium text-gray-500 mb-2">Empty</div>
-              <p>No allocations added yet. Click "Add Allocation" to start.</p>
-            </div>
+            existingAllocations.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <div className="text-sm font-medium text-gray-500 mb-2">No Allocations Yet</div>
+                <p>No broker allocations configured. Click "Add Allocation" to start allocating this basket to brokers.</p>
+              </div>
+            ) : (
+              <div className="text-center py-4 text-gray-400">
+                <p className="text-sm">Use "Add Allocation" button above to add more broker allocations.</p>
+              </div>
+            )
           ) : (
             <div className="space-y-4">
               {newAllocations.map((allocation, index) => (

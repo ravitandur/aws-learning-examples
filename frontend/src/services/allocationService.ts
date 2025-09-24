@@ -7,7 +7,12 @@ class AllocationService {
    */
   async getBasketAllocations(basketId: string): Promise<BasketBrokerAllocation[]> {
     try {
-      const response = await optionsApiClient.get<ApiResponse<BasketBrokerAllocation[]>>(
+      const response = await optionsApiClient.get<ApiResponse<{
+        allocations: BasketBrokerAllocation[];
+        total_brokers: number;
+        active_brokers: number;
+        total_lot_multiplier: number;
+      }>>(
         `/options/baskets/${basketId}/allocations`
       );
 
@@ -15,7 +20,8 @@ class AllocationService {
         throw new Error(response.message || 'Failed to fetch basket allocations');
       }
 
-      return response.data;
+      // Backend returns allocations nested in data.allocations
+      return response.data.allocations || [];
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch basket allocations');
     }
@@ -68,7 +74,12 @@ class AllocationService {
    */
   async createBasketAllocations(basketId: string, allocationData: CreateAllocation): Promise<BasketBrokerAllocation[]> {
     try {
-      const response = await optionsApiClient.post<ApiResponse<BasketBrokerAllocation[]>>(
+      const response = await optionsApiClient.post<ApiResponse<{
+        allocations: BasketBrokerAllocation[];
+        total_brokers: number;
+        active_brokers: number;
+        total_lot_multiplier: number;
+      }>>(
         `/options/baskets/${basketId}/allocations`,
         allocationData
       );
@@ -77,7 +88,8 @@ class AllocationService {
         throw new Error(response.message || 'Failed to create allocations');
       }
 
-      return response.data;
+      // Backend returns allocations nested in data.allocations
+      return response.data.allocations || [];
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to create allocations');
     }
@@ -87,22 +99,26 @@ class AllocationService {
    * Update a specific allocation
    */
   async updateAllocation(
-    basketId: string, 
-    brokerId: string, 
-    clientId: string, 
+    basketId: string,
+    allocationId: string,
     updates: UpdateAllocation
-  ): Promise<BasketBrokerAllocation> {
+  ): Promise<{ success: true; allocation_id: string; message: string }> {
     try {
-      const response = await optionsApiClient.put<ApiResponse<BasketBrokerAllocation>>(
-        `/options/baskets/${basketId}/allocations/${brokerId}/${clientId}`,
+      const response = await optionsApiClient.put<ApiResponse<{ allocation_id: string }>>(
+        `/options/baskets/${basketId}/allocations/${allocationId}`,
         updates
       );
 
-      if (!response.success || !response.data) {
+      if (!response.success) {
         throw new Error(response.message || 'Failed to update allocation');
       }
 
-      return response.data;
+      // Backend returns simple success response with allocation_id
+      return {
+        success: true,
+        allocation_id: response.data?.allocation_id || allocationId,
+        message: response.message || 'Allocation updated successfully'
+      };
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to update allocation');
     }
@@ -111,10 +127,10 @@ class AllocationService {
   /**
    * Delete a specific allocation
    */
-  async deleteAllocation(basketId: string, brokerId: string, clientId: string): Promise<void> {
+  async deleteAllocation(basketId: string, allocationId: string): Promise<void> {
     try {
       const response = await optionsApiClient.delete<ApiResponse>(
-        `/options/baskets/${basketId}/allocations/${brokerId}/${clientId}`
+        `/options/baskets/${basketId}/allocations/${allocationId}`
       );
 
       if (!response.success) {
