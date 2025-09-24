@@ -248,6 +248,15 @@ Use consistent table styling across all data tables:
 
 ## Recent Updates
 
+### September 24, 2025 - Data Transformation & Service Layer Enhancement
+- ✅ **Shared Transformation Utility**: Implemented transformStrategyFields utility for consistent snake_case/camelCase conversion
+- ✅ **Service Layer Consistency**: Updated strategyService.getBasketStrategies() and basketService with unified field transformation
+- ✅ **Backend Integration**: Resolved DynamoDB ValidationException errors with improved data handling
+- ✅ **Strategy Editing Fix**: Fixed "Strategy ID not found" errors with proper field name mapping (strategy_id → strategyId)
+- ✅ **Code Quality**: Enhanced frontend services consistency and eliminated transformation duplication
+- ✅ **Type Safety**: Maintained comprehensive TypeScript interfaces with improved data flow
+- ✅ **Architecture Improvement**: Applied single source of truth principle for derived data handling
+
 ### September 12, 2025 - Product Type System & UI Consistency Enhancement
 - ✅ **Complete Product Type System**: Comprehensive MIS/NRML validation with business rules
 - ✅ **UI Components**: GlobalIndexSelector and PositionsSection components for better architecture

@@ -1,7 +1,7 @@
 ---
 created: 2025-09-05T19:46:11Z
-last_updated: 2025-09-12T04:48:39Z
-version: 1.5
+last_updated: 2025-09-24T02:53:53Z
+version: 1.6
 author: Claude Code PM System
 ---
 
@@ -216,7 +216,36 @@ tests/options_strategies/               # Trading-specific test suite
 - **Multi-environment deployment**: Staging and production pipelines
 - **Security hardening**: Additional AWS security services
 
+### Data Transformation & Service Architecture (September 24, 2025)
+
+#### **Shared Transformation Utilities**
+- **transformStrategyFields.ts**: Unified snake_case to camelCase conversion utility
+- **Cross-Service Consistency**: strategyService and basketService use shared transformation patterns
+- **Field Mapping Standards**: strategy_id → strategyId, strategy_name → strategyName, strategy_type → strategyType
+- **Single Source of Truth**: Eliminates field transformation duplication across services
+
+#### **Backend Architecture Improvements**
+- **DynamoDB ValidationException Resolution**: Removed unnecessary basket counter updates (strategy_count, active_strategy_count)
+- **Single Table Design**: Maintained strategy-level allocation inheritance without denormalization
+- **Performance Optimization**: GSI2 query patterns remain optimized (401+ → 2 queries)
+- **Data Integrity**: Applied single source of truth principle for derived data
+
+#### **Service Layer Enhancements**
+```typescript
+// Shared transformation utility pattern
+import { transformStrategyFields } from '../utils/transformStrategyFields';
+
+// Consistent field transformation across services
+export function transformBasket(backendBasket: any): Basket {
+  return {
+    ...backendBasket,
+    strategies: backendBasket.strategies?.map(transformStrategyFields) || [],
+  };
+}
+```
+
 ## Update History
+- 2025-09-24: Added data transformation utilities, shared service patterns, backend DynamoDB ValidationException resolution, and architectural improvements following single source of truth principle
 - 2025-09-12: Added connected toggle group UI pattern, documented comprehensive documentation management system with smart categorization and update triggers
 - 2025-09-11: Added comprehensive frontend testing dependencies (@testing-library suite, jest-junit), updated frontend dependencies to exact versions from package.json, enhanced testing section with implemented features
 - 2025-09-09: Added modern testing dependencies (moto mock_aws, pytest, faker), updated testing infrastructure with 100% error elimination achievements

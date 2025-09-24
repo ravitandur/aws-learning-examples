@@ -312,7 +312,25 @@ const ScrollableDialog: React.FC = () => (
 - ✅ **Resource Name Pattern**: All resource names follow {module-prefix}-{function-name}
 - ✅ **Deployment Reliability**: Stacks can be destroyed and redeployed without errors
 
-## Latest Project Updates (September 12, 2025)
+## Latest Project Updates (September 24, 2025)
+
+### 🎯 **DynamoDB ValidationException Resolution & Data Transformation Enhancement** ✅
+**Major Achievement**: Resolved critical basket creation/strategy addition errors and implemented unified data transformation architecture
+
+#### **Critical Backend Fix**:
+- **DynamoDB ValidationException Resolution**: Fixed "The provided expression refers to an attribute that does not exist in the item" error
+- **Root Cause**: Unnecessary basket counter updates (strategy_count, active_strategy_count) for non-existent attributes
+- **Solution**: Removed problematic UpdateItem operations following single source of truth principle
+- **Impact**: Basket and strategy creation now works seamlessly without database validation errors
+
+#### **Frontend Data Transformation Consistency**:
+- **Shared Transformation Utility**: Created transformStrategyFields.ts for unified snake_case/camelCase conversion
+- **Service Layer Enhancement**: Updated strategyService.getBasketStrategies() and basketService with consistent field transformation
+- **Strategy Editing Fix**: Resolved "Strategy ID not found" errors with proper field name mapping (strategy_id → strategyId)
+- **Code Quality**: Eliminated transformation duplication across frontend services
+- **31 Files Changed**: 1,663 insertions, 1,692 deletions - comprehensive data handling improvements
+
+## Previous Project Updates (September 12, 2025)
 
 ### 🎯 **Complete Product Type Configuration System** ✅
 **Major Achievement**: Implemented comprehensive MIS/NRML product type management with business rule validation
