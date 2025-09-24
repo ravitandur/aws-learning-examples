@@ -22,13 +22,13 @@ const StrategyCard: React.FC<StrategyCardProps> = ({
   const formatDays = (days?: string[]): string => {
     if (!days || days.length === 0) return 'Not set';
 
-    // Convert to short format
+    // Convert to short uppercase format
     const dayMap: { [key: string]: string } = {
-      'MONDAY': 'Mon', 'TUESDAY': 'Tue', 'WEDNESDAY': 'Wed',
-      'THURSDAY': 'Thu', 'FRIDAY': 'Fri', 'SATURDAY': 'Sat', 'SUNDAY': 'Sun'
+      'MONDAY': 'MON', 'TUESDAY': 'TUE', 'WEDNESDAY': 'WED',
+      'THURSDAY': 'THU', 'FRIDAY': 'FRI', 'SATURDAY': 'SAT', 'SUNDAY': 'SUN'
     };
 
-    return days.map(day => dayMap[day.toUpperCase()] || day).join(', ');
+    return days.map(day => dayMap[day.toUpperCase()] || day.toUpperCase()).join(', ');
   };
 
   // Format time to readable format
@@ -140,7 +140,7 @@ const StrategyCard: React.FC<StrategyCardProps> = ({
           )}
           {strategy.expiryType && (
             <Badge variant="info" size="sm">
-              {strategy.expiryType}
+              {strategy.expiryType.toUpperCase()}
             </Badge>
           )}
           {strategy.product && (
