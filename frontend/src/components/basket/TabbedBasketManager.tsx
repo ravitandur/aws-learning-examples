@@ -6,7 +6,7 @@ import Badge from '../ui/Badge';
 import { useToast } from '../common/ToastContainer';
 import ConfirmDialog from '../common/ConfirmDialog';
 import {
-  Plus, Settings, Search, TrendingUp,
+  Plus, Search, TrendingUp,
   Activity, BarChart3,
   Trash2, Target, Zap
 } from 'lucide-react';
@@ -15,7 +15,7 @@ import basketService from '../../services/basketService';
 import strategyService from '../../services/strategyService';
 import CreateBasketDialog from './CreateBasketDialog';
 import StrategyWizardDialog from './StrategyWizardDialog';
-import StrategyTable from '../strategy/StrategyTable';
+import StrategyCard from '../strategy/StrategyCard';
 
 interface BasketWithStrategies extends Omit<Basket, 'strategies'> {
   strategies?: Strategy[]; // Make strategies optional initially
@@ -641,15 +641,57 @@ const TabbedBasketManager: React.FC = () => {
           {/* Right Panel Header */}
           <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                {selectedBasket ? (selectedBasket.basket_name || 'Unnamed Basket') : 'Select a Basket'}
-              </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                {selectedBasket
-                  ? `${selectedBasket.strategies?.length || 0} strategies configured`
-                  : 'Choose a basket from the left panel to view details'
-                }
-              </p>
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {selectedBasket ? (selectedBasket.basket_name || 'Unnamed Basket') : 'Select a Basket'}
+                </h3>
+                {selectedBasket && (
+                  <Button
+                    onClick={() => setShowStrategyWizard(true)}
+                    leftIcon={<Plus className="h-4 w-4" />}
+                    size="sm"
+                  >
+                    Add Strategy
+                  </Button>
+                )}
+              </div>
+              {selectedBasket ? (
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  <span className="text-sm text-gray-600 dark:text-gray-300">
+                    {selectedBasket.strategies?.length || 0} strategies
+                  </span>
+                  <span className="text-gray-400">•</span>
+
+                  {/* Compact Broker Allocations */}
+                  <div className="flex items-center gap-2">
+                    <div className="inline-flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 rounded-md px-2 py-1">
+                      <div className="w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold">Z</div>
+                      <span className="text-xs font-medium text-blue-600 dark:text-blue-400">5x</span>
+                    </div>
+                    <div className="inline-flex items-center gap-1 bg-green-50 dark:bg-green-900/20 rounded-md px-2 py-1">
+                      <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">A</div>
+                      <span className="text-xs font-medium text-green-600 dark:text-green-400">3x</span>
+                    </div>
+                    <div className="inline-flex items-center gap-1 bg-purple-50 dark:bg-purple-900/20 rounded-md px-2 py-1">
+                      <div className="w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">F</div>
+                      <span className="text-xs font-medium text-purple-600 dark:text-purple-400">2x</span>
+                    </div>
+                  </div>
+
+                  <span className="text-gray-400">•</span>
+                  <button
+                    onClick={() => showSuccess('Broker allocation feature coming soon!')}
+                    className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <Plus className="h-3 w-3" />
+                    Add Broker
+                  </button>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                  Choose a basket from the left panel to view details
+                </p>
+              )}
             </div>
             
             {/* Tab Navigation */}
@@ -688,111 +730,36 @@ const TabbedBasketManager: React.FC = () => {
                   <>
                     {/* Strategies Section */}
                     <Card>
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="flex items-center gap-2">
-                            <Target className="h-5 w-5" />
-                            Strategies ({selectedBasket.strategyCount})
-                          </CardTitle>
-                          <Button
-                            onClick={() => setShowStrategyWizard(true)}
-                            leftIcon={<Plus className="h-4 w-4" />}
-                            size="sm"
-                          >
-                            Add Strategy
-                          </Button>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        {strategiesLoading ? (
-                          <div className="flex items-center justify-center py-8">
-                            <div className="text-center">
-                              <Activity className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
-                              <p className="text-sm text-gray-600">Loading strategies...</p>
+                      <CardContent className="p-6">
+                          {strategiesLoading ? (
+                            <div className="flex items-center justify-center py-8">
+                              <div className="text-center">
+                                <Activity className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
+                                <p className="text-sm text-gray-600">Loading strategies...</p>
+                              </div>
                             </div>
-                          </div>
-                        ) : selectedBasket.strategies && selectedBasket.strategies.length > 0 ? (
-                          <StrategyTable
-                            strategies={selectedBasket.strategies}
-                            onEdit={handleEditStrategy}
-                            onDelete={handleDeleteStrategy}
-                            isLoading={loadingEditStrategy}
-                          />
-                        ) : (
-                          <div className="text-center py-8">
-                            <div className="text-sm font-medium text-gray-500 mb-4">Details</div>
-                            <h3 className="text-lg font-medium mb-2">No Strategies Yet</h3>
-                            <p className="text-gray-600 mb-4">Add your first strategy to start building this basket</p>
-                            <Button onClick={() => setShowStrategyWizard(true)} leftIcon={<Plus className="h-4 w-4" />}>
-                              Add Strategy
-                            </Button>
-                          </div>
-                        )}
+                          ) : selectedBasket.strategies && selectedBasket.strategies.length > 0 ? (
+                            <div className="space-y-4">
+                              {selectedBasket.strategies.map(strategy => (
+                                <StrategyCard
+                                  key={strategy.strategyId}
+                                  strategy={strategy}
+                                  onEdit={handleEditStrategy}
+                                  onDelete={handleDeleteStrategy}
+                                  isLoading={loadingEditStrategy}
+                                />
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-8">
+                              <div className="text-sm font-medium text-gray-500 mb-4">Details</div>
+                              <h3 className="text-lg font-medium mb-2">No Strategies Yet</h3>
+                              <p className="text-gray-600 mb-4">Use the "Add Strategy" button above to start building this basket</p>
+                            </div>
+                          )}
                       </CardContent>
                     </Card>
 
-                    {/* Broker Allocation Section */}
-                    <Card>
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="flex items-center gap-2">
-                            <Settings className="h-5 w-5" />
-                            Broker Allocations
-                          </CardTitle>
-                          <Button
-                            onClick={() => showSuccess('Broker allocation feature coming soon!')}
-                            leftIcon={<Plus className="h-4 w-4" />}
-                            size="sm"
-                            variant="outline"
-                          >
-                            Add Allocation
-                          </Button>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold">Z</div>
-                                <div>
-                                  <div className="font-medium text-sm">Zerodha</div>
-                                  <div className="text-xs text-gray-600">Client: DEMO123</div>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="font-bold text-lg text-blue-600">5x</div>
-                                <div className="text-xs text-gray-600">Lot Multiplier</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-gray-600">Capital Allocation: ₹2,50,000</span>
-                              <Badge variant="success" size="sm">Active</Badge>
-                            </div>
-                          </div>
-
-                          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold">A</div>
-                                <div>
-                                  <div className="font-medium text-sm">Angel One</div>
-                                  <div className="text-xs text-gray-600">Client: ANGEL456</div>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <div className="font-bold text-lg text-green-600">3x</div>
-                                <div className="text-xs text-gray-600">Lot Multiplier</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
-                              <span className="text-gray-600">Capital Allocation: ₹1,50,000</span>
-                              <Badge variant="success" size="sm">Active</Badge>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
                   </>
                 ) : (
                   /* Performance Tab */

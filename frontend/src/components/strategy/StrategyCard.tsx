@@ -3,7 +3,7 @@ import { Strategy } from '../../types';
 import { Card, CardContent } from '../ui/Card';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
-import { Edit3, Zap } from 'lucide-react';
+import { Edit3, Trash2, Zap } from 'lucide-react';
 
 interface StrategyCardProps {
   strategy: Strategy;
@@ -188,16 +188,30 @@ const StrategyCard: React.FC<StrategyCardProps> = ({
               {getAdvancedFeatures()}
             </span>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onEdit(strategy)}
-            disabled={isLoading}
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-          >
-            <Edit3 className="h-4 w-4 mr-1" />
-            Edit
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onEdit(strategy)}
+              disabled={isLoading}
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+            >
+              <Edit3 className="h-4 w-4 mr-1" />
+              Edit
+            </Button>
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDelete(strategy)}
+                disabled={isLoading}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Delete
+              </Button>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
