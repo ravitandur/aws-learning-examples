@@ -187,6 +187,29 @@ export interface BasketBrokerAllocation {
   status: 'ACTIVE' | 'INACTIVE';
   created_at: string;
   updated_at: string;
+
+  // Enhanced fields for global allocations view
+  basket_name?: string;
+  basket_status?: string;
+  strategies_count?: number;
+  broker_name?: string;
+
+  // Additional fields from API
+  priority?: number;
+  max_lots_per_order?: number;
+  risk_limit_per_trade?: number;
+  max_daily_trades?: number;
+  stop_loss_percentage?: number;
+  total_executions?: number;
+  successful_executions?: number;
+  total_pnl?: number;
+  avg_execution_time_ms?: number;
+  last_execution_date?: string | null;
+  entity_type?: string;
+  entity_type_priority?: string;
+  version?: number;
+  sort_key?: string;
+  user_id?: string;
 }
 
 export interface CreateAllocation {

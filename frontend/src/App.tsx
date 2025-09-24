@@ -7,6 +7,7 @@ import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import BrokersPage from './pages/BrokersPage';
 import BasketsPage from './pages/BasketsPage';
+import AllAllocationsPage from './pages/AllAllocationsPage';
 import AuthPage from './pages/AuthPage';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import OAuthCallback from './components/oauth/OAuthCallback';
@@ -59,6 +60,7 @@ const AppContent: React.FC = () => {
           <Route index element={<Dashboard />} />
           <Route path="brokers" element={<BrokersPage />} />
           <Route path="baskets" element={<BasketsPage />} />
+          <Route path="allocations" element={<AllAllocationsPage />} />
           <Route path="strategies" element={<div className="space-y-6"><h1 className="text-2xl font-bold">Strategies</h1><p>Coming Soon</p></div>} />
           <Route path="portfolio" element={<div className="space-y-6"><h1 className="text-2xl font-bold">Portfolio</h1><p>Coming Soon</p></div>} />
           <Route path="analytics" element={<div className="space-y-6"><h1 className="text-2xl font-bold">Analytics</h1><p>Coming Soon</p></div>} />

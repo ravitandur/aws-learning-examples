@@ -88,6 +88,9 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
             return handle_delete_basket_allocation(event, user_id, basket_id, allocation_id, trading_configurations_table)
         elif http_method == 'GET' and basket_id and path_parameters.get('summary'):
             return handle_get_basket_allocation_summary(event, user_id, basket_id, trading_configurations_table)
+        elif http_method == 'GET' and not basket_id:
+            # Global allocations endpoint: GET /options/allocations
+            return handle_get_all_user_allocations(event, user_id, trading_configurations_table)
         else:
             return {
                 'statusCode': 405,
@@ -188,10 +191,10 @@ def handle_create_basket_allocation(event, user_id, basket_id, table):
             # Validate lot_multiplier
             try:
                 lot_multiplier = float(lot_multiplier)
-                if lot_multiplier <= 0:
-                    raise ValueError("lot_multiplier must be positive")
-                if lot_multiplier > 10.0:
-                    raise ValueError("lot_multiplier cannot exceed 10.0")
+                if lot_multiplier < 1:
+                    raise ValueError("lot_multiplier must be at least 1")
+                if lot_multiplier > 250:
+                    raise ValueError("lot_multiplier cannot exceed 250")
             except (ValueError, TypeError) as e:
                 return {
                     'statusCode': 400,
@@ -201,7 +204,7 @@ def handle_create_basket_allocation(event, user_id, basket_id, table):
                     },
                     'body': json.dumps({
                         'error': 'Invalid lot_multiplier',
-                        'message': 'lot_multiplier must be a positive number between 0.1 and 10.0'
+                        'message': 'lot_multiplier must be a positive number between 1 and 250'
                     })
                 }
             
@@ -532,6 +535,47 @@ def handle_update_basket_allocation(event, user_id, basket_id, allocation_id, ta
         
         for field in updatable_fields:
             if field in body:
+                # Validate lot_multiplier before updating
+                if field == 'lot_multiplier':
+                    try:
+                        lot_multiplier = float(body[field])
+                        if lot_multiplier < 1:
+                            return {
+                                'statusCode': 400,
+                                'headers': {
+                                    'Content-Type': 'application/json',
+                                    'Access-Control-Allow-Origin': '*'
+                                },
+                                'body': json.dumps({
+                                    'error': 'Invalid lot_multiplier',
+                                    'message': 'lot_multiplier must be at least 1'
+                                })
+                            }
+                        if lot_multiplier > 250:
+                            return {
+                                'statusCode': 400,
+                                'headers': {
+                                    'Content-Type': 'application/json',
+                                    'Access-Control-Allow-Origin': '*'
+                                },
+                                'body': json.dumps({
+                                    'error': 'Invalid lot_multiplier',
+                                    'message': 'lot_multiplier cannot exceed 250'
+                                })
+                            }
+                    except (ValueError, TypeError):
+                        return {
+                            'statusCode': 400,
+                            'headers': {
+                                'Content-Type': 'application/json',
+                                'Access-Control-Allow-Origin': '*'
+                            },
+                            'body': json.dumps({
+                                'error': 'Invalid lot_multiplier',
+                                'message': 'lot_multiplier must be a positive number between 1 and 250'
+                            })
+                        }
+
                 # Handle reserved keyword 'status'
                 if field == 'status':
                     update_expression_parts.append('#status = :status')
@@ -748,6 +792,140 @@ def handle_get_basket_allocation_summary(event, user_id, basket_id, table):
             },
             'body': json.dumps({
                 'error': 'Failed to get basket allocation summary',
+                'message': str(e)
+            })
+        }
+
+
+def handle_get_all_user_allocations(event, user_id, table):
+    """
+    Get all basket-to-broker allocations for the authenticated user across all their baskets
+    This endpoint serves the AllAllocationsPage with a global view of user's allocations
+    """
+
+    try:
+        # Query all basket allocations for this user
+        response = table.query(
+            KeyConditionExpression='user_id = :user_id AND begins_with(sort_key, :allocation_prefix)',
+            ExpressionAttributeValues={
+                ':user_id': user_id,
+                ':allocation_prefix': 'BASKET_ALLOCATION#'
+            },
+            ScanIndexForward=False  # Most recent first
+        )
+
+        allocations = response['Items']
+
+        # Get basket names for each allocation by querying basket details
+        baskets_cache = {}
+        enhanced_allocations = []
+
+        for allocation in allocations:
+            basket_id = allocation.get('basket_id')
+
+            # Cache basket details to avoid repeated queries
+            if basket_id and basket_id not in baskets_cache:
+                basket_response = table.get_item(
+                    Key={
+                        'user_id': user_id,
+                        'sort_key': f'BASKET#{basket_id}'
+                    }
+                )
+                if 'Item' in basket_response:
+                    basket = basket_response['Item']
+                    baskets_cache[basket_id] = {
+                        'basket_name': basket.get('basket_name', 'Unknown Basket'),
+                        'status': basket.get('status', 'UNKNOWN'),
+                        'strategies_count': len(basket.get('strategies', []))
+                    }
+                else:
+                    baskets_cache[basket_id] = {
+                        'basket_name': 'Unknown Basket',
+                        'status': 'NOT_FOUND',
+                        'strategies_count': 0
+                    }
+
+            # Enhance allocation with basket information
+            enhanced_allocation = dict(allocation)
+            if basket_id in baskets_cache:
+                enhanced_allocation.update({
+                    'basket_name': baskets_cache[basket_id]['basket_name'],
+                    'basket_status': baskets_cache[basket_id]['status'],
+                    'strategies_count': baskets_cache[basket_id]['strategies_count']
+                })
+
+            enhanced_allocations.append(enhanced_allocation)
+
+        # Calculate summary statistics
+        total_allocations = len(allocations)
+        active_allocations = len([a for a in allocations if a.get('status') == 'ACTIVE'])
+        total_baskets = len(baskets_cache)
+        unique_brokers = len(set(a.get('broker_id', a.get('broker_name', 'unknown')) for a in allocations))
+
+        # Broker breakdown across all baskets
+        broker_stats = {}
+        for allocation in allocations:
+            broker_id = allocation.get('broker_id', allocation.get('broker_name', 'unknown'))
+            if broker_id not in broker_stats:
+                broker_stats[broker_id] = {
+                    'broker_id': broker_id,
+                    'total_allocations': 0,
+                    'active_allocations': 0,
+                    'total_lot_multiplier': 0,
+                    'baskets': set()
+                }
+
+            broker_stats[broker_id]['total_allocations'] += 1
+            broker_stats[broker_id]['baskets'].add(allocation.get('basket_id'))
+
+            if allocation.get('status') == 'ACTIVE':
+                broker_stats[broker_id]['active_allocations'] += 1
+                broker_stats[broker_id]['total_lot_multiplier'] += float(allocation.get('lot_multiplier', 0))
+
+        # Convert sets to counts for JSON serialization
+        broker_breakdown = []
+        for broker_id, stats in broker_stats.items():
+            broker_breakdown.append({
+                'broker_id': stats['broker_id'],
+                'total_allocations': stats['total_allocations'],
+                'active_allocations': stats['active_allocations'],
+                'total_lot_multiplier': stats['total_lot_multiplier'],
+                'baskets_count': len(stats['baskets'])
+            })
+
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({
+                'success': True,
+                'data': {
+                    'allocations': enhanced_allocations,
+                    'summary': {
+                        'total_allocations': total_allocations,
+                        'active_allocations': active_allocations,
+                        'total_baskets': total_baskets,
+                        'unique_brokers': unique_brokers,
+                        'broker_breakdown': broker_breakdown
+                    }
+                },
+                'count': total_allocations,
+                'message': f'Retrieved {total_allocations} allocations across {total_baskets} baskets'
+            }, cls=DecimalEncoder)
+        }
+
+    except Exception as e:
+        logger.error("Failed to retrieve all user allocations", extra={"error": str(e), "user_id": user_id})
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({
+                'error': 'Failed to retrieve allocations',
                 'message': str(e)
             })
         }

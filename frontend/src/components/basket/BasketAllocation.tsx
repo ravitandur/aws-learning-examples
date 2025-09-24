@@ -4,7 +4,7 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Badge from '../ui/Badge';
 import { useToast } from '../common/ToastContainer';
-import { ArrowLeft, Plus, Trash2, RefreshCw, AlertCircle, Power, Edit3, Save, X } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, RefreshCw, AlertCircle, Power, Edit3, Save, X, ExternalLink } from 'lucide-react';
 import { BrokerAccount, Basket, BasketBrokerAllocation, CreateAllocation } from '../../types';
 import brokerService from '../../services/brokerService';
 import allocationService from '../../services/allocationService';
@@ -315,9 +315,20 @@ const BasketAllocation: React.FC<BasketAllocationProps> = ({
             </p>
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-sm text-gray-600">Total Lot Multiplier</div>
-          <div className="text-2xl font-bold text-blue-600">{calculateTotalMultiplier()}</div>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <div className="text-sm text-gray-600">Total Lot Multiplier</div>
+            <div className="text-2xl font-bold text-blue-600">{calculateTotalMultiplier()}</div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open('/allocations', '_blank')}
+            leftIcon={<ExternalLink className="h-4 w-4" />}
+            className="text-blue-600 hover:text-blue-700 border-blue-200"
+          >
+            View All Allocations
+          </Button>
         </div>
       </div>
 

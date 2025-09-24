@@ -423,6 +423,14 @@ class OptionsTradeStack(Stack):
         # Create options resource group
         options_resource = self.api.root.add_resource("options")
 
+        # Global allocations endpoint - Get all allocations for current user across all baskets
+        allocations_resource = options_resource.add_resource("allocations")
+        allocations_resource.add_method("GET",
+                                       apigateway.LambdaIntegration(self.lambda_functions['basket-broker-allocator']),
+                                       authorization_type=apigateway.AuthorizationType.COGNITO,
+                                       authorizer=authorizer
+                                       )
+
         # Basket endpoints (secured with Cognito authorizer)
         baskets_resource = options_resource.add_resource("baskets")
         baskets_resource.add_method("GET",

@@ -32,7 +32,16 @@ class AllocationService {
    */
   async getAllAllocations(): Promise<BasketBrokerAllocation[]> {
     try {
-      const response = await optionsApiClient.get<ApiResponse<BasketBrokerAllocation[]>>(
+      const response = await optionsApiClient.get<ApiResponse<{
+        allocations: BasketBrokerAllocation[];
+        summary: {
+          total_allocations: number;
+          active_allocations: number;
+          total_baskets: number;
+          unique_brokers: number;
+          broker_breakdown: any[];
+        };
+      }>>(
         '/options/allocations'
       );
 
@@ -40,7 +49,8 @@ class AllocationService {
         throw new Error(response.message || 'Failed to fetch allocations');
       }
 
-      return response.data;
+      // Backend returns allocations nested in data.allocations
+      return response.data.allocations || [];
     } catch (error: any) {
       throw new Error(error.response?.data?.message || 'Failed to fetch allocations');
     }
@@ -217,12 +227,12 @@ class AllocationService {
         errors.push(`Allocation ${index + 1}: Client ID is required`);
       }
 
-      if (!allocation.lot_multiplier || allocation.lot_multiplier <= 0) {
-        errors.push(`Allocation ${index + 1}: Lot multiplier must be greater than 0`);
+      if (!allocation.lot_multiplier || allocation.lot_multiplier < 1) {
+        errors.push(`Allocation ${index + 1}: Lot multiplier must be at least 1`);
       }
 
-      if (allocation.lot_multiplier && allocation.lot_multiplier > 1000) {
-        errors.push(`Allocation ${index + 1}: Lot multiplier cannot exceed 1000`);
+      if (allocation.lot_multiplier && allocation.lot_multiplier > 250) {
+        errors.push(`Allocation ${index + 1}: Lot multiplier cannot exceed 250`);
       }
     });
 
