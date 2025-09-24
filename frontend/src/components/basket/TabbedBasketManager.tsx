@@ -646,15 +646,6 @@ const TabbedBasketManager: React.FC = () => {
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                   {selectedBasket ? (selectedBasket.basket_name || 'Unnamed Basket') : 'Select a Basket'}
                 </h3>
-                {selectedBasket && (
-                  <Button
-                    onClick={() => setShowStrategyWizard(true)}
-                    leftIcon={<Plus className="h-4 w-4" />}
-                    size="sm"
-                  >
-                    Add Strategy
-                  </Button>
-                )}
               </div>
               {selectedBasket ? (
                 <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -722,7 +713,19 @@ const TabbedBasketManager: React.FC = () => {
                   <>
                     {/* Strategies Section */}
                     <Card>
-                      <CardContent className="p-6">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <CardTitle>Strategies</CardTitle>
+                          <Button
+                            onClick={() => setShowStrategyWizard(true)}
+                            leftIcon={<Plus className="h-4 w-4" />}
+                            size="sm"
+                          >
+                            Add Strategy
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
                           {strategiesLoading ? (
                             <div className="flex items-center justify-center py-8">
                               <div className="text-center">
