@@ -195,10 +195,19 @@ const TabbedBasketManager: React.FC = () => {
         basketName: selectedBasket.basket_name,
         currentStrategyCount: selectedBasket.strategyCount,
         hasStrategiesArray: Array.isArray(selectedBasket.strategies),
+        hasStrategiesData: selectedBasket.strategies && selectedBasket.strategies.length > 0,
         useEffectTrigger: 'selectedBasket?.basket_id',
         dependencyValue: selectedBasket.basket_id
       });
-      loadBasketStrategies(selectedBasket.basket_id);
+
+      // Only load strategies if we don't already have them or if they're empty
+      if (!selectedBasket.strategies || selectedBasket.strategies.length === 0) {
+        console.log('🔄 [DEBUG] Loading strategies as basket has no strategy data');
+        loadBasketStrategies(selectedBasket.basket_id);
+      } else {
+        console.log('✅ [DEBUG] Strategies already loaded, skipping API call');
+        setStrategiesLoading(false);
+      }
     } else {
       console.log('📝 [DEBUG] UseEffect triggered - no basket selected:', {
         selectedBasket: selectedBasket,
@@ -230,16 +239,37 @@ const TabbedBasketManager: React.FC = () => {
         }))
       });
 
-      // Enhance baskets with additional data and ensure strategies is properly handled
-      const enhancedBaskets: BasketWithStrategies[] = basketsData.map(basket => ({
-        ...basket,
-        strategies: basket.strategies || [], // Ensure strategies is always an array
-        strategyCount: basket.strategies?.length || 0,
-        totalPnL: Math.random() * 2000 - 500, // Mock data
-        lastExecution: Math.random() > 0.5 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString() : undefined
-      }));
+      // Enhance baskets with additional data and load strategy counts for all baskets
+      const enhancedBaskets: BasketWithStrategies[] = [];
 
-      console.log('✨ [DEBUG] Enhanced baskets created:', {
+      for (const basket of basketsData) {
+        try {
+          // Fetch strategy count for each basket
+          const strategies = await strategyService.getBasketStrategies(basket.basket_id);
+          const enhancedBasket: BasketWithStrategies = {
+            ...basket,
+            strategies: strategies || [],
+            strategyCount: strategies?.length || 0,
+            totalPnL: Math.random() * 2000 - 500, // Mock data
+            lastExecution: Math.random() > 0.5 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString() : undefined
+          };
+          enhancedBaskets.push(enhancedBasket);
+          console.log(`✅ [DEBUG] Loaded strategies for basket ${basket.basket_name}: ${strategies?.length || 0} strategies`);
+        } catch (error) {
+          console.warn(`⚠️ [DEBUG] Failed to load strategies for basket ${basket.basket_name}:`, error);
+          // Still add the basket but with 0 strategy count
+          const enhancedBasket: BasketWithStrategies = {
+            ...basket,
+            strategies: [],
+            strategyCount: 0,
+            totalPnL: Math.random() * 2000 - 500, // Mock data
+            lastExecution: Math.random() > 0.5 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString() : undefined
+          };
+          enhancedBaskets.push(enhancedBasket);
+        }
+      }
+
+      console.log('✨ [DEBUG] Enhanced baskets created with strategy counts:', {
         count: enhancedBaskets.length,
         baskets: enhancedBaskets.map(b => ({
           id: b.basket_id,
@@ -335,17 +365,20 @@ const TabbedBasketManager: React.FC = () => {
 
     try {
       await basketService.deleteBasket(deleteConfirmDialog.basket.basket_id);
-      
+
       // Remove from local state
       setBaskets(prev => prev.filter(b => b.basket_id !== deleteConfirmDialog.basket!.basket_id));
-      
+
       // Clear selection if the deleted basket was selected
       if (selectedBasket?.basket_id === deleteConfirmDialog.basket.basket_id) {
         setSelectedBasket(null);
       }
-      
+
       showSuccess(`Basket "${deleteConfirmDialog.basket.basket_name}" deleted successfully!`);
-      
+
+      // Close dialog
+      setDeleteConfirmDialog({ isOpen: false, basket: null });
+
     } catch (error: any) {
       console.error('Failed to delete basket:', error);
       showError(error.message || 'Failed to delete basket');
@@ -694,7 +727,7 @@ const TabbedBasketManager: React.FC = () => {
                       <div className="flex items-center gap-2 ml-2 flex-shrink-0">
                         <div className={`w-2 h-2 rounded-full ${basket.status === 'ACTIVE' ? 'bg-green-500' : basket.status === 'PAUSED' ? 'bg-yellow-500' : 'bg-gray-400'}`} />
                         <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {basket.strategies?.length || 0}
+                          {basket.strategyCount || 0}
                         </span>
 
                         {/* Basket Actions - Mobile Friendly */}

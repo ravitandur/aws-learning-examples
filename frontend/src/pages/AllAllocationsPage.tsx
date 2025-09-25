@@ -6,10 +6,13 @@ import Badge from '../components/ui/Badge';
 import { useToast } from '../components/common/ToastContainer';
 import StandardLayout from '../components/common/StandardLayout';
 import PageHeader from '../components/common/PageHeader';
+import AllocationCard from '../components/allocation/AllocationCard';
+import AllocationTable from '../components/allocation/AllocationTable';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 import {
   Search, Network, Filter, Download, Edit3, Trash2,
   Power, RefreshCw, TrendingUp, Activity, Users, Target,
-  ChevronRight, ExternalLink, Eye, Save, X, Home
+  ChevronRight, ExternalLink, Eye, Save, X, Home, Grid3x3, List
 } from 'lucide-react';
 import { BasketBrokerAllocation, Basket } from '../types';
 import allocationService from '../services/allocationService';
@@ -45,9 +48,24 @@ const AllAllocationsPage: React.FC = () => {
   // Selection state for bulk operations
   const [selectedAllocations, setSelectedAllocations] = useState<Set<string>>(new Set());
 
+  // View toggle state - mobile defaults to cards, desktop to table
+  const [allocationView, setAllocationView] = useState<'cards' | 'table'>(() => {
+    // Check if mobile (screen width < 1024px) - default to cards
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 1024 ? 'cards' : 'table';
+    }
+    return 'cards';
+  });
+
   // Editing state
   const [editingAllocation, setEditingAllocation] = useState<string | null>(null);
   const [editLotMultiplier, setEditLotMultiplier] = useState<number>(1);
+
+  // Delete confirmation dialog state
+  const [deleteConfirmDialog, setDeleteConfirmDialog] = useState<{
+    isOpen: boolean;
+    allocation: EnhancedAllocation | null;
+  }>({ isOpen: false, allocation: null });
 
   // Load all data on component mount
   useEffect(() => {
@@ -194,22 +212,42 @@ const AllAllocationsPage: React.FC = () => {
   };
 
   // Handle individual allocation deletion
-  const handleDeleteAllocation = async (allocation: EnhancedAllocation) => {
-    if (!window.confirm(`Are you sure you want to delete the allocation for ${allocation.broker_id} - ${allocation.client_id} in basket "${allocation.basket_name}"?`)) {
-      return;
-    }
+  const handleDeleteAllocation = (allocation: EnhancedAllocation) => {
+    // Show enhanced confirmation dialog
+    setDeleteConfirmDialog({
+      isOpen: true,
+      allocation: allocation
+    });
+  };
+
+  // Confirm allocation deletion
+  const confirmDeleteAllocation = async () => {
+    if (!deleteConfirmDialog.allocation) return;
 
     try {
-      setUpdating(allocation.allocation_id);
+      setUpdating(deleteConfirmDialog.allocation.allocation_id);
 
-      await allocationService.deleteAllocation(allocation.basket_id, allocation.allocation_id);
+      await allocationService.deleteAllocation(
+        deleteConfirmDialog.allocation.basket_id,
+        deleteConfirmDialog.allocation.allocation_id
+      );
 
       // Remove from local state
       setAllocations(prev =>
-        prev.filter(a => a.allocation_id !== allocation.allocation_id)
+        prev.filter(a => a.allocation_id !== deleteConfirmDialog.allocation!.allocation_id)
       );
 
-      showSuccess('Allocation deleted successfully');
+      // Remove from selected allocations if it was selected
+      setSelectedAllocations(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(deleteConfirmDialog.allocation!.allocation_id);
+        return newSet;
+      });
+
+      showSuccess(`Allocation for ${deleteConfirmDialog.allocation.broker_id} - ${deleteConfirmDialog.allocation.client_id} deleted successfully!`);
+
+      // Close dialog
+      setDeleteConfirmDialog({ isOpen: false, allocation: null });
 
     } catch (error: any) {
       showError(error.message || 'Failed to delete allocation');
@@ -458,23 +496,51 @@ const AllAllocationsPage: React.FC = () => {
               <Filter className="h-5 w-5" />
               Allocations ({filteredAllocations.length})
             </CardTitle>
-            {selectedAllocations.size > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {selectedAllocations.size} selected
-                </span>
-                <Button
-                  onClick={() => setSelectedAllocations(new Set())}
-                  variant="outline"
-                  size="sm"
+            <div className="flex items-center gap-4">
+              {selectedAllocations.size > 0 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {selectedAllocations.size} selected
+                  </span>
+                  <Button
+                    onClick={() => setSelectedAllocations(new Set())}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
+              )}
+
+              {/* View Toggle Buttons */}
+              <div className="flex rounded-lg overflow-hidden border border-gray-300 dark:border-gray-600">
+                <button
+                  onClick={() => setAllocationView('cards')}
+                  className={`px-3 py-2 text-sm font-medium transition-colors ${
+                    allocationView === 'cards'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                  title="Card view"
                 >
-                  Clear Selection
-                </Button>
+                  <Grid3x3 className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setAllocationView('table')}
+                  className={`px-3 py-2 text-sm font-medium transition-colors border-l border-gray-300 dark:border-gray-600 ${
+                    allocationView === 'table'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                  }`}
+                  title="Table view"
+                >
+                  <List className="h-4 w-4" />
+                </button>
               </div>
-            )}
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0">
+        <CardContent className={allocationView === 'cards' ? 'p-6' : 'p-0'}>
           {filteredAllocations.length === 0 ? (
             <div className="text-center py-8">
               <Network className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -488,173 +554,60 @@ const AllAllocationsPage: React.FC = () => {
                 }
               </p>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th className="px-6 py-3 text-left">
-                      <input
-                        type="checkbox"
-                        checked={selectedAllocations.size === filteredAllocations.length && filteredAllocations.length > 0}
-                        onChange={handleSelectAll}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Basket
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Broker
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Client ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Lot Multiplier
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Created
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredAllocations.map((allocation) => (
-                    <tr
-                      key={allocation.allocation_id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <td className="px-6 py-4">
-                        <input
-                          type="checkbox"
-                          checked={selectedAllocations.has(allocation.allocation_id)}
-                          onChange={() => handleSelectAllocation(allocation.allocation_id)}
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        />
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">
-                            {allocation.basket_name}
-                          </span>
-                          <button
-                            onClick={() => window.open(`/baskets`, '_blank')}
-                            className="text-gray-400 hover:text-blue-600 transition-colors"
-                            title="View basket details"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </button>
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {allocation.basket_id}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge variant="info">{allocation.broker_id}</Badge>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {allocation.client_id}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {editingAllocation === allocation.allocation_id ? (
-                          <div className="flex items-center gap-2">
-                            <Input
-                              type="number"
-                              min="1"
-                              max="1000"
-                              value={editLotMultiplier}
-                              onChange={(e) => setEditLotMultiplier(parseInt(e.target.value) || 1)}
-                              className="w-20 text-sm"
-                            />
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => handleSaveEdit(allocation)}
-                                disabled={updating === allocation.allocation_id}
-                                className="text-green-600 hover:text-green-700 disabled:opacity-50"
-                                title="Save"
-                              >
-                                {updating === allocation.allocation_id ? (
-                                  <RefreshCw className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Save className="h-4 w-4" />
-                                )}
-                              </button>
-                              <button
-                                onClick={handleCancelEdit}
-                                className="text-red-600 hover:text-red-700"
-                                title="Cancel"
-                              >
-                                <X className="h-4 w-4" />
-                              </button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-gray-900 dark:text-white">
-                              {allocation.lot_multiplier}
-                            </span>
-                            <button
-                              onClick={() => handleStartEdit(allocation)}
-                              className="text-gray-400 hover:text-blue-600 transition-colors"
-                              title="Edit lot multiplier"
-                            >
-                              <Edit3 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge
-                          variant={allocation.status === 'ACTIVE' ? 'success' : 'default'}
-                        >
-                          {allocation.status}
-                        </Badge>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {new Date(allocation.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => handleStatusToggle(allocation)}
-                            disabled={updating === allocation.allocation_id}
-                            className={`p-1 rounded transition-colors ${
-                              allocation.status === 'ACTIVE'
-                                ? 'text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20'
-                                : 'text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20'
-                            } disabled:opacity-50`}
-                            title={allocation.status === 'ACTIVE' ? 'Disable' : 'Enable'}
-                          >
-                            {updating === allocation.allocation_id ? (
-                              <RefreshCw className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Power className="h-4 w-4" />
-                            )}
-                          </button>
-                          <button
-                            onClick={() => handleDeleteAllocation(allocation)}
-                            disabled={updating === allocation.allocation_id}
-                            className="p-1 rounded text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
-                            title="Delete allocation"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          ) : allocationView === 'cards' ? (
+            /* Card View */
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredAllocations.map((allocation) => (
+                <AllocationCard
+                  key={allocation.allocation_id}
+                  allocation={allocation}
+                  isSelected={selectedAllocations.has(allocation.allocation_id)}
+                  onSelect={handleSelectAllocation}
+                  onStatusToggle={handleStatusToggle}
+                  onDelete={handleDeleteAllocation}
+                  onStartEdit={handleStartEdit}
+                  onSaveEdit={handleSaveEdit}
+                  onCancelEdit={handleCancelEdit}
+                  isEditing={editingAllocation === allocation.allocation_id}
+                  isUpdating={updating === allocation.allocation_id}
+                  editLotMultiplier={editLotMultiplier}
+                  onEditLotMultiplierChange={setEditLotMultiplier}
+                />
+              ))}
             </div>
+          ) : (
+            /* Table View */
+            <AllocationTable
+              allocations={filteredAllocations}
+              selectedAllocations={selectedAllocations}
+              onSelectAll={handleSelectAll}
+              onSelectAllocation={handleSelectAllocation}
+              onStatusToggle={handleStatusToggle}
+              onDelete={handleDeleteAllocation}
+              onStartEdit={handleStartEdit}
+              onSaveEdit={handleSaveEdit}
+              onCancelEdit={handleCancelEdit}
+              editingAllocation={editingAllocation}
+              updating={updating}
+              editLotMultiplier={editLotMultiplier}
+              onEditLotMultiplierChange={setEditLotMultiplier}
+            />
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Allocation Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteConfirmDialog.isOpen}
+        onClose={() => setDeleteConfirmDialog({ isOpen: false, allocation: null })}
+        onConfirm={confirmDeleteAllocation}
+        title="Delete Allocation"
+        message={`Are you sure you want to delete the allocation for ${deleteConfirmDialog.allocation?.broker_id || 'this broker'} - ${deleteConfirmDialog.allocation?.client_id || 'client'} in basket "${deleteConfirmDialog.allocation?.basket_name || 'this basket'}"? This action cannot be undone.`}
+        confirmText="Delete Allocation"
+        cancelText="Keep Allocation"
+        variant="danger"
+        icon={<Trash2 className="h-6 w-6 text-red-600" />}
+      />
     </StandardLayout>
   );
 };

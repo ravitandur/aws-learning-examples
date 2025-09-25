@@ -1,6 +1,7 @@
 import optionsApiClient from './optionsApiClient';
 import { Basket, CreateBasket, UpdateBasket, Strategy, ApiResponse } from '../types';
 import { transformBasket } from '../utils/transformStrategyFields';
+import allocationService from './allocationService';
 
 class BasketService {
   /**
@@ -95,10 +96,28 @@ class BasketService {
   }
 
   /**
-   * Delete a basket
+   * Delete a basket (with validation to prevent deletion if allocations exist)
    */
   async deleteBasket(basketId: string): Promise<void> {
     try {
+      // Validation: Check for existing allocations before deletion
+      try {
+        const allocations = await allocationService.getBasketAllocations(basketId);
+        if (allocations.length > 0) {
+          throw new Error(
+            `Cannot delete basket. Please delete all ${allocations.length} broker allocation${allocations.length === 1 ? '' : 's'} first.`
+          );
+        }
+      } catch (error: any) {
+        // If it's our validation error, re-throw it
+        if (error.message.includes('Cannot delete basket')) {
+          throw error;
+        }
+        // If it's a 404 or other error (no allocations found), continue with deletion
+        console.log('No allocations found for basket or allocation check failed:', basketId);
+      }
+
+      // Delete the basket only if validation passes
       const response = await optionsApiClient.delete<ApiResponse>(
         `/options/baskets/${basketId}`
       );
@@ -107,7 +126,7 @@ class BasketService {
         throw new Error(response.message || 'Failed to delete basket');
       }
     } catch (error: any) {
-      throw new Error(error.response?.data?.message || 'Failed to delete basket');
+      throw new Error(error.response?.data?.message || error.message || 'Failed to delete basket');
     }
   }
 
@@ -266,6 +285,7 @@ class BasketService {
       throw new Error(error.response?.data?.message || 'Failed to update basket status');
     }
   }
+
 }
 
 const basketService = new BasketService();
