@@ -8,7 +8,7 @@ import ConfirmDialog from '../common/ConfirmDialog';
 import {
   Plus, Search, TrendingUp,
   Activity, BarChart3,
-  Trash2, Target, Zap, Power, RefreshCw, Grid3x3, List, Edit3, Save, X
+  Trash2, Target, Zap, Power, RefreshCw, Grid3x3, List
 } from 'lucide-react';
 import { Basket, Strategy, CreateBasket } from '../../types';
 import basketService from '../../services/basketService';
@@ -21,7 +21,6 @@ import BasketAllocation from './BasketAllocation';
 
 interface BasketWithStrategies extends Omit<Basket, 'strategies'> {
   strategies?: Strategy[]; // Make strategies optional initially
-  strategyCount: number;
   totalPnL: number;
   lastExecution?: string;
 }
@@ -130,8 +129,7 @@ const TabbedBasketManager: React.FC = () => {
 
           const updatedBasket = {
             ...prev,
-            strategies: strategies,
-            strategyCount: strategies.length
+            strategies: strategies
           };
 
           console.log('📊 [DEBUG] Successfully updated basket with strategies:', {
@@ -141,7 +139,7 @@ const TabbedBasketManager: React.FC = () => {
             updatedBasket: {
               id: updatedBasket.basket_id,
               name: updatedBasket.basket_name,
-              strategiesCount: updatedBasket.strategyCount
+              strategiesCount: strategies.length
             }
           });
 
@@ -152,7 +150,7 @@ const TabbedBasketManager: React.FC = () => {
         setBaskets(prev =>
           prev.map(basket =>
             basket.basket_id === basketId
-              ? { ...basket, strategies: strategies, strategyCount: strategies.length }
+              ? { ...basket, strategies: strategies }
               : basket
           )
         );
@@ -193,7 +191,7 @@ const TabbedBasketManager: React.FC = () => {
       console.log('🚀 [DEBUG] UseEffect triggered - basket selected:', {
         basketId: selectedBasket.basket_id,
         basketName: selectedBasket.basket_name,
-        currentStrategyCount: selectedBasket.strategyCount,
+        currentStrategiesLength: selectedBasket.strategies?.length || 0,
         hasStrategiesArray: Array.isArray(selectedBasket.strategies),
         hasStrategiesData: selectedBasket.strategies && selectedBasket.strategies.length > 0,
         useEffectTrigger: 'selectedBasket?.basket_id',
@@ -239,42 +237,18 @@ const TabbedBasketManager: React.FC = () => {
         }))
       });
 
-      // Enhance baskets with additional data and load strategy counts for all baskets
-      const enhancedBaskets: BasketWithStrategies[] = [];
+      // Enhance baskets with additional data (no strategy count API calls)
+      const enhancedBaskets: BasketWithStrategies[] = basketsData.map(basket => ({
+        ...basket,
+        totalPnL: Math.random() * 2000 - 500, // Mock data
+        lastExecution: Math.random() > 0.5 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString() : undefined
+      }));
 
-      for (const basket of basketsData) {
-        try {
-          // Fetch strategy count for each basket
-          const strategies = await strategyService.getBasketStrategies(basket.basket_id);
-          const enhancedBasket: BasketWithStrategies = {
-            ...basket,
-            strategies: strategies || [],
-            strategyCount: strategies?.length || 0,
-            totalPnL: Math.random() * 2000 - 500, // Mock data
-            lastExecution: Math.random() > 0.5 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString() : undefined
-          };
-          enhancedBaskets.push(enhancedBasket);
-          console.log(`✅ [DEBUG] Loaded strategies for basket ${basket.basket_name}: ${strategies?.length || 0} strategies`);
-        } catch (error) {
-          console.warn(`⚠️ [DEBUG] Failed to load strategies for basket ${basket.basket_name}:`, error);
-          // Still add the basket but with 0 strategy count
-          const enhancedBasket: BasketWithStrategies = {
-            ...basket,
-            strategies: [],
-            strategyCount: 0,
-            totalPnL: Math.random() * 2000 - 500, // Mock data
-            lastExecution: Math.random() > 0.5 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString() : undefined
-          };
-          enhancedBaskets.push(enhancedBasket);
-        }
-      }
-
-      console.log('✨ [DEBUG] Enhanced baskets created with strategy counts:', {
+      console.log('✨ [DEBUG] Enhanced baskets created:', {
         count: enhancedBaskets.length,
         baskets: enhancedBaskets.map(b => ({
           id: b.basket_id,
           name: b.basket_name,
-          strategiesCount: b.strategyCount,
           hasStrategiesArray: Array.isArray(b.strategies)
         }))
       });
@@ -335,7 +309,6 @@ const TabbedBasketManager: React.FC = () => {
       
       const newBasket: BasketWithStrategies = {
         ...createdBasket,
-        strategyCount: 0,
         totalPnL: 0,
         status: 'INACTIVE'
       };
@@ -419,8 +392,7 @@ const TabbedBasketManager: React.FC = () => {
 
       const updatedBasket = {
         ...selectedBasket,
-        strategies: [...(selectedBasket.strategies || []), newStrategy],
-        strategyCount: (selectedBasket.strategyCount || 0) + 1
+        strategies: [...(selectedBasket.strategies || []), newStrategy]
       };
 
       setBaskets(prev =>
@@ -509,15 +481,14 @@ const TabbedBasketManager: React.FC = () => {
           // Update selected basket with fresh strategies
           setSelectedBasket(prev => prev ? {
             ...prev,
-            strategies: strategies,
-            strategyCount: strategies.length
+            strategies: strategies
           } : null);
 
           // Update baskets list with fresh strategies
           setBaskets(prev =>
             prev.map(basket =>
               basket.basket_id === selectedBasket.basket_id
-                ? { ...basket, strategies: strategies, strategyCount: strategies.length }
+                ? { ...basket, strategies: strategies }
                 : basket
             )
           );
@@ -601,14 +572,13 @@ const TabbedBasketManager: React.FC = () => {
         // Update selected basket with refreshed strategies
         setSelectedBasket(prev => prev ? {
           ...prev,
-          strategies: strategies,
-          strategyCount: strategies.length
+          strategies: strategies
         } : null);
 
         // Update baskets list
         setBaskets(prev => prev.map(basket =>
           basket.basket_id === selectedBasket.basket_id
-            ? { ...basket, strategies: strategies, strategyCount: strategies.length }
+            ? { ...basket, strategies: strategies }
             : basket
         ));
       }
@@ -628,19 +598,6 @@ const TabbedBasketManager: React.FC = () => {
     (basket.description && basket.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'ACTIVE':
-        return 'text-green-600 bg-green-100 dark:bg-green-900/20';
-      case 'PAUSED':
-        return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/20';
-      case 'INACTIVE':
-      case 'COMPLETED':
-        return 'text-gray-600 bg-gray-100 dark:bg-gray-700';
-      default:
-        return 'text-gray-600 bg-gray-100 dark:bg-gray-700';
-    }
-  };
 
   const getPnLColor = (pnl: number) => {
     if (pnl > 0) return 'text-green-600';
@@ -726,9 +683,6 @@ const TabbedBasketManager: React.FC = () => {
                       </span>
                       <div className="flex items-center gap-2 ml-2 flex-shrink-0">
                         <div className={`w-2 h-2 rounded-full ${basket.status === 'ACTIVE' ? 'bg-green-500' : basket.status === 'PAUSED' ? 'bg-yellow-500' : 'bg-gray-400'}`} />
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {basket.strategyCount || 0}
-                        </span>
 
                         {/* Basket Actions - Mobile Friendly */}
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 lg:transition-opacity sm:opacity-100">
