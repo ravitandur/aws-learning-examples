@@ -191,12 +191,17 @@ def handle_create_strategy(event, user_id, basket_id, table):
         # Extract missing fields (Phase 2: Add missing field storage)
         move_sl_to_cost = body.get("move_sl_to_cost", False)
         range_breakout = body.get("range_breakout", False)
+        range_breakout_time = body.get("range_breakout_time")  # Format: "HH:MM" e.g. "09:45"
         trading_type = body.get("trading_type", "").upper()
         intraday_exit_mode = body.get("intraday_exit_mode", "SAME_DAY").upper()
 
         # Extract strategy-level risk management fields (Phase 3: Target Profit & Stop Loss)
         target_profit = body.get("target_profit")  # {enabled: bool, type: str, value: number}
         mtm_stop_loss = body.get("mtm_stop_loss")  # {enabled: bool, type: str, value: number}
+
+        # Extract POSITIONAL trading fields (Phase 4: Complete field support)
+        entry_trading_days_before_expiry = body.get("entry_trading_days_before_expiry")
+        exit_trading_days_before_expiry = body.get("exit_trading_days_before_expiry")
 
         # Validate required fields
         if not strategy_name or not underlying or not product or not legs:
@@ -289,6 +294,7 @@ def handle_create_strategy(event, user_id, basket_id, table):
             # Phase 2: Add missing fields from payload
             "move_sl_to_cost": move_sl_to_cost,
             "range_breakout": range_breakout,
+            "range_breakout_time": range_breakout_time,
             "trading_type": trading_type,
             "intraday_exit_mode": intraday_exit_mode,
             # Timing Configuration
@@ -318,6 +324,9 @@ def handle_create_strategy(event, user_id, basket_id, table):
             # Strategy-level risk management (Phase 3: TP/SL Storage)
             "target_profit": target_profit,
             "mtm_stop_loss": mtm_stop_loss,
+            # POSITIONAL trading fields (Phase 4: Complete field support)
+            "entry_trading_days_before_expiry": entry_trading_days_before_expiry,
+            "exit_trading_days_before_expiry": exit_trading_days_before_expiry,
         }
 
         # Store main strategy in single table
@@ -631,6 +640,7 @@ def handle_update_strategy(event, user_id, strategy_id, table):
             # Phase 4: Add missing fields from payload
             "move_sl_to_cost",
             "range_breakout",
+            "range_breakout_time",
             "trading_type",
             "intraday_exit_mode",
             "product",  # Allow product type updates (MIS/NRML)
