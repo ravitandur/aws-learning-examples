@@ -618,34 +618,45 @@ const TabbedBasketManager: React.FC = () => {
 
   return (
     <>
-      {/* Main Content Card with Split Pane */}
-      <Card className="h-[calc(100vh-300px)] min-h-[600px]">
-        <div className="h-full flex overflow-hidden rounded-lg">
-        
-        {/* Left Panel - Simple Basket Name List */}
-        <div className="w-1/4 border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
+      {/* Mobile-First Responsive Layout */}
+      <div className="flex flex-col lg:flex-row lg:h-[calc(100vh-300px)] lg:min-h-[600px] bg-white dark:bg-gray-900 rounded-lg shadow lg:overflow-hidden">
+
+        {/* Basket List Panel - Mobile: Full width stack, Desktop: Fixed sidebar */}
+        <div className="w-full lg:w-80 xl:w-96 border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 flex flex-col">
           
-          {/* Left Panel Header */}
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Baskets</h2>
-              <Badge variant="info" size="sm">{baskets.length}</Badge>
+          {/* Basket List Header - Minimalist 2025 Design */}
+          <div className="p-3 lg:p-4 border-b border-gray-100 dark:border-gray-800">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-medium text-gray-900 dark:text-white">Baskets</h2>
+              <span className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full">
+                {baskets.length}
+              </span>
             </div>
             
-            {/* Search */}
+            {/* Search - Mobile optimized */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search baskets..."
-                className="pl-10"
+                className="pl-10 text-sm h-9 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
               />
             </div>
+
+            {/* Create Basket Button - Minimalist */}
+            <Button
+              onClick={() => setShowCreateDialog(true)}
+              className="w-full mt-3 h-9 text-sm bg-blue-600 hover:bg-blue-700 text-white"
+              size="sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Basket
+            </Button>
           </div>
 
           {/* Basket List */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 lg:overflow-y-auto">
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="text-center">
@@ -667,76 +678,81 @@ const TabbedBasketManager: React.FC = () => {
             ) : (
               <div className="space-y-1 p-3">
                 {filteredBaskets.map(basket => (
-                  <div
+                  <button
                     key={basket.basket_id}
-                    className={`group p-3 transition-all rounded-lg cursor-pointer ${
+                    className={`group w-full p-3 text-left transition-colors cursor-pointer ${
                       selectedBasket?.basket_id === basket.basket_id
-                        ? 'bg-blue-100 dark:bg-blue-900/30 border-l-4 border-l-blue-500'
-                        : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                        ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
                     }`}
                     onClick={() => setSelectedBasket(basket)}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="font-medium text-sm text-gray-900 dark:text-white flex-1">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
                         {basket.basket_name || 'Unnamed Basket'}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className={`px-2 py-1 rounded-full text-xs ${getStatusColor(basket.status)}`}>
-                          {basket.status}
+                      </span>
+                      <div className="flex items-center gap-2 ml-2 flex-shrink-0">
+                        <div className={`w-2 h-2 rounded-full ${basket.status === 'ACTIVE' ? 'bg-green-500' : basket.status === 'PAUSED' ? 'bg-yellow-500' : 'bg-gray-400'}`} />
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {basket.strategies?.length || 0}
+                        </span>
+
+                        {/* Basket Actions - Mobile Friendly */}
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 lg:transition-opacity sm:opacity-100">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleBasketStatusToggle(basket);
+                            }}
+                            disabled={updatingBasket === basket.basket_id}
+                            className={`p-1 rounded-sm transition-colors ${
+                              basket.status === 'ACTIVE'
+                                ? 'text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20'
+                                : 'text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20'
+                            } disabled:opacity-50`}
+                            title={basket.status === 'ACTIVE' ? 'Disable' : 'Enable'}
+                          >
+                            {updatingBasket === basket.basket_id ? (
+                              <RefreshCw className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <Power className="h-3 w-3" />
+                            )}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteBasket(basket);
+                            }}
+                            className="p-1 rounded-sm text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            title="Delete basket"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
                         </div>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleBasketStatusToggle(basket);
-                          }}
-                          disabled={updatingBasket === basket.basket_id}
-                          className={`opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded transition-colors ${
-                            basket.status === 'ACTIVE'
-                              ? 'text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20'
-                              : 'text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-900/20'
-                          } disabled:opacity-50`}
-                          title={basket.status === 'ACTIVE' ? 'Disable' : 'Enable'}
-                        >
-                          {updatingBasket === basket.basket_id ? (
-                            <RefreshCw className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <Power className="h-3 w-3" />
-                          )}
-                        </button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteBasket(basket);
-                          }}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
                       </div>
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
           </div>
         </div>
 
-        {/* Right Panel - Tabbed Content */}
-        <div className="flex-1 bg-white dark:bg-gray-800 flex flex-col">
+        {/* Right Panel - Responsive Content Area */}
+        <div className="flex-1 min-w-0 bg-white dark:bg-gray-800 flex flex-col">
           
-          {/* Right Panel Header */}
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          {/* Right Panel Header - Mobile Responsive */}
+          <div className="p-4 lg:p-6 border-b border-gray-100 dark:border-gray-800">
             <div>
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                <div className="flex items-center gap-3 min-w-0">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white truncate">
                     {selectedBasket ? (selectedBasket.basket_name || 'Unnamed Basket') : 'Select a Basket'}
                   </h3>
                   {selectedBasket && (
                     <Badge
                       variant={selectedBasket.status === 'ACTIVE' ? 'success' : selectedBasket.status === 'PAUSED' ? 'warning' : 'default'}
+                      size="sm"
                     >
                       {selectedBasket.status}
                     </Badge>
@@ -793,8 +809,8 @@ const TabbedBasketManager: React.FC = () => {
             )}
           </div>
 
-          {/* Right Panel Content */}
-          <div className="flex-1 overflow-y-auto p-6">
+          {/* Right Panel Content - Mobile Responsive */}
+          <div className="flex-1 lg:overflow-y-auto p-4 lg:p-6">
             {selectedBasket ? (
               <div className="space-y-6">
                 {/* Strategies Tab */}
@@ -1032,8 +1048,7 @@ const TabbedBasketManager: React.FC = () => {
             )}
           </div>
         </div>
-        </div>
-      </Card>
+      </div>
 
       {/* Dialogs */}
       {showCreateDialog && (

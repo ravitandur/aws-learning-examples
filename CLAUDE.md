@@ -557,3 +557,4 @@ def calculate_next_minute_wait_seconds(current_ist: datetime) -> int:
 - .claude directory exists at project root
 - all frontent components must follow minimalist 2025 design trends.
 - whenever I use /context:update please also update root CLAUDE.md file also with required details if required.
+- Mobile-First Stack + Desktop Split for BasketManagement page.
