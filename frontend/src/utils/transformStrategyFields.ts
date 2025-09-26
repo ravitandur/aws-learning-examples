@@ -29,6 +29,10 @@ export function transformStrategyFields(backendStrategy: any): Strategy {
     entryDays: backendStrategy.entry_days,
     exitDays: backendStrategy.exit_days,
 
+    // POSITIONAL trading fields for derived trading type calculation
+    entryTradingDaysBeforeExpiry: backendStrategy.entry_trading_days_before_expiry,
+    exitTradingDaysBeforeExpiry: backendStrategy.exit_trading_days_before_expiry,
+
     // Strategy-level risk management
     targetProfit: backendStrategy.target_profit ? {
       enabled: true,

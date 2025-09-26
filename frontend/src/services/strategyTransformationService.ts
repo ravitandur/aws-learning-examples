@@ -556,10 +556,28 @@ class StrategyTransformationService {
       errors.push('Exit time must be between 09:00 and 15:30');
     }
     
-    if (entryHour >= exitHour) {
-      errors.push('Entry time must be before exit time');
+    // POSITIONAL trading days validation
+    if (data.config.tradingType === 'POSITIONAL') {
+      const entryDays = data.config.entryTradingDaysBeforeExpiry;
+      const exitDays = data.config.exitTradingDaysBeforeExpiry;
+
+      if (entryDays < exitDays) {
+        errors.push('Entry trading days must be greater than or equal to exit trading days for positional strategies');
+      }
+
+      // Same-day POSITIONAL trades need intraday time validation
+      if (entryDays === exitDays && entryHour >= exitHour) {
+        errors.push('Entry time must be before exit time for same-day positional strategies');
+      }
+    } else {
+      // INTRADAY time validation with proper BTST support
+      const isNextDayExit = data.config.tradingType === 'INTRADAY' && data.config.intradayExitMode === 'NEXT_DAY_BTST';
+
+      if (!isNextDayExit && entryHour >= exitHour) {
+        errors.push('Entry time must be before exit time');
+      }
     }
-    
+
     return {
       isValid: errors.length === 0,
       errors

@@ -161,29 +161,47 @@ export const validateTimeConfiguration = (config: any): string[] => {
     errors.push('Exit time must be between 09:00 and 15:30');
   }
   
-  // Validate that entry time is before exit time
+  // Validate that entry time is before exit time (with BTST support)
   const entryTimeMinutes = entryHour * 60 + entryMinute;
   const exitTimeMinutes = exitHour * 60 + exitMinute;
-  
-  if (entryTimeMinutes >= exitTimeMinutes) {
-    errors.push('Entry time must be before exit time');
-  }
-  
-  // Validate range breakout time if enabled
-  if (config.rangeBreakout) {
-    const rangeHour = parseInt(config.rangeBreakoutTimeHour);
-    const rangeMinute = parseInt(config.rangeBreakoutTimeMinute);
-    const rangeTimeMinutes = rangeHour * 60 + rangeMinute;
-    
-    if (rangeTimeMinutes <= entryTimeMinutes) {
-      errors.push('Range breakout time must be after entry time');
+
+  // POSITIONAL trading days validation
+  if (config.tradingType === 'POSITIONAL') {
+    const entryDays = config.entryTradingDaysBeforeExpiry;
+    const exitDays = config.exitTradingDaysBeforeExpiry;
+
+    if (entryDays < exitDays) {
+      errors.push('Entry trading days must be greater than or equal to exit trading days for positional strategies');
     }
-    
-    if (rangeTimeMinutes >= exitTimeMinutes) {
-      errors.push('Range breakout time must be before exit time');
+
+    // Same-day POSITIONAL trades need intraday time validation
+    if (entryDays === exitDays && entryTimeMinutes >= exitTimeMinutes) {
+      errors.push('Entry time must be before exit time for same-day positional strategies');
+    }
+  } else {
+    // INTRADAY time validation with proper BTST support
+    const isNextDayExit = config.tradingType === 'INTRADAY' && config.intradayExitMode === 'NEXT_DAY_BTST';
+
+    if (!isNextDayExit && entryTimeMinutes >= exitTimeMinutes) {
+      errors.push('Entry time must be before exit time');
+    }
+
+    // Validate range breakout time if enabled (only for INTRADAY)
+    if (config.rangeBreakout) {
+      const rangeHour = parseInt(config.rangeBreakoutTimeHour);
+      const rangeMinute = parseInt(config.rangeBreakoutTimeMinute);
+      const rangeTimeMinutes = rangeHour * 60 + rangeMinute;
+
+      if (rangeTimeMinutes <= entryTimeMinutes) {
+        errors.push('Range breakout time must be after entry time');
+      }
+
+      if (rangeTimeMinutes >= exitTimeMinutes) {
+        errors.push('Range breakout time must be before exit time');
+      }
     }
   }
-  
+
   return errors;
 };
 

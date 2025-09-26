@@ -281,22 +281,65 @@ class StrategyValidationService {
       warnings.push('Exit time is outside typical market hours (09:15-15:30 IST)');
     }
 
-    if (entryTime >= exitTime) {
-      errors.push('Entry time must be before exit time');
+    // POSITIONAL trading days validation takes priority
+    if (config.tradingType === 'POSITIONAL') {
+      const entryDays = config.entryTradingDaysBeforeExpiry;
+      const exitDays = config.exitTradingDaysBeforeExpiry;
+
+      if (entryDays < exitDays) {
+        errors.push('Entry trading days must be greater than or equal to exit trading days for positional strategies');
+      }
+
+      // Same-day POSITIONAL trades need intraday time validation
+      if (entryDays === exitDays) {
+        if (entryDays > 0) {
+          warnings.push('Same day positional strategy: entry and exit on the same day before expiry');
+        }
+
+        // Apply intraday time validation ONLY for same-day positional trades
+        if (entryTime >= exitTime) {
+          errors.push('Entry time must be before exit time for same-day positional strategies');
+        }
+      }
+
+      if (entryDays > 10) {
+        warnings.push('Very early entry (>10 days before expiry) may have high time decay risk');
+      }
+
+      // Skip INTRADAY validation for POSITIONAL strategies
+    } else if (config.tradingType === 'INTRADAY') {
+      // INTRADAY time validation with proper BTST support
+      const isNextDayExit = config.intradayExitMode === 'NEXT_DAY_BTST';
+
+      if (!isNextDayExit && entryTime >= exitTime) {
+        errors.push('Entry time must be before exit time');
+      } else if (isNextDayExit && entryTime === exitTime) {
+        // For NEXT_DAY_BTST, entry and exit can be at different times or same time (but different days)
+        warnings.push('Entry and exit times are the same for next-day exit strategy');
+      }
+
+      // Duration warning - skip for NEXT_DAY_BTST as it spans across days
+      if (!isNextDayExit) {
+        if (exitTime - entryTime < 900000) { // 15 minutes in milliseconds
+          warnings.push('Very short strategy duration may limit effectiveness');
+        }
+      } else {
+        // For NEXT_DAY_BTST, calculate effective duration (entry today + exit tomorrow)
+        const effectiveDuration = (24 * 3600000) - entryTime + exitTime; // Next day calculation
+        if (effectiveDuration < 12 * 3600000) { // Less than 12 hours
+          warnings.push('Short duration for next-day exit strategy');
+        }
+      }
     }
 
-    if (exitTime - entryTime < 900000) { // 15 minutes in milliseconds
-      warnings.push('Very short strategy duration may limit effectiveness');
-    }
-
-    // Range breakout validation
-    if (config.rangeBreakout) {
+    // Range breakout validation (only for INTRADAY)
+    if (config.tradingType !== 'POSITIONAL' && config.rangeBreakout) {
       const rangeBreakoutTime = this.parseTime(config.rangeBreakoutTimeHour, config.rangeBreakoutTimeMinute);
-      
+
       if (rangeBreakoutTime <= entryTime) {
         errors.push('Range breakout time must be after entry time');
       }
-      
+
       if (rangeBreakoutTime >= exitTime) {
         errors.push('Range breakout time must be before exit time');
       }

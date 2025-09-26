@@ -2,6 +2,15 @@ import React from 'react';
 import { Strategy } from '../../types';
 import Badge from '../ui/Badge';
 import { Edit3, Trash2, Power, RefreshCw } from 'lucide-react';
+import {
+  formatDays,
+  formatTime,
+  getProductBadgeVariant,
+  getStatusBadgeVariant,
+  getAdvancedFeaturesForTable,
+  getDerivedTradingType,
+  getDerivedTradingTypeVariant
+} from '../../utils/strategy/strategyDisplayHelpers';
 
 interface StrategyTableProps {
   strategies: Strategy[];
@@ -20,82 +29,6 @@ const StrategyTable: React.FC<StrategyTableProps> = ({
   loadingEditStrategy,
   updatingStrategy
 }) => {
-  // Format days array to readable string
-  const formatDays = (days?: string[]): string => {
-    if (!days || days.length === 0) return 'Not set';
-
-    const dayMap: { [key: string]: string } = {
-      'MONDAY': 'MON', 'TUESDAY': 'TUE', 'WEDNESDAY': 'WED',
-      'THURSDAY': 'THU', 'FRIDAY': 'FRI', 'SATURDAY': 'SAT', 'SUNDAY': 'SUN'
-    };
-
-    return days.map(day => dayMap[day.toUpperCase()] || day.toUpperCase()).join(', ');
-  };
-
-  // Format time to readable format
-  const formatTime = (time?: string): string => {
-    if (!time) return 'Not set';
-
-    if (time.includes(':')) return time;
-
-    if (time.length === 4) {
-      return `${time.substring(0, 2)}:${time.substring(2, 4)}`;
-    }
-
-    return time;
-  };
-
-  // Get badge variant based on value
-  const getProductBadgeVariant = (product?: string) => {
-    switch (product?.toUpperCase()) {
-      case 'MIS': return 'success';
-      case 'NRML': return 'warning';
-      default: return 'default';
-    }
-  };
-
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'ACTIVE': return 'success';
-      case 'PAUSED': return 'warning';
-      case 'COMPLETED': return 'default';
-      default: return 'default';
-    }
-  };
-
-  // Generate features display
-  const getAdvancedFeatures = (strategy: Strategy): string => {
-    const features = [];
-
-    if (strategy.moveSlToCost) features.push('MSLC');
-    if (strategy.rangeBreakout) features.push('ORB');
-
-    // Target Profit
-    if (strategy.targetProfit && typeof strategy.targetProfit.value === 'number' && strategy.targetProfit.value > 0 &&
-        (strategy.targetProfit.enabled !== false)) {
-      const tpValue = strategy.targetProfit.value;
-      const tpType = strategy.targetProfit.type;
-      let displayText = `TP: ${tpValue}`;
-      if (tpType === "COMBINED_PREMIUM_PERCENT") displayText += "% Prem";
-      else if (tpType === "TOTAL_MTM") displayText += " Pts.";
-      else displayText += "pts";
-      features.push(displayText);
-    }
-
-    // Stop Loss
-    if (strategy.stopLoss && typeof strategy.stopLoss.value === 'number' && strategy.stopLoss.value > 0 &&
-        (strategy.stopLoss.enabled !== false)) {
-      const slValue = strategy.stopLoss.value;
-      const slType = strategy.stopLoss.type;
-      let displayText = `SL: ${slValue}`;
-      if (slType === "TOTAL_MTM") displayText += " Pts.";
-      else if (slType === "COMBINED_PREMIUM_PERCENT") displayText += "% Prem";
-      else displayText += "pts";
-      features.push(displayText);
-    }
-
-    return features.length > 0 ? features.join(', ') : 'None';
-  };
 
   if (strategies.length === 0) {
     return (
@@ -118,6 +51,9 @@ const StrategyTable: React.FC<StrategyTableProps> = ({
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Exit Schedule
+            </th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              Trading Type
             </th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
               Features
@@ -181,17 +117,27 @@ const StrategyTable: React.FC<StrategyTableProps> = ({
                 </div>
               </td>
 
+              {/* Trading Type */}
+              <td className="px-6 py-4 whitespace-nowrap">
+                <Badge
+                  variant={getDerivedTradingTypeVariant(strategy)}
+                  size="sm"
+                >
+                  {getDerivedTradingType(strategy)}
+                </Badge>
+              </td>
+
               {/* Features */}
               <td className="px-6 py-4">
                 <div className="text-xs text-gray-600 dark:text-gray-400">
-                  {getAdvancedFeatures(strategy)}
+                  {getAdvancedFeaturesForTable(strategy)}
                 </div>
               </td>
 
               {/* Status */}
               <td className="px-6 py-4 whitespace-nowrap">
                 <Badge
-                  variant={strategy.status === 'ACTIVE' ? 'success' : strategy.status === 'PAUSED' ? 'warning' : 'default'}
+                  variant={getStatusBadgeVariant(strategy.status)}
                 >
                   {strategy.status}
                 </Badge>

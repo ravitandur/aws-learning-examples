@@ -533,6 +533,14 @@ class OptionsTradeStack(Stack):
                                             authorizer=authorizer
                                             )
 
+        # Bulk delete endpoint - DELETE /options/baskets/{basket_id}/strategies/bulk-delete
+        bulk_delete_resource = basket_strategies_resource.add_resource("bulk-delete")
+        bulk_delete_resource.add_method("DELETE",
+                                      apigateway.LambdaIntegration(self.lambda_functions['strategy-manager']),
+                                      authorization_type=apigateway.AuthorizationType.COGNITO,
+                                      authorizer=authorizer
+                                      )
+
         # Strategy endpoints (secured with Cognito authorizer)
         strategies_resource = options_resource.add_resource("strategies")
         strategies_resource.add_method("GET",

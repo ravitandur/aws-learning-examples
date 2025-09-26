@@ -2,7 +2,7 @@ import json
 import boto3
 import uuid
 from datetime import datetime, timezone
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union
 import os
 import sys
 from decimal import Decimal
@@ -62,6 +62,114 @@ def generate_schedule_key(
     return f"SCHEDULE#{weekday.upper()}#{execution_time}#{execution_type.upper()}#{strategy_id}"
 
 
+def delete_strategy_schedules(user_id: str, strategy_id: str, table) -> dict:
+    """
+    🧹 Delete all schedule entries for a specific strategy to prevent orphaned records
+
+    This function is critical for data integrity - when strategies are deleted,
+    their associated schedule entries must also be removed to prevent:
+    - EventBridge execution errors on non-existent strategies
+    - Database bloat from orphaned schedule records
+    - Performance degradation in GSI2 schedule queries
+
+    Args:
+        user_id: User ID owning the strategy
+        strategy_id: Strategy ID whose schedules need cleanup
+        table: DynamoDB table resource
+
+    Returns:
+        Dictionary with cleanup results: {
+            'deleted_count': int,
+            'failed_count': int,
+            'errors': list
+        }
+    """
+    try:
+        logger.info(
+            "Starting schedule cleanup for strategy",
+            extra={
+                "user_id": user_id,
+                "strategy_id": strategy_id,
+                "operation": "delete_strategy_schedules"
+            }
+        )
+
+        # Query for all schedule entries belonging to this strategy
+        # Pattern: All items with sort_key starting with "SCHEDULE#" that belong to this strategy
+        response = table.query(
+            KeyConditionExpression="user_id = :user_id AND begins_with(sort_key, :schedule_prefix)",
+            ExpressionAttributeValues={
+                ":user_id": user_id,
+                ":schedule_prefix": "SCHEDULE#",
+                ":strategy_id": strategy_id,
+            },
+            # Filter for schedules belonging to this specific strategy
+            FilterExpression="strategy_id = :strategy_id",
+        )
+
+        schedules_to_delete = response.get('Items', [])
+        deleted_count = 0
+        failed_count = 0
+        errors = []
+
+        logger.info(
+            f"Found {len(schedules_to_delete)} schedule entries to delete for strategy {strategy_id}"
+        )
+
+        # Use batch writer for efficient deletion
+        with table.batch_writer() as batch:
+            for schedule in schedules_to_delete:
+                try:
+                    batch.delete_item(
+                        Key={
+                            'user_id': schedule['user_id'],
+                            'sort_key': schedule['sort_key']
+                        }
+                    )
+                    deleted_count += 1
+                    logger.debug(
+                        f"Deleted schedule entry: {schedule['sort_key']} for strategy {strategy_id}"
+                    )
+                except Exception as e:
+                    failed_count += 1
+                    error_msg = f"Failed to delete schedule {schedule.get('sort_key', 'unknown')}: {str(e)}"
+                    errors.append(error_msg)
+                    logger.warning(error_msg)
+
+        logger.info(
+            "Schedule cleanup completed",
+            extra={
+                "user_id": user_id,
+                "strategy_id": strategy_id,
+                "deleted_count": deleted_count,
+                "failed_count": failed_count,
+                "operation": "delete_strategy_schedules"
+            }
+        )
+
+        return {
+            'deleted_count': deleted_count,
+            'failed_count': failed_count,
+            'errors': errors
+        }
+
+    except Exception as e:
+        logger.error(
+            "Failed to cleanup strategy schedules",
+            extra={
+                "error": str(e),
+                "user_id": user_id,
+                "strategy_id": strategy_id,
+                "operation": "delete_strategy_schedules"
+            }
+        )
+        return {
+            'deleted_count': 0,
+            'failed_count': 0,
+            'errors': [f"Schedule cleanup failed: {str(e)}"]
+        }
+
+
 def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
     """
     Phase 1 Lambda function to manage strategies using hybrid architecture
@@ -114,6 +222,13 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         trading_configurations_table = dynamodb.Table(
             os.environ["TRADING_CONFIGURATIONS_TABLE"]
         )
+
+        # Check for bulk delete special endpoint
+        resource_path = event.get("resource", "")
+        if http_method == "DELETE" and basket_id and "bulk-delete" in resource_path:
+            return handle_bulk_delete_strategies(
+                event, user_id, basket_id, trading_configurations_table
+            )
 
         # Route based on HTTP method and parameters
         if http_method == "POST" and basket_id:
@@ -746,6 +861,21 @@ def handle_delete_strategy(event, user_id, strategy_id, table):
         # Check if strategy has active positions (future enhancement)
         # For now, allow deletion
 
+        # 🧹 CRITICAL: Delete associated schedule entries BEFORE deleting strategy
+        # This prevents orphaned schedule records that cause execution errors
+        schedule_cleanup_result = delete_strategy_schedules(user_id, strategy_id, table)
+
+        logger.info(
+            "Schedule cleanup completed for strategy deletion",
+            extra={
+                "user_id": user_id,
+                "strategy_id": strategy_id,
+                "schedules_deleted": schedule_cleanup_result['deleted_count'],
+                "schedules_failed": schedule_cleanup_result['failed_count'],
+                "operation": "single_strategy_deletion"
+            }
+        )
+
         # Delete the strategy
         table.delete_item(
             Key={"user_id": user_id, "sort_key": f"STRATEGY#{strategy_id}"}
@@ -786,7 +916,211 @@ def handle_delete_strategy(event, user_id, strategy_id, table):
         }
 
 
-def validate_and_enhance_legs(legs: List[Dict]) -> tuple[List[Dict], Dict]:
+def handle_bulk_delete_strategies(event, user_id, basket_id, table):
+    """
+    🗑️ Bulk delete all strategies in a basket with transaction safety
+
+    This function safely deletes all strategies belonging to a user in a specific basket.
+    Uses batch operations for efficiency while maintaining data integrity.
+
+    Args:
+        event: Lambda event object
+        user_id: ID of the user performing the operation
+        basket_id: ID of the basket containing strategies to delete
+        table: DynamoDB table resource
+
+    Returns:
+        HTTP response with deletion results and counts
+    """
+
+    try:
+        # First, get all strategies for this basket to validate ownership
+        logger.info(
+            "Starting bulk delete operation",
+            extra={
+                "user_id": user_id,
+                "basket_id": basket_id,
+                "operation": "bulk_delete_strategies"
+            }
+        )
+
+        # Query all strategies for this user using the same working pattern from handle_list_strategies
+        response = table.query(
+            KeyConditionExpression="user_id = :user_id AND begins_with(sort_key, :strategy_prefix)",
+            ExpressionAttributeValues={
+                ":user_id": user_id,
+                ":strategy_prefix": "STRATEGY#",
+                ":basket_id": basket_id,
+            },
+            FilterExpression="basket_id = :basket_id",
+        )
+
+        strategies_to_delete = response.get('Items', [])
+        strategy_count = len(strategies_to_delete)
+
+        if strategy_count == 0:
+            return {
+                "statusCode": 404,
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                },
+                "body": json.dumps({
+                    "error": "No strategies found",
+                    "message": f"No strategies found in basket {basket_id} for bulk deletion",
+                    "deleted_count": 0,
+                    "failed_count": 0
+                }),
+            }
+
+        # 🧹 CRITICAL: Delete all schedule entries for these strategies FIRST
+        # This prevents orphaned schedule records that cause execution errors
+        schedule_cleanup_totals = {'deleted_count': 0, 'failed_count': 0, 'errors': []}
+
+        logger.info(
+            f"Starting schedule cleanup for {strategy_count} strategies in bulk deletion"
+        )
+
+        # Clean up schedules for each strategy before deleting strategies
+        for strategy in strategies_to_delete:
+            strategy_id = strategy['sort_key'].replace('STRATEGY#', '')
+            schedule_result = delete_strategy_schedules(user_id, strategy_id, table)
+
+            # Aggregate results
+            schedule_cleanup_totals['deleted_count'] += schedule_result['deleted_count']
+            schedule_cleanup_totals['failed_count'] += schedule_result['failed_count']
+            schedule_cleanup_totals['errors'].extend(schedule_result['errors'])
+
+        logger.info(
+            "Schedule cleanup completed for bulk strategy deletion",
+            extra={
+                "user_id": user_id,
+                "basket_id": basket_id,
+                "total_schedules_deleted": schedule_cleanup_totals['deleted_count'],
+                "total_schedules_failed": schedule_cleanup_totals['failed_count'],
+                "operation": "bulk_strategy_deletion_schedule_cleanup"
+            }
+        )
+
+        # Batch delete strategies for efficiency
+        deleted_count = 0
+        failed_count = 0
+        failed_strategy_ids = []
+
+        # Process in batches of 25 (DynamoDB batch limit)
+        batch_size = 25
+        for i in range(0, len(strategies_to_delete), batch_size):
+            batch = strategies_to_delete[i:i + batch_size]
+
+            # Prepare batch delete request
+            with table.batch_writer() as batch_writer:
+                for strategy in batch:
+                    try:
+                        strategy_id = strategy['sort_key'].replace('STRATEGY#', '')
+
+                        # Delete the strategy
+                        batch_writer.delete_item(
+                            Key={
+                                'user_id': user_id,
+                                'sort_key': strategy['sort_key']
+                            }
+                        )
+
+                        deleted_count += 1
+
+                        # Log individual deletion
+                        logger.info(
+                            "Strategy deleted in bulk operation",
+                            extra={
+                                "user_id": user_id,
+                                "strategy_id": strategy_id,
+                                "basket_id": basket_id
+                            }
+                        )
+
+                    except Exception as strategy_error:
+                        failed_count += 1
+                        strategy_id = strategy.get('sort_key', 'unknown').replace('STRATEGY#', '')
+                        failed_strategy_ids.append(strategy_id)
+                        logger.error(
+                            "Failed to delete strategy in bulk operation",
+                            extra={
+                                "user_id": user_id,
+                                "strategy_id": strategy_id,
+                                "error": str(strategy_error)
+                            }
+                        )
+
+        # Log the bulk operation completion
+        log_user_action(
+            logger, user_id, "bulk_strategies_deleted",
+            {
+                "basket_id": basket_id,
+                "total_strategies": strategy_count,
+                "deleted_count": deleted_count,
+                "failed_count": failed_count,
+                "failed_strategy_ids": failed_strategy_ids
+            }
+        )
+
+        # Prepare response based on results
+        if failed_count == 0:
+            return {
+                "statusCode": 200,
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                },
+                "body": json.dumps({
+                    "success": True,
+                    "message": f"Successfully deleted {deleted_count} strategies from basket {basket_id}",
+                    "deleted_count": deleted_count,
+                    "failed_count": failed_count,
+                    "basket_id": basket_id
+                }),
+            }
+        else:
+            return {
+                "statusCode": 207,  # Multi-Status for partial success
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": "*",
+                },
+                "body": json.dumps({
+                    "success": True,
+                    "message": f"Bulk deletion completed with {failed_count} failures. {deleted_count} strategies deleted successfully.",
+                    "deleted_count": deleted_count,
+                    "failed_count": failed_count,
+                    "failed_strategy_ids": failed_strategy_ids,
+                    "basket_id": basket_id
+                }),
+            }
+
+    except Exception as e:
+        logger.error(
+            "Failed to perform bulk delete operation",
+            extra={
+                "error": str(e),
+                "user_id": user_id,
+                "basket_id": basket_id
+            }
+        )
+        return {
+            "statusCode": 500,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+            },
+            "body": json.dumps({
+                "error": "Failed to bulk delete strategies",
+                "message": str(e),
+                "deleted_count": 0,
+                "failed_count": 0
+            }),
+        }
+
+
+def validate_and_enhance_legs(legs: List[Dict]) -> Union[tuple[List[Dict], None], tuple[None, Dict]]:
     """
     ✅ NEW: Validate legs and enhance with lot configuration support
 
@@ -1020,8 +1354,12 @@ def validate_and_enhance_legs(legs: List[Dict]) -> tuple[List[Dict], Dict]:
                     ),
                 }
 
-            # Create enhanced leg with validated data (UPDATED: Dynamic strike selection)
-            enhanced_leg = {
+            # Create enhanced leg with validated data - PRESERVE ALL INCOMING ATTRIBUTES
+            # Start with all original leg attributes to prevent data loss
+            enhanced_leg = dict(leg)  # Preserve ALL incoming fields including stop_loss, target_profit, etc.
+
+            # Add/override with required enhancements and validated data
+            enhanced_leg.update({
                 # Generate unique leg ID
                 "leg_id": str(uuid.uuid4()),
                 "leg_index": i + 1,
@@ -1033,12 +1371,9 @@ def validate_and_enhance_legs(legs: List[Dict]) -> tuple[List[Dict], Dict]:
                 "selection_method": selection_method,
                 "selection_value": selection_value,
                 "selection_operator": selection_operator,
-                # Optional fields
-                "symbol": leg.get("symbol"),  # Optional symbol override
-                "description": leg.get("description", ""),
                 # Metadata
                 "created_at": datetime.now(timezone.utc).isoformat(),
-            }
+            })
 
             enhanced_legs.append(enhanced_leg)
 

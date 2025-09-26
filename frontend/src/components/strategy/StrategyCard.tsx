@@ -4,6 +4,13 @@ import { Card, CardContent } from '../ui/Card';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
 import { Edit3, Trash2, Zap, Power, RefreshCw } from 'lucide-react';
+import {
+  formatDays,
+  formatTime,
+  getProductBadgeVariant,
+  getStatusBadgeVariant,
+  getAdvancedFeaturesWithDerivedType
+} from '../../utils/strategy/strategyDisplayHelpers';
 
 interface StrategyCardProps {
   strategy: Strategy;
@@ -22,92 +29,6 @@ const StrategyCard: React.FC<StrategyCardProps> = ({
   isLoading = false,
   isUpdating = false
 }) => {
-  // Format days array to readable string
-  const formatDays = (days?: string[]): string => {
-    if (!days || days.length === 0) return 'Not set';
-
-    // Convert to short uppercase format
-    const dayMap: { [key: string]: string } = {
-      'MONDAY': 'MON', 'TUESDAY': 'TUE', 'WEDNESDAY': 'WED',
-      'THURSDAY': 'THU', 'FRIDAY': 'FRI', 'SATURDAY': 'SAT', 'SUNDAY': 'SUN'
-    };
-
-    return days.map(day => dayMap[day.toUpperCase()] || day.toUpperCase()).join(', ');
-  };
-
-  // Format time to readable format
-  const formatTime = (time?: string): string => {
-    if (!time) return 'Not set';
-
-    // If it's already in HH:MM format, return as is
-    if (time.includes(':')) return time;
-
-    // If it's in HHMM format, add colon
-    if (time.length === 4) {
-      return `${time.substring(0, 2)}:${time.substring(2, 4)}`;
-    }
-
-    return time;
-  };
-
-  // Get badge variant based on value
-  const getProductBadgeVariant = (product?: string) => {
-    switch (product?.toUpperCase()) {
-      case 'MIS': return 'success';
-      case 'NRML': return 'warning';
-      default: return 'default';
-    }
-  };
-
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'ACTIVE': return 'success';
-      case 'PAUSED': return 'warning';
-      case 'COMPLETED': return 'default';
-      default: return 'default';
-    }
-  };
-
-  // Generate advanced features display
-  const getAdvancedFeatures = () => {
-    const features = [];
-
-    // Check for advanced features based on available strategy data
-    if (strategy.moveSlToCost) features.push('MSLC');
-    if (strategy.rangeBreakout) features.push('ORB');
-
-    // Check for strategy-level risk management features
-    // If enabled is undefined but value exists and > 0, treat as enabled
-    if (strategy.targetProfit && typeof strategy.targetProfit.value === 'number' && strategy.targetProfit.value > 0 &&
-        (strategy.targetProfit.enabled !== false)) {
-      const tpValue = strategy.targetProfit.value;
-      const tpType = strategy.targetProfit.type;
-      // Format display based on type
-      let displayText = `TP: ${tpValue}`;
-      if (tpType === "COMBINED_PREMIUM_PERCENT") displayText += "% Prem";
-      else if (tpType === "TOTAL_MTM") displayText += " Pts.";
-      else displayText += "pts";
-      features.push(displayText);
-    }
-    if (strategy.stopLoss && typeof strategy.stopLoss.value === 'number' && strategy.stopLoss.value > 0 &&
-        (strategy.stopLoss.enabled !== false)) {
-      const slValue = strategy.stopLoss.value;
-      const slType = strategy.stopLoss.type;
-      // Format display based on type
-      let displayText = `SL: ${slValue}`;
-      if (slType === "TOTAL_MTM") displayText += " Pts.";
-      else if (slType === "COMBINED_PREMIUM_PERCENT") displayText += "% Prem";
-      else displayText += "pts";
-      features.push(displayText);
-    }
-
-    // If no specific advanced features, show trading type as a feature
-    if (features.length === 0) {
-      return strategy.tradingType || 'Standard';
-    }
-
-    return features.join(', ');
-  };
 
   return (
     <Card className="hover:shadow-lg transition-all duration-200 border border-gray-100 dark:border-gray-700/50 bg-gradient-to-r from-white to-gray-50/30 dark:from-gray-800 dark:to-gray-800/70 border-l-4 border-l-blue-500/30 hover:border-l-blue-500/60">
@@ -189,7 +110,7 @@ const StrategyCard: React.FC<StrategyCardProps> = ({
           <div className="flex items-center gap-2 text-sm">
             <span className="text-gray-500 dark:text-gray-400">Features:</span>
             <span className="text-gray-900 dark:text-white font-medium">
-              {getAdvancedFeatures()}
+              {getAdvancedFeaturesWithDerivedType(strategy)}
             </span>
           </div>
           <div className="flex items-center gap-2">

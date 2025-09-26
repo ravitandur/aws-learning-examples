@@ -177,6 +177,53 @@ class StrategyService {
   }
 
   /**
+   * Delete all strategies in a basket (bulk delete)
+   */
+  async deleteAllBasketStrategies(basketId: string): Promise<{
+    success: boolean;
+    deletedCount: number;
+    failedCount: number;
+    failedStrategyIds?: string[];
+    message: string;
+  }> {
+    try {
+      const response = await optionsApiClient.delete<ApiResponse<{
+        deleted_count: number;
+        failed_count: number;
+        failed_strategy_ids?: string[];
+        message: string;
+      }>>(`/options/baskets/${basketId}/strategies/bulk-delete`);
+
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to delete all strategies');
+      }
+
+      return {
+        success: true,
+        deletedCount: response.data?.deleted_count || 0,
+        failedCount: response.data?.failed_count || 0,
+        failedStrategyIds: response.data?.failed_strategy_ids,
+        message: response.data?.message || response.message || 'All strategies deleted successfully'
+      };
+    } catch (error: any) {
+      const errorData = error.response?.data;
+
+      // Handle partial success scenarios (207 Multi-Status)
+      if (error.response?.status === 207 && errorData) {
+        return {
+          success: true, // Partial success is still considered success
+          deletedCount: errorData.deleted_count || 0,
+          failedCount: errorData.failed_count || 0,
+          failedStrategyIds: errorData.failed_strategy_ids,
+          message: errorData.message || 'Bulk deletion completed with some failures'
+        };
+      }
+
+      throw new Error(errorData?.message || error.message || 'Failed to delete all strategies');
+    }
+  }
+
+  /**
    * Get strategy execution status with performance metrics
    */
   async getStrategyStatus(strategyId: string): Promise<StrategyExecutionStatus> {

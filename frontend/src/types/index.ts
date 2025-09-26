@@ -136,6 +136,10 @@ export interface Strategy {
   entryDays?: string[];
   exitDays?: string[];
 
+  // POSITIONAL strategy fields
+  entryTradingDaysBeforeExpiry?: number;
+  exitTradingDaysBeforeExpiry?: number;
+
   // Strategy-level risk management
   targetProfit?: {
     enabled?: boolean;

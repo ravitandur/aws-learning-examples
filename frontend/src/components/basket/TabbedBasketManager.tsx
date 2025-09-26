@@ -5,10 +5,11 @@ import Input from '../ui/Input';
 import Badge from '../ui/Badge';
 import { useToast } from '../common/ToastContainer';
 import ConfirmDialog from '../common/ConfirmDialog';
+import BulkDeleteConfirmationDialog from '../common/BulkDeleteConfirmationDialog';
 import {
   Plus, Search, TrendingUp,
   Activity, BarChart3,
-  Trash2, Target, Zap, Power, RefreshCw, Grid3x3, List
+  Trash2, Target, Zap, Power, RefreshCw, Grid3x3, List, AlertTriangle
 } from 'lucide-react';
 import { Basket, Strategy, CreateBasket } from '../../types';
 import basketService from '../../services/basketService';
@@ -50,6 +51,12 @@ const TabbedBasketManager: React.FC = () => {
     isOpen: boolean;
     strategy: Strategy | null;
   }>({ isOpen: false, strategy: null });
+
+  const [bulkDeleteDialog, setBulkDeleteDialog] = useState<{
+    isOpen: boolean;
+    basket: BasketWithStrategies | null;
+    isDeleting: boolean;
+  }>({ isOpen: false, basket: null, isDeleting: false });
 
   // Load baskets on component mount 
   useEffect(() => {
@@ -593,6 +600,82 @@ const TabbedBasketManager: React.FC = () => {
     }
   };
 
+  // Bulk delete strategies handlers
+  const handleBulkDeleteStrategies = (basket: BasketWithStrategies) => {
+    if (!basket.strategies || basket.strategies.length === 0) {
+      showError('No strategies to delete in this basket');
+      return;
+    }
+
+    setBulkDeleteDialog({
+      isOpen: true,
+      basket: basket,
+      isDeleting: false
+    });
+  };
+
+  const confirmBulkDeleteStrategies = async () => {
+    if (!bulkDeleteDialog.basket) return;
+
+    try {
+      // Set deleting state
+      setBulkDeleteDialog(prev => ({ ...prev, isDeleting: true }));
+
+      const basket = bulkDeleteDialog.basket;
+      const strategiesCount = basket.strategies?.length || 0;
+
+      // Call the bulk delete API
+      const result = await strategyService.deleteAllBasketStrategies(basket.basket_id);
+
+      // Close the dialog
+      setBulkDeleteDialog({ isOpen: false, basket: null, isDeleting: false });
+
+      // Show appropriate success message
+      if (result.failedCount > 0) {
+        showSuccess(
+          `Bulk deletion completed: ${result.deletedCount} strategies deleted successfully. ${result.failedCount} failures.`
+        );
+        console.warn('Some strategies failed to delete:', result.failedStrategyIds);
+      } else {
+        showSuccess(`Successfully deleted all ${result.deletedCount} strategies from basket "${basket.basket_name}"`);
+      }
+
+      // Refresh the strategy list for the current basket
+      if (selectedBasket && selectedBasket.basket_id === basket.basket_id) {
+        try {
+          const strategies = await strategyService.getBasketStrategies(selectedBasket.basket_id);
+
+          // Update selected basket with refreshed strategies
+          setSelectedBasket(prev => prev ? {
+            ...prev,
+            strategies: strategies
+          } : null);
+        } catch (refreshError) {
+          console.warn('Failed to refresh strategies after bulk delete:', refreshError);
+          // Clear strategies from UI since they should be deleted
+          setSelectedBasket(prev => prev ? {
+            ...prev,
+            strategies: []
+          } : null);
+        }
+      }
+
+      // Update baskets list to reflect empty strategies
+      setBaskets(prev => prev.map(b =>
+        b.basket_id === basket.basket_id
+          ? { ...b, strategies: [] }
+          : b
+      ));
+
+    } catch (error: any) {
+      console.error('Error during bulk delete:', error);
+      showError(error.message || 'Failed to delete all strategies');
+
+      // Reset deleting state on error
+      setBulkDeleteDialog(prev => ({ ...prev, isDeleting: false }));
+    }
+  };
+
   const filteredBaskets = baskets.filter(basket =>
     (basket.basket_name && basket.basket_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (basket.description && basket.description.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -845,6 +928,20 @@ const TabbedBasketManager: React.FC = () => {
                           >
                             Add Strategy
                           </Button>
+
+                          {/* Delete All Strategies Button - Only show when strategies exist */}
+                          {selectedBasket && selectedBasket.strategies && selectedBasket.strategies.length > 0 && (
+                            <Button
+                              onClick={() => handleBulkDeleteStrategies(selectedBasket)}
+                              leftIcon={<AlertTriangle className="h-4 w-4" />}
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800 ml-2"
+                              title={`Delete all ${selectedBasket.strategies.length} strategies`}
+                            >
+                              Delete All ({selectedBasket.strategies.length})
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardHeader>
@@ -1089,6 +1186,18 @@ const TabbedBasketManager: React.FC = () => {
         cancelText="Keep Strategy"
         variant="danger"
         icon={<Trash2 className="h-6 w-6 text-red-600" />}
+      />
+
+      {/* Bulk Delete Strategies Confirmation Dialog */}
+      <BulkDeleteConfirmationDialog
+        isOpen={bulkDeleteDialog.isOpen}
+        onClose={() => setBulkDeleteDialog({ isOpen: false, basket: null, isDeleting: false })}
+        onConfirm={confirmBulkDeleteStrategies}
+        title="Delete All Strategies"
+        itemCount={bulkDeleteDialog.basket?.strategies?.length || 0}
+        itemType="strategies"
+        isDeleting={bulkDeleteDialog.isDeleting}
+        deletingMessage={`Deleting ${bulkDeleteDialog.basket?.strategies?.length || 0} strategies...`}
       />
     </>
   );
