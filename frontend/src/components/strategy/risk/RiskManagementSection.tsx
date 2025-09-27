@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import { StrategyLeg } from '../../../types/strategy';
+import { Leg } from '../../../types/strategy';
 import StopLossControl from './StopLossControl';
 import TargetProfitControl from './TargetProfitControl';
 import TrailingStopLossControl from './TrailingStopLossControl';
@@ -16,8 +16,8 @@ import ReEntryControl from './ReEntryControl';
 import ReExecuteControl from './ReExecuteControl';
 
 interface RiskManagementSectionProps {
-  leg: StrategyLeg;
-  onUpdate: (updates: Partial<StrategyLeg>) => void;
+  leg: Leg;
+  onUpdate: (updates: Partial<Leg>) => void;
 }
 
 const RiskManagementSection: React.FC<RiskManagementSectionProps> = ({ leg, onUpdate }) => {

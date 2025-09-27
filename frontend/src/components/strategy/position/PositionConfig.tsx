@@ -12,14 +12,14 @@
 import React from 'react';
 import { Copy, Trash2 } from 'lucide-react';
 import Input from '../../ui/Input';
-import { StrategyLeg, ProductType } from '../../../types/strategy';
+import { Leg, ProductType } from '../../../types/strategy';
 import StrikeSelection from './StrikeSelection';
 import RiskManagementSection from '../risk/RiskManagementSection';
 
 interface PositionConfigProps {
-  leg: StrategyLeg;
+  leg: Leg;
   index: number;
-  onUpdate: (updates: Partial<StrategyLeg>) => void;
+  onUpdate: (updates: Partial<Leg>) => void;
   onRemove: () => void;
   onCopy: () => void;
   strategyIndex: string;

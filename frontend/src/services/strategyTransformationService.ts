@@ -9,58 +9,9 @@
 import strategyValidationService from './strategyValidationService';
 import { parseStrikeValue, validateStrikeFormat, formatStrikeForDisplay } from '../utils/strategy/strikeValueParser';
 import { getProductTypeValidationError, autoCorrectProductType, isValidProductType } from '../utils/strategy/productTypeValidation';
-import { SelectionMethod } from '../types/strategy';
+import { SelectionMethod, Leg } from '../types/strategy';
 
-// Frontend types from StrategyWizardDialog
-interface FrontendStrategyLeg {
-  id: string;
-  optionType: 'CE' | 'PE';
-  actionType: 'BUY' | 'SELL';
-  strikePrice: string;
-  totalLots: number;
-  selectionMethod: SelectionMethod;
-  
-  // Premium selection fields
-  premiumOperator?: 'CLOSEST' | 'GTE' | 'LTE';
-  premiumValue?: number;
-  
-  // Straddle premium fields
-  straddlePremiumOperator?: 'CLOSEST' | 'GTE' | 'LTE';
-  straddlePremiumPercentage?: number;
-  
-  // Risk Management Fields (6 types)
-  stopLoss: {
-    enabled: boolean;
-    type: 'POINTS' | 'PERCENTAGE' | 'RANGE';
-    value: number;
-  };
-  targetProfit: {
-    enabled: boolean;
-    type: 'POINTS' | 'PERCENTAGE';
-    value: number;
-  };
-  trailingStopLoss: {
-    enabled: boolean;
-    type: 'POINTS' | 'PERCENTAGE';
-    instrumentMoveValue: number;
-    stopLossMoveValue: number;
-  };
-  waitAndTrade: {
-    enabled: boolean;
-    type: 'POINTS' | 'PERCENTAGE';
-    value: number;
-  };
-  reEntry: {
-    enabled: boolean;
-    type: 'SL_REENTRY' | 'SL_RECOST' | 'SL_REEXEC';
-    count: number;
-  };
-  reExecute: {
-    enabled: boolean;
-    type: 'TP_REEXEC';
-    count: number;
-  };
-}
+// Using Leg interface from types/strategy.ts
 
 interface FrontendStrategyConfig {
   entryTimeHour: string;
@@ -96,11 +47,11 @@ interface FrontendStrategyData {
   strategyName: string;
   index: string;
   config: FrontendStrategyConfig;
-  legs: FrontendStrategyLeg[];
+  legs: Leg[];
 }
 
 // Backend API schema
-interface BackendStrategyLeg {
+interface BackendLeg {
   option_type: 'CE' | 'PE';
   action: 'BUY' | 'SELL';
   lots: number;
@@ -158,7 +109,7 @@ interface BackendStrategyData {
   exit_time: string;
   entry_days: string[];
   exit_days: string[];
-  legs: BackendStrategyLeg[];
+  legs: BackendLeg[];
   
   // Trading type configuration
   trading_type: 'INTRADAY' | 'POSITIONAL';  // MANDATORY
@@ -220,8 +171,8 @@ class StrategyTransformationService {
     }
     
     // Transform legs with flat selection criteria (no strategy-level duplication)
-    const backendLegs: BackendStrategyLeg[] = legs.map(leg => {
-      const backendLeg: BackendStrategyLeg = {
+    const backendLegs: BackendLeg[] = legs.map(leg => {
+      const backendLeg: BackendLeg = {
         option_type: leg.optionType,  // Direct pass-through: CE → CE, PE → PE
         action: leg.actionType,
         lots: leg.totalLots,
@@ -384,8 +335,8 @@ class StrategyTransformationService {
     const { name, strategy_name, underlying, legs = [], entry_time, exit_time } = backendData;
     
     // Transform backend legs to frontend format
-    const frontendLegs: FrontendStrategyLeg[] = legs.map((backendLeg: any, index: number) => {
-      const leg: FrontendStrategyLeg = {
+    const frontendLegs: Leg[] = legs.map((backendLeg: any, index: number) => {
+      const leg: Leg = {
         id: `leg-${index}`,
         optionType: backendLeg.option_type,  // Direct pass-through: CE → CE, PE → PE
         actionType: backendLeg.action,
@@ -613,4 +564,4 @@ class StrategyTransformationService {
 const strategyTransformationService = new StrategyTransformationService();
 export default strategyTransformationService;
 export { StrategyTransformationService };
-export type { FrontendStrategyData, BackendStrategyData, FrontendStrategyLeg, BackendStrategyLeg };
+export type { FrontendStrategyData, BackendStrategyData, BackendLeg };

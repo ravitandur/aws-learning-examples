@@ -7,13 +7,13 @@
 
 import React from 'react';
 import Select from '../../ui/Select';
-import { StrategyLeg } from '../../../types/strategy';
+import { Leg } from '../../../types/strategy';
 import { RE_EXECUTE_TYPE_OPTIONS, COUNT_OPTIONS } from '../../../utils/strategy';
 import { canEnableReExecute, getTargetProfitInvalidReason } from '../../../utils/strategy/riskValidators';
 
 interface ReExecuteControlProps {
-  leg: StrategyLeg;
-  onUpdate: (updates: Partial<StrategyLeg>) => void;
+  leg: Leg;
+  onUpdate: (updates: Partial<Leg>) => void;
 }
 
 const ReExecuteControl: React.FC<ReExecuteControlProps> = ({ leg, onUpdate }) => {

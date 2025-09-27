@@ -1,10 +1,10 @@
 import React from "react";
 import PositionConfig from "./PositionConfig";
-import { StrategyLeg, ProductType } from "../../../types/strategy";
+import { Leg, ProductType } from "../../../types/strategy";
 
 interface PositionsSectionProps {
-  positions: StrategyLeg[];
-  onPositionUpdate: (legId: string, updates: Partial<StrategyLeg>) => void;
+  positions: Leg[];
+  onPositionUpdate: (legId: string, updates: Partial<Leg>) => void;
   onPositionRemove: (legId: string) => void;
   onPositionCopy: (legId: string) => void;
   onAddPosition: () => void;

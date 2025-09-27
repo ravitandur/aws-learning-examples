@@ -8,7 +8,7 @@
 import {
   SelectOption,
   StrategyConfig,
-  StrategyLeg,
+  Leg,
 } from "../../types/strategy";
 
 // Index options
@@ -130,7 +130,7 @@ export const DEFAULT_STRATEGY_CONFIG: StrategyConfig = {
 };
 
 // Default position template (without ID)
-export const createDefaultPositionTemplate = (): Omit<StrategyLeg, "id"> => ({
+export const createDefaultPositionTemplate = (): Omit<Leg, "id"> => ({
   optionType: "CE",
   actionType: "BUY",
   strikePrice: "ATM",

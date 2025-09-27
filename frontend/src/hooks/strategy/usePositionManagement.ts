@@ -6,7 +6,7 @@
  */
 
 import { useCallback } from 'react';
-import { StrategyLeg, PositionActions } from '../../types/strategy';
+import { Leg, PositionActions } from '../../types/strategy';
 import {
   createNewPosition,
   clonePosition,
@@ -16,14 +16,14 @@ import {
 } from '../../utils/strategy';
 
 interface UsePositionManagementProps {
-  legs: StrategyLeg[];
-  setLegs: React.Dispatch<React.SetStateAction<StrategyLeg[]>>;
+  legs: Leg[];
+  setLegs: React.Dispatch<React.SetStateAction<Leg[]>>;
   showError: (message: string) => void;
 }
 
 interface UsePositionManagementReturn {
   actions: PositionActions;
-  updatePosition: (legId: string, updates: Partial<StrategyLeg>) => void;
+  updatePosition: (legId: string, updates: Partial<Leg>) => void;
 }
 
 export const usePositionManagement = ({
@@ -53,7 +53,7 @@ export const usePositionManagement = ({
   }, [legs, setLegs]);
   
   // Update specific position
-  const updatePosition = useCallback((legId: string, updates: Partial<StrategyLeg>) => {
+  const updatePosition = useCallback((legId: string, updates: Partial<Leg>) => {
     setLegs(prev => {
       const updatedLegs = updatePositionInArray(prev, legId, updates);
       // Auto-correct interdependencies

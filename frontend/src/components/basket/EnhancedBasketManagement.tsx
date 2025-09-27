@@ -8,7 +8,7 @@ import {
   Play, Pause, Square, BarChart3,
   TrendingUp, Activity
 } from 'lucide-react';
-import { BrokerAccount, Strategy, Basket, CreateBasket, BasketBrokerAllocation } from '../../types';
+import { BrokerAccount, StrategyMetadata, Basket, CreateBasket, BasketBrokerAllocation } from '../../types';
 import basketService from '../../services/basketService';
 import brokerService from '../../services/brokerService';
 import allocationService from '../../services/allocationService';
@@ -37,7 +37,7 @@ interface EnhancedBasket extends Basket {
 const EnhancedBasketManagement: React.FC = () => {
   const [baskets, setBaskets] = useState<EnhancedBasket[]>([]);
   const [brokerAccounts, setBrokerAccounts] = useState<BrokerAccount[]>([]);
-  const [availableStrategies, setAvailableStrategies] = useState<Strategy[]>([]);
+  const [availableStrategies, setAvailableStrategies] = useState<StrategyMetadata[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingBasket, setEditingBasket] = useState<string | null>(null);
   const [allocatingBasket, setAllocatingBasket] = useState<Basket | null>(null);
@@ -498,7 +498,7 @@ const EnhancedBasketManagement: React.FC = () => {
                     />
                     <label htmlFor={strategy.strategyId} className="flex-1 cursor-pointer">
                       <div className="font-medium">{strategy.strategyName}</div>
-                      <div className="text-sm text-gray-600">{strategy.strategyType} • {strategy.legs} legs</div>
+                      <div className="text-sm text-gray-600">{strategy.strategyType} • {strategy.legCount} legs</div>
                     </label>
                     <Badge variant={getStatusColor(strategy.status)} size="sm">
                       {strategy.status}

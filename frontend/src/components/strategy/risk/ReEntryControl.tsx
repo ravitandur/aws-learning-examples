@@ -7,13 +7,13 @@
 
 import React from 'react';
 import Select from '../../ui/Select';
-import { StrategyLeg } from '../../../types/strategy';
+import { Leg } from '../../../types/strategy';
 import { RE_ENTRY_TYPE_OPTIONS, COUNT_OPTIONS } from '../../../utils/strategy';
 import { canEnableReEntry, getStopLossInvalidReason } from '../../../utils/strategy/riskValidators';
 
 interface ReEntryControlProps {
-  leg: StrategyLeg;
-  onUpdate: (updates: Partial<StrategyLeg>) => void;
+  leg: Leg;
+  onUpdate: (updates: Partial<Leg>) => void;
 }
 
 const ReEntryControl: React.FC<ReEntryControlProps> = ({ leg, onUpdate }) => {

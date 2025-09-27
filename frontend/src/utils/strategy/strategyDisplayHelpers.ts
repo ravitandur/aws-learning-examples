@@ -5,7 +5,7 @@
  * Consolidates formatting, badge variants, and display logic from StrategyCard and StrategyTable.
  */
 
-import { Strategy } from '../../types';
+import { StrategyMetadata } from '../../types';
 
 export interface StrategyTradingInfo {
   tradingType?: string;
@@ -187,7 +187,7 @@ export const getStatusBadgeVariant = (status: string): 'default' | 'success' | '
  * @param strategy Strategy object
  * @returns Formatted features string
  */
-export const getAdvancedFeaturesWithDerivedType = (strategy: Strategy): string => {
+export const getAdvancedFeaturesWithDerivedType = (strategy: StrategyMetadata): string => {
   const features = [];
 
   // Always show derived trading type as the first feature
@@ -233,7 +233,7 @@ export const getAdvancedFeaturesWithDerivedType = (strategy: Strategy): string =
  * @param strategy Strategy object
  * @returns Formatted features string or "None" if no features
  */
-export const getAdvancedFeaturesForTable = (strategy: Strategy): string => {
+export const getAdvancedFeaturesForTable = (strategy: StrategyMetadata): string => {
   const features = [];
 
   // Check for advanced features based on available strategy data

@@ -8,12 +8,12 @@
 import React from 'react';
 import Input from '../../ui/Input';
 import Select from '../../ui/Select';
-import { StrategyLeg } from '../../../types/strategy';
+import { Leg } from '../../../types/strategy';
 import { TARGET_PROFIT_TYPE_OPTIONS } from '../../../utils/strategy';
 
 interface WaitAndTradeControlProps {
-  leg: StrategyLeg;
-  onUpdate: (updates: Partial<StrategyLeg>) => void;
+  leg: Leg;
+  onUpdate: (updates: Partial<Leg>) => void;
 }
 
 const WaitAndTradeControl: React.FC<WaitAndTradeControlProps> = ({ leg, onUpdate }) => {

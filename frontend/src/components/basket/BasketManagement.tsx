@@ -4,7 +4,7 @@ import Button from '../ui/Button';
 import Input from '../ui/Input';
 import Badge from '../ui/Badge';
 import { Trash2, Plus, Edit, Settings, AlertCircle, RefreshCw } from 'lucide-react';
-import { BrokerAccount, Strategy, Basket, CreateBasket } from '../../types';
+import { BrokerAccount, StrategyMetadata, Basket, CreateBasket } from '../../types';
 import basketService from '../../services/basketService';
 import brokerService from '../../services/brokerService';
 import BasketAllocation from './BasketAllocation';
@@ -12,7 +12,7 @@ import BasketAllocation from './BasketAllocation';
 const BasketManagement: React.FC = () => {
   const [baskets, setBaskets] = useState<Basket[]>([]);
   const [brokerAccounts, setBrokerAccounts] = useState<BrokerAccount[]>([]);
-  const [availableStrategies, setAvailableStrategies] = useState<Strategy[]>([]);
+  const [availableStrategies, setAvailableStrategies] = useState<StrategyMetadata[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingBasket, setEditingBasket] = useState<string | null>(null);
   const [allocatingBasket, setAllocatingBasket] = useState<Basket | null>(null);
@@ -290,7 +290,7 @@ const BasketManagement: React.FC = () => {
                     />
                     <label htmlFor={strategy.strategyId} className="flex-1 cursor-pointer">
                       <div className="font-medium">{strategy.strategyName}</div>
-                      <div className="text-sm text-gray-600">{strategy.strategyType} • {strategy.legs} legs</div>
+                      <div className="text-sm text-gray-600">{strategy.strategyType} • {strategy.legCount} legs</div>
                     </label>
                     <Badge variant={getStatusColor(strategy.status)} size="sm">
                       {strategy.status}
@@ -379,7 +379,7 @@ const BasketManagement: React.FC = () => {
                     <div key={strategy.strategyId} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
                       <div>
                         <div className="font-medium text-sm">{strategy.strategyName}</div>
-                        <div className="text-xs text-gray-600">{strategy.strategyType} • {strategy.legs} legs</div>
+                        <div className="text-xs text-gray-600">{strategy.strategyType} • {strategy.legCount} legs</div>
                       </div>
                       <Badge variant={getStatusColor(strategy.status)} size="sm">
                         {strategy.status}

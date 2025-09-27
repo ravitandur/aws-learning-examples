@@ -8,13 +8,13 @@
 import React from 'react';
 import Input from '../../ui/Input';
 import Select from '../../ui/Select';
-import { StrategyLeg } from '../../../types/strategy';
+import { Leg } from '../../../types/strategy';
 import { TARGET_PROFIT_TYPE_OPTIONS } from '../../../utils/strategy';
 import { canEnableTrailingStopLoss, getStopLossInvalidReason } from '../../../utils/strategy/riskValidators';
 
 interface TrailingStopLossControlProps {
-  leg: StrategyLeg;
-  onUpdate: (updates: Partial<StrategyLeg>) => void;
+  leg: Leg;
+  onUpdate: (updates: Partial<Leg>) => void;
 }
 
 const TrailingStopLossControl: React.FC<TrailingStopLossControlProps> = ({ leg, onUpdate }) => {

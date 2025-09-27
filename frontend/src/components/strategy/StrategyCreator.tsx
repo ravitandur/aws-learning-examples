@@ -11,7 +11,7 @@ interface BrokerAllocation {
   lots: number;
 }
 
-interface StrategyLeg {
+interface Leg {
   legId: string;
   legType: 'CALL_BUY' | 'CALL_SELL' | 'PUT_BUY' | 'PUT_SELL';
   strike: number;
@@ -22,7 +22,7 @@ interface StrategyFormData {
   strategyName: string;
   strategyType: string;
   underlyingSymbol: string;
-  legs: StrategyLeg[];
+  legs: Leg[];
 }
 
 const StrategyCreator: React.FC = () => {
@@ -59,7 +59,7 @@ const StrategyCreator: React.FC = () => {
   };
 
   const addLeg = () => {
-    const newLeg: StrategyLeg = {
+    const newLeg: Leg = {
       legId: `leg-${Date.now()}`,
       legType: 'CALL_BUY',
       strike: 20500,
@@ -71,7 +71,7 @@ const StrategyCreator: React.FC = () => {
     }));
   };
 
-  const updateLeg = (legIndex: number, field: keyof StrategyLeg, value: any) => {
+  const updateLeg = (legIndex: number, field: keyof Leg, value: any) => {
     setFormData(prev => ({
       ...prev,
       legs: prev.legs.map((leg, idx) => 

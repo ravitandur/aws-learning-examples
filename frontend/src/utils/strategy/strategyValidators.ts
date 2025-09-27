@@ -5,7 +5,7 @@
  * Extracted from StrategyWizardDialog.tsx for better maintainability.
  */
 
-import { StrategyFormData, StrategyLeg, ValidationResult } from '../../types/strategy';
+import { StrategyFormData, Leg, ValidationResult } from '../../types/strategy';
 
 /**
  * Validate strategy name
@@ -31,7 +31,7 @@ export const validateStrategyName = (name: string): string[] => {
 /**
  * Validate positions/legs
  */
-export const validatePositions = (legs: StrategyLeg[]): string[] => {
+export const validatePositions = (legs: Leg[]): string[] => {
   const errors: string[] = [];
   
   if (!legs || legs.length === 0) {
@@ -49,7 +49,7 @@ export const validatePositions = (legs: StrategyLeg[]): string[] => {
 /**
  * Validate a single position
  */
-export const validateSinglePosition = (leg: StrategyLeg, positionNumber: number): string[] => {
+export const validateSinglePosition = (leg: Leg, positionNumber: number): string[] => {
   const errors: string[] = [];
   const prefix = `Position ${positionNumber}:`;
   
@@ -94,7 +94,7 @@ export const validateSinglePosition = (leg: StrategyLeg, positionNumber: number)
 /**
  * Validate risk management configuration for a position
  */
-export const validateRiskManagement = (leg: StrategyLeg, positionNumber: number): string[] => {
+export const validateRiskManagement = (leg: Leg, positionNumber: number): string[] => {
   const errors: string[] = [];
   const prefix = `Position ${positionNumber}:`;
 

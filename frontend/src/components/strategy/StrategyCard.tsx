@@ -1,5 +1,5 @@
 import React from 'react';
-import { Strategy } from '../../types';
+import { StrategyMetadata } from '../../types';
 import { Card, CardContent } from '../ui/Card';
 import Badge from '../ui/Badge';
 import Button from '../ui/Button';
@@ -13,10 +13,10 @@ import {
 } from '../../utils/strategy/strategyDisplayHelpers';
 
 interface StrategyCardProps {
-  strategy: Strategy;
-  onEdit: (strategy: Strategy) => void;
-  onDelete?: (strategy: Strategy) => void;
-  onStatusToggle?: (strategy: Strategy) => void;
+  strategy: StrategyMetadata;
+  onEdit: (strategy: StrategyMetadata) => void;
+  onDelete?: (strategy: StrategyMetadata) => void;
+  onStatusToggle?: (strategy: StrategyMetadata) => void;
   isLoading?: boolean;
   isUpdating?: boolean;
 }
@@ -44,7 +44,7 @@ const StrategyCard: React.FC<StrategyCardProps> = ({
                 {strategy.strategyName}
               </h3>
               <div className="text-xs text-gray-600 dark:text-gray-400">
-                {Array.isArray(strategy.legsArray) ? strategy.legsArray.length : strategy.legs} legs
+                {strategy.legCount} legs
               </div>
             </div>
           </div>

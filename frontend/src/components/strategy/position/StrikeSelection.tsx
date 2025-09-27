@@ -11,7 +11,7 @@
 import React from 'react';
 import Input from '../../ui/Input';
 import Select from '../../ui/Select';
-import { StrategyLeg } from '../../../types/strategy';
+import { Leg } from '../../../types/strategy';
 import { 
   SELECTION_METHOD_OPTIONS, 
   PREMIUM_OPERATOR_OPTIONS 
@@ -19,14 +19,14 @@ import {
 import { useStrikeOptions } from '../../../hooks/strategy/useStrikeOptions';
 
 interface StrikeSelectionProps {
-  leg: StrategyLeg;
-  onUpdate: (updates: Partial<StrategyLeg>) => void;
+  leg: Leg;
+  onUpdate: (updates: Partial<Leg>) => void;
 }
 
 const StrikeSelection: React.FC<StrikeSelectionProps> = ({ leg, onUpdate }) => {
   const { generatePositionStrikeOptions, generateStraddlePremiumPercentageOptions } = useStrikeOptions();
 
-  const handleSelectionMethodChange = (method: StrategyLeg['selectionMethod']) => {
+  const handleSelectionMethodChange = (method: Leg['selectionMethod']) => {
     onUpdate({
       selectionMethod: method,
       strikePrice: 'ATM'
@@ -66,7 +66,7 @@ const StrikeSelection: React.FC<StrikeSelectionProps> = ({ leg, onUpdate }) => {
           {/* Selection Method */}
           <Select
             value={leg.selectionMethod}
-            onChange={(e) => handleSelectionMethodChange(e.target.value as StrategyLeg['selectionMethod'])}
+            onChange={(e) => handleSelectionMethodChange(e.target.value as Leg['selectionMethod'])}
             options={SELECTION_METHOD_OPTIONS}
             className="h-9 text-sm"
           />
@@ -96,7 +96,7 @@ const StrikeSelection: React.FC<StrikeSelectionProps> = ({ leg, onUpdate }) => {
           {/* Selection Method */}
           <Select
             value={leg.selectionMethod}
-            onChange={(e) => handleSelectionMethodChange(e.target.value as StrategyLeg['selectionMethod'])}
+            onChange={(e) => handleSelectionMethodChange(e.target.value as Leg['selectionMethod'])}
             options={SELECTION_METHOD_OPTIONS}
             className="h-9 text-sm"
           />
@@ -123,7 +123,7 @@ const StrikeSelection: React.FC<StrikeSelectionProps> = ({ leg, onUpdate }) => {
           {/* Selection Method */}
           <Select
             value={leg.selectionMethod}
-            onChange={(e) => handleSelectionMethodChange(e.target.value as StrategyLeg['selectionMethod'])}
+            onChange={(e) => handleSelectionMethodChange(e.target.value as Leg['selectionMethod'])}
             options={SELECTION_METHOD_OPTIONS}
             className="h-9 text-sm"
           />

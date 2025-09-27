@@ -9,7 +9,8 @@
  * - Indian market specialization rules
  */
 
-import { FrontendStrategyData, FrontendStrategyLeg } from './strategyTransformationService';
+import { FrontendStrategyData } from './strategyTransformationService';
+import { Leg } from '../types/strategy';
 
 interface ValidationResult {
   isValid: boolean;
@@ -101,7 +102,7 @@ class StrategyValidationService {
   /**
    * Validate individual legs/positions
    */
-  private validateLegs(legs: FrontendStrategyLeg[]): LegValidationResult[] {
+  private validateLegs(legs: Leg[]): LegValidationResult[] {
     return legs.map((leg, index) => {
       const errors: string[] = [];
       const warnings: string[] = [];
@@ -135,7 +136,7 @@ class StrategyValidationService {
   /**
    * Validate strike selection methods and their configurations
    */
-  private validateStrikeSelection(leg: FrontendStrategyLeg): ValidationResult {
+  private validateStrikeSelection(leg: Leg): ValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
 
@@ -190,7 +191,7 @@ class StrategyValidationService {
   /**
    * Validate risk management configurations
    */
-  private validateRiskManagement(leg: FrontendStrategyLeg): ValidationResult {
+  private validateRiskManagement(leg: Leg): ValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
 
@@ -484,7 +485,7 @@ class StrategyValidationService {
   /**
    * Detect common options strategy patterns
    */
-  private detectStrategyPattern(legs: FrontendStrategyLeg[]): string | null {
+  private detectStrategyPattern(legs: Leg[]): string | null {
     if (legs.length === 2) {
       const ceLegs = legs.filter(leg => leg.optionType === 'CE');
       const peLegs = legs.filter(leg => leg.optionType === 'PE');
@@ -516,7 +517,7 @@ class StrategyValidationService {
   /**
    * Validate specific strategy patterns
    */
-  private validateStrategyPattern(pattern: string, legs: FrontendStrategyLeg[]): ValidationResult {
+  private validateStrategyPattern(pattern: string, legs: Leg[]): ValidationResult {
     const errors: string[] = [];
     const warnings: string[] = [];
 

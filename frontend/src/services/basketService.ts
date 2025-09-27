@@ -1,5 +1,5 @@
 import optionsApiClient from './optionsApiClient';
-import { Basket, CreateBasket, UpdateBasket, Strategy, ApiResponse } from '../types';
+import { Basket, CreateBasket, UpdateBasket, StrategyMetadata, ApiResponse } from '../types';
 import { transformBasket } from '../utils/transformStrategyFields';
 import allocationService from './allocationService';
 
@@ -133,9 +133,9 @@ class BasketService {
   /**
    * Get available strategies for baskets
    */
-  async getAvailableStrategies(): Promise<Strategy[]> {
+  async getAvailableStrategies(): Promise<StrategyMetadata[]> {
     try {
-      const response = await optionsApiClient.get<ApiResponse<Strategy[]>>('/options/strategies');
+      const response = await optionsApiClient.get<ApiResponse<StrategyMetadata[]>>('/options/strategies');
 
       if (!response.success || !response.data) {
         throw new Error(response.message || 'Failed to fetch strategies');

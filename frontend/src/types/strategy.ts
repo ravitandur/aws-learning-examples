@@ -62,7 +62,7 @@ export interface ReExecuteConfig {
 }
 
 // Main Strategy Leg interface
-export interface StrategyLeg {
+export interface Leg {
   id: string;
   optionType: OptionType;
   actionType: ActionType;
@@ -129,7 +129,7 @@ export interface StrategyFormData {
   strategyName: string;
   index: string;
   config: StrategyConfig;
-  legs: StrategyLeg[];
+  legs: Leg[];
 }
 
 // Component Props interfaces
@@ -157,7 +157,7 @@ export interface PositionActions {
   add: () => void;
   remove: (legId: string) => void;
   copy: (legId: string) => void;
-  update: (legId: string, updates: Partial<StrategyLeg>) => void;
+  update: (legId: string, updates: Partial<Leg>) => void;
 }
 
 // Default values type

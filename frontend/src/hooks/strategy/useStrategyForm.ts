@@ -9,7 +9,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { 
   StrategyFormData, 
   StrategyConfig, 
-  StrategyLeg 
+  Leg 
 } from '../../types/strategy';
 import { 
   DEFAULT_STRATEGY_CONFIG,
@@ -32,8 +32,8 @@ interface UseStrategyFormReturn {
   setStrategyIndex: (index: string) => void;
   strategyConfig: StrategyConfig;
   setStrategyConfig: React.Dispatch<React.SetStateAction<StrategyConfig>>;
-  legs: StrategyLeg[];
-  setLegs: React.Dispatch<React.SetStateAction<StrategyLeg[]>>;
+  legs: Leg[];
+  setLegs: React.Dispatch<React.SetStateAction<Leg[]>>;
   
   // UI state
   error: string | null;
@@ -99,7 +99,7 @@ export const useStrategyForm = ({
   const [strategyConfig, setStrategyConfig] = useState<StrategyConfig>(
     getStrategyConfig(editingStrategy)
   );
-  const [legs, setLegs] = useState<StrategyLeg[]>(editingStrategy?.legsArray || editingStrategy?.legs || []);
+  const [legs, setLegs] = useState<Leg[]>(editingStrategy?.legsArray || editingStrategy?.legs || []);
 
   // UI state
   const [error, setError] = useState<string | null>(null);

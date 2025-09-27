@@ -1,6 +1,6 @@
 import optionsApiClient from './optionsApiClient';
 import strategyTransformationService, { FrontendStrategyData, BackendStrategyData } from './strategyTransformationService';
-import { ApiResponse, Strategy } from '../types';
+import { ApiResponse, StrategyMetadata, StrategyWithLegs } from '../types';
 import { transformStrategyFields } from '../utils/transformStrategyFields';
 
 interface StrategyCreationResponse {
@@ -90,7 +90,7 @@ class StrategyService {
   /**
    * Get all strategies for a specific basket
    */
-  async getBasketStrategies(basketId: string): Promise<Strategy[]> {
+  async getBasketStrategies(basketId: string): Promise<StrategyMetadata[]> {
     try {
       const response = await optionsApiClient.get<ApiResponse<any[]>>(
         `/options/baskets/${basketId}/strategies`
@@ -110,7 +110,7 @@ class StrategyService {
   /**
    * Get detailed information about a specific strategy
    */
-  async getStrategy(strategyId: string): Promise<any> {
+  async getStrategy(strategyId: string): Promise<StrategyWithLegs> {
     try {
       const response = await optionsApiClient.get<ApiResponse<any>>(
         `/options/strategies/${strategyId}`

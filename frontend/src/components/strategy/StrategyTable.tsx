@@ -1,5 +1,5 @@
 import React from 'react';
-import { Strategy } from '../../types';
+import { StrategyMetadata } from '../../types';
 import Badge from '../ui/Badge';
 import { Edit3, Trash2, Power, RefreshCw } from 'lucide-react';
 import {
@@ -13,10 +13,10 @@ import {
 } from '../../utils/strategy/strategyDisplayHelpers';
 
 interface StrategyTableProps {
-  strategies: Strategy[];
-  onEdit: (strategy: Strategy) => void;
-  onDelete: (strategy: Strategy) => void;
-  onStatusToggle: (strategy: Strategy) => void;
+  strategies: StrategyMetadata[];
+  onEdit: (strategy: StrategyMetadata) => void;
+  onDelete: (strategy: StrategyMetadata) => void;
+  onStatusToggle: (strategy: StrategyMetadata) => void;
   loadingEditStrategy: boolean;
   updatingStrategy: string | null;
 }
@@ -79,7 +79,7 @@ const StrategyTable: React.FC<StrategyTableProps> = ({
                 </div>
                 <div className="flex flex-wrap gap-1">
                   <Badge variant="info" size="sm">{strategy.strategyType}</Badge>
-                  <Badge variant="default" size="sm">{strategy.legs || 0} legs</Badge>
+                  <Badge variant="default" size="sm">{strategy.legCount || 0} legs</Badge>
                   {strategy.expiryType && (
                     <Badge variant="info" size="sm">
                       {strategy.expiryType.toUpperCase()}

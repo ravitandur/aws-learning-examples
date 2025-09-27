@@ -1,3 +1,5 @@
+import { Leg } from './strategy';
+
 // User Types
 export interface User {
   id: string;
@@ -112,57 +114,55 @@ export const INDIAN_STATES = [
 export type IndianState = typeof INDIAN_STATES[number];
 
 // Basket and Strategy Types for Options Platform
-export interface Strategy {
+export interface StrategyMetadata {
   strategyId: string;
   strategyName: string;
   strategyType: string;
   status: 'ACTIVE' | 'PAUSED' | 'COMPLETED';
-  legs: number;
-  legsArray?: any[]; // For editing mode - preserves actual legs data
+  legCount: number; // Clean unified field
 
-  // Phase 2: Add missing field definitions for proper transformation
-  moveSlToCost?: boolean;
-  rangeBreakout?: boolean;
-  tradingType?: string;
-  intradayExitMode?: string;
-
-  // Additional configuration fields that might be needed
+  // Configuration fields for display
   underlying?: string;
   expiryType?: string;
   product?: string;
+  tradingType?: string;
+  intradayExitMode?: string;
+  entryTradingDaysBeforeExpiry?: number;
+  exitTradingDaysBeforeExpiry?: number;
   description?: string;
+
+  // Display fields
   entryTime?: string;
   exitTime?: string;
   entryDays?: string[];
   exitDays?: string[];
 
-  // POSITIONAL strategy fields
-  entryTradingDaysBeforeExpiry?: number;
-  exitTradingDaysBeforeExpiry?: number;
+  // Risk management display
+  targetProfit?: { enabled?: boolean; type?: string; value?: number; };
+  stopLoss?: { enabled?: boolean; type?: string; value?: number; };
+  moveSlToCost?: boolean;
+  rangeBreakout?: boolean;
+}
 
-  // Strategy-level risk management
-  targetProfit?: {
-    enabled?: boolean;
-    type?: string;
-    value?: number;
-  };
-  stopLoss?: {
-    enabled?: boolean;
-    type?: string;
-    value?: number;
-  };
-
-  // On-demand derived fields (calculated instead of stored)
-  legCount?: number;
-  isIntraDay?: boolean;
+export interface StrategyWithLegs extends StrategyMetadata {
+  legs: Leg[]; // Import Leg from types/strategy.ts
   sequenceNumber?: number;
+  isIntraDay?: boolean;
+}
+
+/** @deprecated Use StrategyMetadata for display or StrategyWithLegs for editing */
+export interface Strategy extends StrategyMetadata {
+  /** @deprecated Use legCount instead */
+  legs: number;
+  /** @deprecated Use StrategyWithLegs.legs instead */
+  legsArray?: any[];
 }
 
 export interface Basket {
   basket_id: string;
   basket_name: string;
   description?: string;
-  strategies: Strategy[];
+  strategies: StrategyMetadata[];
   status: 'ACTIVE' | 'PAUSED' | 'INACTIVE';
   created_at: string;
 }

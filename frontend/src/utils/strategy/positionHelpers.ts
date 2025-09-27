@@ -5,7 +5,7 @@
  * Extracted from StrategyWizardDialog.tsx for better maintainability.
  */
 
-import { StrategyLeg, ExpiryType } from '../../types/strategy';
+import { Leg, ExpiryType } from '../../types/strategy';
 import { createDefaultPositionTemplate, DEFAULT_POSITIONAL_VALUES, SLIDER_RANGE } from './strategyConstants';
 
 // Stable ID counter for better performance
@@ -19,7 +19,7 @@ export const generateStableId = (): string => `leg-${++legIdCounter}-${Date.now(
 /**
  * Create a new position with default values
  */
-export const createNewPosition = (): StrategyLeg => {
+export const createNewPosition = (): Leg => {
   const template = createDefaultPositionTemplate();
   return {
     id: generateStableId(),
@@ -30,7 +30,7 @@ export const createNewPosition = (): StrategyLeg => {
 /**
  * Clone an existing position with new ID
  */
-export const clonePosition = (position: StrategyLeg): StrategyLeg => {
+export const clonePosition = (position: Leg): Leg => {
   return {
     ...position,
     id: generateStableId()
@@ -41,10 +41,10 @@ export const clonePosition = (position: StrategyLeg): StrategyLeg => {
  * Update a specific position in an array
  */
 export const updatePositionInArray = (
-  positions: StrategyLeg[], 
+  positions: Leg[], 
   positionId: string, 
-  updates: Partial<StrategyLeg>
-): StrategyLeg[] => {
+  updates: Partial<Leg>
+): Leg[] => {
   return positions.map(position => 
     position.id === positionId ? { ...position, ...updates } : position
   );
@@ -54,9 +54,9 @@ export const updatePositionInArray = (
  * Remove a position from an array
  */
 export const removePositionFromArray = (
-  positions: StrategyLeg[], 
+  positions: Leg[], 
   positionId: string
-): StrategyLeg[] => {
+): Leg[] => {
   return positions.filter(position => position.id !== positionId);
 };
 
@@ -85,7 +85,7 @@ export const getDefaultPositionalValues = () => DEFAULT_POSITIONAL_VALUES;
 /**
  * Check if position has enabled risk management
  */
-export const hasEnabledRiskManagement = (position: StrategyLeg): boolean => {
+export const hasEnabledRiskManagement = (position: Leg): boolean => {
   return (position.stopLoss?.enabled || false) ||
          (position.targetProfit?.enabled || false) ||
          (position.trailingStopLoss?.enabled || false) ||
@@ -98,8 +98,8 @@ export const hasEnabledRiskManagement = (position: StrategyLeg): boolean => {
  * Count positions with specific risk management enabled
  */
 export const countPositionsWithRiskType = (
-  positions: StrategyLeg[], 
-  riskType: keyof Pick<StrategyLeg, 'stopLoss' | 'targetProfit' | 'trailingStopLoss' | 'waitAndTrade' | 'reEntry' | 'reExecute'>
+  positions: Leg[], 
+  riskType: keyof Pick<Leg, 'stopLoss' | 'targetProfit' | 'trailingStopLoss' | 'waitAndTrade' | 'reEntry' | 'reExecute'>
 ): number => {
   return positions.filter(position => position[riskType].enabled).length;
 };
@@ -107,7 +107,7 @@ export const countPositionsWithRiskType = (
 /**
  * Get position summary statistics
  */
-export const getPositionSummary = (positions: StrategyLeg[]) => {
+export const getPositionSummary = (positions: Leg[]) => {
   return {
     total: positions.length,
     buyPositions: positions.filter(p => p.actionType === 'BUY').length,
@@ -124,7 +124,7 @@ export const getPositionSummary = (positions: StrategyLeg[]) => {
 /**
  * Validate position interdependencies
  */
-export const validatePositionInterdependencies = (position: StrategyLeg): string[] => {
+export const validatePositionInterdependencies = (position: Leg): string[] => {
   const errors: string[] = [];
 
   // Trailing stop loss requires stop loss to be enabled
@@ -138,7 +138,7 @@ export const validatePositionInterdependencies = (position: StrategyLeg): string
 /**
  * Auto-correct position interdependencies
  */
-export const autoCorrectPositionInterdependencies = (position: StrategyLeg): StrategyLeg => {
+export const autoCorrectPositionInterdependencies = (position: Leg): Leg => {
   const correctedPosition = { ...position };
 
   // Provide default values if risk management objects are undefined
@@ -173,9 +173,9 @@ export const autoCorrectPositionInterdependencies = (position: StrategyLeg): Str
  * Reset position selection method and related fields
  */
 export const resetPositionSelectionMethod = (
-  position: StrategyLeg, 
-  newMethod: StrategyLeg['selectionMethod']
-): Partial<StrategyLeg> => {
+  position: Leg, 
+  newMethod: Leg['selectionMethod']
+): Partial<Leg> => {
   return {
     selectionMethod: newMethod,
     strikePrice: 'ATM', // Reset to ATM when method changes

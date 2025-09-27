@@ -11,7 +11,7 @@ import {
   Activity, BarChart3,
   Trash2, Target, Zap, Power, RefreshCw, Grid3x3, List, AlertTriangle
 } from 'lucide-react';
-import { Basket, Strategy, CreateBasket } from '../../types';
+import { Basket, StrategyMetadata, StrategyWithLegs, CreateBasket } from '../../types';
 import basketService from '../../services/basketService';
 import strategyService from '../../services/strategyService';
 import CreateBasketDialog from './CreateBasketDialog';
@@ -21,7 +21,7 @@ import StrategyTable from '../strategy/StrategyTable';
 import BasketAllocation from './BasketAllocation';
 
 interface BasketWithStrategies extends Omit<Basket, 'strategies'> {
-  strategies?: Strategy[]; // Make strategies optional initially
+  strategies?: StrategyMetadata[]; // Make strategies optional initially
   totalPnL: number;
   lastExecution?: string;
 }
@@ -36,7 +36,7 @@ const TabbedBasketManager: React.FC = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showStrategyWizard, setShowStrategyWizard] = useState(false);
   const [showEditStrategyDialog, setShowEditStrategyDialog] = useState(false);
-  const [editingStrategy, setEditingStrategy] = useState<Strategy | null>(null);
+  const [editingStrategy, setEditingStrategy] = useState<StrategyWithLegs | null>(null);
   const [loadingEditStrategy, setLoadingEditStrategy] = useState(false);
   const [activeTab, setActiveTab] = useState<'details' | 'performance' | 'allocation'>('details');
   const [strategyView, setStrategyView] = useState<'cards' | 'table'>('cards');
@@ -49,7 +49,7 @@ const TabbedBasketManager: React.FC = () => {
 
   const [deleteStrategyConfirmDialog, setDeleteStrategyConfirmDialog] = useState<{
     isOpen: boolean;
-    strategy: Strategy | null;
+    strategy: StrategyMetadata | null;
   }>({ isOpen: false, strategy: null });
 
   const [bulkDeleteDialog, setBulkDeleteDialog] = useState<{
@@ -115,7 +115,7 @@ const TabbedBasketManager: React.FC = () => {
             name: s.strategyName,
             type: s.strategyType,
             status: s.status,
-            legs: s.legs
+            legs: s.legCount
           }))
         });
 
@@ -419,7 +419,7 @@ const TabbedBasketManager: React.FC = () => {
     }
   };
 
-  const handleEditStrategy = async (strategy: Strategy) => {
+  const handleEditStrategy = async (strategy: StrategyMetadata) => {
     try {
       console.log('🔍 [DEBUG] Starting strategy edit for:', {
         fullStrategy: strategy,
@@ -446,8 +446,7 @@ const TabbedBasketManager: React.FC = () => {
       console.log('✅ [DEBUG] Strategy details fetched successfully:', {
         strategyId: fullStrategyData.strategyId,
         strategyName: fullStrategyData.strategyName,
-        legsCount: Array.isArray(fullStrategyData.legs) ? fullStrategyData.legs.length : fullStrategyData.legs,
-        hasConfig: !!fullStrategyData.config,
+        legsCount: fullStrategyData.legs?.length || 0,
         fullData: fullStrategyData
       });
 
@@ -520,7 +519,7 @@ const TabbedBasketManager: React.FC = () => {
   };
 
   // Handle strategy status toggle (enable/disable)
-  const handleStrategyStatusToggle = async (strategy: Strategy) => {
+  const handleStrategyStatusToggle = async (strategy: StrategyMetadata) => {
     const newStatus: 'ACTIVE' | 'PAUSED' | 'COMPLETED' = strategy.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
     try {
       setUpdatingStrategy(strategy.strategyId);
@@ -529,7 +528,7 @@ const TabbedBasketManager: React.FC = () => {
       // Update local state
       const updatedStrategies = selectedBasket?.strategies?.map(s =>
         s.strategyId === strategy.strategyId
-          ? { ...s, status: newStatus as Strategy['status'] }
+          ? { ...s, status: newStatus as StrategyMetadata['status'] }
           : s
       ) || [];
 
@@ -553,7 +552,7 @@ const TabbedBasketManager: React.FC = () => {
     }
   };
 
-  const handleDeleteStrategy = (strategy: Strategy) => {
+  const handleDeleteStrategy = (strategy: StrategyMetadata) => {
     // Show confirmation dialog
     setDeleteStrategyConfirmDialog({
       isOpen: true,
@@ -622,7 +621,6 @@ const TabbedBasketManager: React.FC = () => {
       setBulkDeleteDialog(prev => ({ ...prev, isDeleting: true }));
 
       const basket = bulkDeleteDialog.basket;
-      const strategiesCount = basket.strategies?.length || 0;
 
       // Call the bulk delete API
       const result = await strategyService.deleteAllBasketStrategies(basket.basket_id);
@@ -753,10 +751,10 @@ const TabbedBasketManager: React.FC = () => {
                 {filteredBaskets.map(basket => (
                   <button
                     key={basket.basket_id}
-                    className={`group w-full p-3 text-left transition-colors cursor-pointer ${
+                    className={`group w-full p-3 text-left transition-colors cursor-pointer rounded-lg border ${
                       selectedBasket?.basket_id === basket.basket_id
-                        ? 'bg-blue-50 dark:bg-blue-900/20 border-l-2 border-blue-500'
-                        : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                        ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700 shadow-sm'
+                        : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50 hover:border-gray-200 dark:hover:border-gray-700'
                     }`}
                     onClick={() => setSelectedBasket(basket)}
                   >

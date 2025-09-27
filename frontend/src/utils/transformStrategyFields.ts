@@ -1,17 +1,16 @@
-import { Strategy, Basket } from '../types';
+import { StrategyMetadata, Basket } from '../types';
 
 /**
  * Transform strategy fields from backend snake_case to frontend camelCase
- * Fixed: Added missing field mappings for proper strategy editing
+ * Updated to use clean StrategyMetadata interface with legCount
  */
-export function transformStrategyFields(backendStrategy: any): Strategy {
+export function transformStrategyFields(backendStrategy: any): StrategyMetadata {
   return {
     strategyId: backendStrategy.strategy_id,
     strategyName: backendStrategy.strategy_name,
     strategyType: backendStrategy.strategy_type || backendStrategy.underlying || 'Unknown',
     status: backendStrategy.status || 'ACTIVE',
-    legs: backendStrategy.leg_count || backendStrategy.legs?.length || 0,
-    legsArray: Array.isArray(backendStrategy.legs) ? backendStrategy.legs : undefined,
+    legCount: backendStrategy.leg_count || backendStrategy.legs?.length || 0,
 
     // Phase 2: Add missing field mappings for strategy editing
     moveSlToCost: backendStrategy.move_sl_to_cost || false,
@@ -45,10 +44,7 @@ export function transformStrategyFields(backendStrategy: any): Strategy {
       value: (backendStrategy.mtm_stop_loss)?.value || 0
     } : undefined,
 
-    // On-demand derived fields (calculated instead of stored)
-    legCount: backendStrategy.legs?.length || 0,
-    isIntraDay: backendStrategy.product === 'MIS',
-    sequenceNumber: backendStrategy.sequence_number || 1,
+    // Note: isIntraDay and sequenceNumber are now handled in StrategyWithLegs for editing mode
   };
 }
 
