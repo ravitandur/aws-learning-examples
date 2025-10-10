@@ -1,0 +1,896 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "QuantLeap Algo Trading - Partner API",
+    "version": "1.0.0",
+    "description": "B2B2C Marketplace API for broker partners to integrate QuantLeap's algorithmic trading strategies with their platforms. This API enables partners like Zebu to offer premium trading strategies to their users, earning 30% commission on all subscriptions.",
+    "contact": {
+      "name": "QuantLeap API Support",
+      "email": "api-support@quantleap.in",
+      "url": "https://quantleap.in/support"
+    },
+    "termsOfService": "https://quantleap.in/terms",
+    "license": {
+      "name": "Proprietary",
+      "url": "https://quantleap.in/license"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://vrd3rrtyx4.execute-api.ap-south-1.amazonaws.com/dev",
+      "description": "Development environment - DEPLOYED AND OPERATIONAL"
+    },
+    {
+      "url": "https://api.quantleap.in/v1",
+      "description": "Production environment (coming soon)"
+    }
+  ],
+  "security": [
+    {
+      "PartnerAPIKey": [],
+      "PartnerSecret": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Marketplace",
+      "description": "Browse and discover trading strategy templates"
+    },
+    {
+      "name": "Subscriptions",
+      "description": "Manage user subscriptions to strategy templates"
+    }
+  ],
+  "paths": {
+    "/partner/marketplace/templates": {
+      "get": {
+        "tags": ["Marketplace"],
+        "summary": "Browse marketplace templates",
+        "description": "Retrieve all available trading strategy templates from the marketplace. Templates are created by platform administrators and can be subscribed to by end users through your platform.",
+        "operationId": "getMarketplaceTemplates",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter templates by status",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["active", "inactive"],
+              "default": "active"
+            }
+          },
+          {
+            "name": "index_symbol",
+            "in": "query",
+            "description": "Filter by index symbol (NIFTY, BANKNIFTY, FINNIFTY, MIDCPNIFTY)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY"]
+            }
+          },
+          {
+            "name": "category",
+            "in": "query",
+            "description": "Filter by strategy category",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["directional", "neutral", "volatility", "income"]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results to return",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "description": "Number of results to skip for pagination",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved marketplace templates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "templates": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/StrategyTemplate"
+                      }
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "Total number of templates matching the filters"
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "description": "Number of results per page"
+                    },
+                    "offset": {
+                      "type": "integer",
+                      "description": "Current offset for pagination"
+                    }
+                  },
+                  "required": ["templates", "total", "limit", "offset"]
+                },
+                "example": {
+                  "templates": [
+                    {
+                      "basket_id": "basket_admin_8f3e2a1b",
+                      "basket_name": "Iron Condor Weekly - NIFTY",
+                      "description": "Conservative weekly iron condor strategy on NIFTY with 2% target and 1% stop loss. Ideal for range-bound markets.",
+                      "category": "neutral",
+                      "index_symbol": "NIFTY",
+                      "strategies_count": 1,
+                      "total_capital_required": 50000,
+                      "expected_return_monthly": 8.5,
+                      "risk_level": "low",
+                      "subscription_price": 999,
+                      "currency": "INR",
+                      "is_marketplace_enabled": true,
+                      "marketplace_enabled_at": "2025-10-05T10:30:00Z",
+                      "subscriber_count": 127,
+                      "performance_metrics": {
+                        "win_rate": 78.5,
+                        "avg_return_per_trade": 1.8,
+                        "max_drawdown": -3.2,
+                        "sharpe_ratio": 2.1
+                      },
+                      "created_at": "2025-09-15T08:00:00Z",
+                      "updated_at": "2025-10-08T12:45:00Z"
+                    }
+                  ],
+                  "total": 15,
+                  "limit": 20,
+                  "offset": 0
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/partner/marketplace/subscribe": {
+      "post": {
+        "tags": ["Subscriptions"],
+        "summary": "Subscribe user to strategy template",
+        "description": "Create a new subscription for an end user to a strategy template. The user must have a linked broker account on your platform. Subscriptions are charged monthly at ₹999, with 30% (₹299.70) commission to the partner.",
+        "operationId": "createSubscription",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["user_email", "basket_id", "broker_account_id"],
+                "properties": {
+                  "user_email": {
+                    "type": "string",
+                    "format": "email",
+                    "description": "End user's email address (must be registered on QuantLeap platform)"
+                  },
+                  "basket_id": {
+                    "type": "string",
+                    "description": "ID of the strategy template basket to subscribe to"
+                  },
+                  "broker_account_id": {
+                    "type": "string",
+                    "description": "User's broker account ID on your platform (will be auto-linked)"
+                  },
+                  "custom_lot_multiplier": {
+                    "type": "number",
+                    "minimum": 0.1,
+                    "maximum": 10,
+                    "default": 1,
+                    "description": "Multiplier for lot sizes (1 = default, 2 = double lots, 0.5 = half lots)"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Optional metadata for tracking (max 10 key-value pairs)",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "example": {
+                "user_email": "user@example.com",
+                "basket_id": "basket_admin_8f3e2a1b",
+                "broker_account_id": "zebu_acc_12345",
+                "custom_lot_multiplier": 1,
+                "metadata": {
+                  "source": "zebu_mobile_app",
+                  "campaign": "diwali_2025"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Subscription created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Subscription"
+                },
+                "example": {
+                  "subscription_id": "sub_zebu_a7f3e2b1",
+                  "user_email": "user@example.com",
+                  "basket_id": "basket_admin_8f3e2a1b",
+                  "basket_name": "Iron Condor Weekly - NIFTY",
+                  "broker_account_id": "zebu_acc_12345",
+                  "partner_id": "partner_zebu_live",
+                  "status": "active",
+                  "subscription_price": 999,
+                  "currency": "INR",
+                  "partner_commission": 299.7,
+                  "custom_lot_multiplier": 1,
+                  "subscribed_at": "2025-10-10T10:15:30Z",
+                  "next_billing_date": "2025-11-10T10:15:30Z",
+                  "auto_renew": true,
+                  "metadata": {
+                    "source": "zebu_mobile_app",
+                    "campaign": "diwali_2025"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestError"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "404": {
+            "description": "User or basket not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "not_found",
+                  "message": "User with email 'user@example.com' not found on QuantLeap platform",
+                  "code": "USER_NOT_FOUND",
+                  "details": {
+                    "user_email": "user@example.com"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Subscription already exists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "conflict",
+                  "message": "User already has an active subscription to this basket",
+                  "code": "DUPLICATE_SUBSCRIPTION",
+                  "details": {
+                    "existing_subscription_id": "sub_zebu_xyz123"
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimitError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/partner/subscriptions": {
+      "get": {
+        "tags": ["Subscriptions"],
+        "summary": "List all partner subscriptions",
+        "description": "Retrieve all subscriptions created by the partner. Supports filtering by user email.",
+        "operationId": "listPartnerSubscriptions",
+        "parameters": [
+          {
+            "name": "user_email",
+            "in": "query",
+            "description": "Filter subscriptions by specific user email",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "email"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved subscriptions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "subscriptions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Subscription"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      }
+    },
+    "/partner/subscriptions/{subscription_id}": {
+      "get": {
+        "tags": ["Subscriptions"],
+        "summary": "Get subscription details",
+        "description": "Retrieve detailed information about a specific subscription",
+        "operationId": "getPartnerSubscription",
+        "parameters": [
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved subscription",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Subscription"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Subscription does not belong to partner"
+          },
+          "404": {
+            "description": "Subscription not found"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Subscriptions"],
+        "summary": "Cancel subscription",
+        "description": "Cancel a user's subscription on their behalf",
+        "operationId": "cancelPartnerSubscription",
+        "parameters": [
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully cancelled subscription"
+          },
+          "400": {
+            "description": "Cannot cancel subscription in current status"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Subscription does not belong to partner"
+          },
+          "404": {
+            "description": "Subscription not found"
+          }
+        }
+      }
+    },
+    "/partner/subscriptions/{subscription_id}/pause": {
+      "put": {
+        "tags": ["Subscriptions"],
+        "summary": "Pause subscription",
+        "description": "Pause a user's subscription on their behalf. Strategy executor will skip paused subscriptions.",
+        "operationId": "pausePartnerSubscription",
+        "parameters": [
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully paused subscription"
+          },
+          "400": {
+            "description": "Can only pause ACTIVE subscriptions"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Subscription does not belong to partner"
+          },
+          "404": {
+            "description": "Subscription not found"
+          }
+        }
+      }
+    },
+    "/partner/subscriptions/{subscription_id}/resume": {
+      "put": {
+        "tags": ["Subscriptions"],
+        "summary": "Resume subscription",
+        "description": "Resume a paused subscription on behalf of the user",
+        "operationId": "resumePartnerSubscription",
+        "parameters": [
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully resumed subscription"
+          },
+          "400": {
+            "description": "Can only resume PAUSED subscriptions"
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Subscription does not belong to partner"
+          },
+          "404": {
+            "description": "Subscription not found"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "PartnerAPIKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "description": "Partner API Key in format: Bearer pk_zebu_live_XXXXXXXX"
+      },
+      "PartnerSecret": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Partner-Secret",
+        "description": "Partner Secret Key: sk_zebu_live_YYYYYYYY"
+      }
+    },
+    "schemas": {
+      "StrategyTemplate": {
+        "type": "object",
+        "description": "Trading strategy template available in the marketplace",
+        "required": [
+          "basket_id",
+          "basket_name",
+          "description",
+          "category",
+          "index_symbol",
+          "strategies_count",
+          "subscription_price",
+          "currency",
+          "is_marketplace_enabled"
+        ],
+        "properties": {
+          "basket_id": {
+            "type": "string",
+            "description": "Unique identifier for the strategy basket",
+            "example": "basket_admin_8f3e2a1b"
+          },
+          "basket_name": {
+            "type": "string",
+            "description": "Display name of the strategy basket",
+            "example": "Iron Condor Weekly - NIFTY"
+          },
+          "description": {
+            "type": "string",
+            "description": "Detailed description of the strategy",
+            "example": "Conservative weekly iron condor strategy on NIFTY with 2% target and 1% stop loss. Ideal for range-bound markets."
+          },
+          "category": {
+            "type": "string",
+            "enum": ["directional", "neutral", "volatility", "income"],
+            "description": "Strategy category"
+          },
+          "index_symbol": {
+            "type": "string",
+            "enum": ["NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY"],
+            "description": "Underlying index symbol"
+          },
+          "strategies_count": {
+            "type": "integer",
+            "description": "Number of strategies in this basket",
+            "minimum": 1
+          },
+          "total_capital_required": {
+            "type": "number",
+            "description": "Approximate capital required in INR",
+            "example": 50000
+          },
+          "expected_return_monthly": {
+            "type": "number",
+            "description": "Expected monthly return percentage",
+            "example": 8.5
+          },
+          "risk_level": {
+            "type": "string",
+            "enum": ["low", "medium", "high"],
+            "description": "Risk level classification"
+          },
+          "subscription_price": {
+            "type": "number",
+            "description": "Monthly subscription price",
+            "example": 999
+          },
+          "currency": {
+            "type": "string",
+            "enum": ["INR"],
+            "description": "Price currency",
+            "default": "INR"
+          },
+          "is_marketplace_enabled": {
+            "type": "boolean",
+            "description": "Whether template is available in marketplace"
+          },
+          "marketplace_enabled_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp when marketplace was enabled"
+          },
+          "subscriber_count": {
+            "type": "integer",
+            "description": "Total number of active subscribers",
+            "minimum": 0
+          },
+          "performance_metrics": {
+            "type": "object",
+            "description": "Historical performance metrics",
+            "properties": {
+              "win_rate": {
+                "type": "number",
+                "description": "Percentage of winning trades",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "avg_return_per_trade": {
+                "type": "number",
+                "description": "Average return percentage per trade"
+              },
+              "max_drawdown": {
+                "type": "number",
+                "description": "Maximum drawdown percentage"
+              },
+              "sharpe_ratio": {
+                "type": "number",
+                "description": "Sharpe ratio for risk-adjusted returns"
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Template creation timestamp"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Last update timestamp"
+          }
+        }
+      },
+      "Subscription": {
+        "type": "object",
+        "description": "User subscription to a strategy template",
+        "required": [
+          "subscription_id",
+          "user_email",
+          "basket_id",
+          "basket_name",
+          "partner_id",
+          "status",
+          "subscription_price",
+          "currency",
+          "partner_commission",
+          "subscribed_at"
+        ],
+        "properties": {
+          "subscription_id": {
+            "type": "string",
+            "description": "Unique subscription identifier",
+            "example": "sub_zebu_a7f3e2b1"
+          },
+          "user_email": {
+            "type": "string",
+            "format": "email",
+            "description": "Subscriber's email address"
+          },
+          "basket_id": {
+            "type": "string",
+            "description": "Subscribed basket ID"
+          },
+          "basket_name": {
+            "type": "string",
+            "description": "Subscribed basket name"
+          },
+          "broker_account_id": {
+            "type": "string",
+            "description": "User's broker account ID (auto-linked)"
+          },
+          "partner_id": {
+            "type": "string",
+            "description": "Partner identifier for revenue attribution",
+            "example": "partner_zebu_live"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["ACTIVE", "PAUSED", "CANCELLED", "EXPIRED"],
+            "description": "Subscription status"
+          },
+          "subscription_price": {
+            "type": "number",
+            "description": "Monthly subscription price in INR",
+            "example": 999
+          },
+          "currency": {
+            "type": "string",
+            "enum": ["INR"],
+            "default": "INR"
+          },
+          "partner_commission": {
+            "type": "number",
+            "description": "Partner's commission (30% of subscription price)",
+            "example": 299.7
+          },
+          "custom_lot_multiplier": {
+            "type": "number",
+            "description": "Lot size multiplier",
+            "minimum": 0.1,
+            "maximum": 10,
+            "default": 1
+          },
+          "subscribed_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Subscription creation timestamp"
+          },
+          "next_billing_date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Next billing date for renewal"
+          },
+          "auto_renew": {
+            "type": "boolean",
+            "description": "Whether subscription auto-renews",
+            "default": true
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Custom metadata",
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error", "message", "code"],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error type",
+            "enum": ["bad_request", "unauthorized", "forbidden", "not_found", "conflict", "rate_limit", "internal_error"]
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable error message"
+          },
+          "code": {
+            "type": "string",
+            "description": "Machine-readable error code"
+          },
+          "details": {
+            "type": "object",
+            "description": "Additional error details",
+            "additionalProperties": true
+          },
+          "request_id": {
+            "type": "string",
+            "description": "Unique request identifier for support",
+            "example": "req_a7f3e2b1c4d5"
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequestError": {
+        "description": "Invalid request parameters",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "bad_request",
+              "message": "Invalid request body: 'user_email' is required",
+              "code": "VALIDATION_ERROR",
+              "details": {
+                "field": "user_email",
+                "reason": "missing_required_field"
+              },
+              "request_id": "req_a7f3e2b1c4d5"
+            }
+          }
+        }
+      },
+      "UnauthorizedError": {
+        "description": "Authentication failed - invalid or missing API credentials",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "unauthorized",
+              "message": "Invalid Partner API Key or Secret",
+              "code": "INVALID_CREDENTIALS",
+              "request_id": "req_b8g4f3c2d6e7"
+            }
+          }
+        }
+      },
+      "RateLimitError": {
+        "description": "Rate limit exceeded - too many requests",
+        "headers": {
+          "X-RateLimit-Limit": {
+            "description": "Request limit per minute",
+            "schema": {
+              "type": "integer",
+              "example": 60
+            }
+          },
+          "X-RateLimit-Remaining": {
+            "description": "Remaining requests in current window",
+            "schema": {
+              "type": "integer",
+              "example": 0
+            }
+          },
+          "X-RateLimit-Reset": {
+            "description": "Unix timestamp when rate limit resets",
+            "schema": {
+              "type": "integer",
+              "example": 1696936200
+            }
+          },
+          "Retry-After": {
+            "description": "Seconds until rate limit resets",
+            "schema": {
+              "type": "integer",
+              "example": 45
+            }
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "rate_limit",
+              "message": "Rate limit exceeded. Maximum 60 requests per minute allowed.",
+              "code": "RATE_LIMIT_EXCEEDED",
+              "details": {
+                "limit": 60,
+                "remaining": 0,
+                "reset_at": "2025-10-10T10:30:00Z"
+              },
+              "request_id": "req_c9h5g4d3e7f8"
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Internal server error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": "internal_error",
+              "message": "An unexpected error occurred. Our team has been notified.",
+              "code": "INTERNAL_ERROR",
+              "request_id": "req_d0i6h5e4f8g9"
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-rateLimit": {
+    "algorithm": "token_bucket",
+    "limit": 60,
+    "window": "1 minute",
+    "headers": {
+      "limit": "X-RateLimit-Limit",
+      "remaining": "X-RateLimit-Remaining",
+      "reset": "X-RateLimit-Reset"
+    }
+  },
+  "x-webhooks": {
+    "description": "Webhook support coming soon in v1.1",
+    "events": [
+      "subscription.created",
+      "subscription.cancelled",
+      "subscription.renewed",
+      "execution.completed",
+      "execution.failed"
+    ]
+  }
+}
