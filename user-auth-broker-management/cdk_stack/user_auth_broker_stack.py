@@ -113,6 +113,15 @@ class UserAuthBrokerStack(Stack):
             refresh_token_validity=Duration.days(30)
         )
 
+        # Cognito Admin Group for marketplace management
+        admin_group = cognito.CfnUserPoolGroup(
+            self, f"AdminGroup{self.deploy_env.title()}",
+            user_pool_id=user_pool.user_pool_id,
+            group_name="Admins",
+            description="Platform administrators with marketplace template management",
+            precedence=0  # Highest precedence
+        )
+
         # DynamoDB table for user profiles
         user_profiles_table = dynamodb.Table(
             self, f"AuthUserProfiles{self.deploy_env.title()}",

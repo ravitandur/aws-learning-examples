@@ -4,8 +4,8 @@ import json
 import aws_cdk as cdk
 from cdk_stack.user_auth_broker_stack import UserAuthBrokerStack
 
-# Load environment configuration
-config_path = os.path.join(os.path.dirname(__file__), 'config', 'environments.json')
+# Load environment configuration from shared config
+config_path = os.path.join(os.path.dirname(__file__), '..', 'shared_config', 'environments.json')
 with open(config_path, 'r') as f:
     config = json.load(f)
 

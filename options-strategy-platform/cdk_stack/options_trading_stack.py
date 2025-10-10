@@ -141,6 +141,60 @@ class OptionsTradeStack(Stack):
             ]
         )
 
+        # GSI3: MarketplaceDiscovery - B2B2C Marketplace Integration
+        # Purpose: Browse marketplace templates by category with subscriber count ranking
+        # Query Pattern: PK="MARKETPLACE#INCOME" SK=subscriber_count (desc)
+        # Benefits:
+        # - Category-based browsing (INCOME, CONSERVATIVE, AGGRESSIVE, etc.)
+        # - Natural ranking by popularity (subscriber_count)
+        # - Efficient partner API queries for external brokers (Zebu, Angel, etc.)
+        # - Supports white-label marketplace integration
+        self.trading_configurations_table.add_global_secondary_index(
+            index_name="MarketplaceDiscovery",
+            partition_key=dynamodb.Attribute(name="marketplace_category", type=dynamodb.AttributeType.STRING),
+            sort_key=dynamodb.Attribute(name="subscriber_count", type=dynamodb.AttributeType.NUMBER),
+            projection_type=dynamodb.ProjectionType.ALL
+        )
+
+        # GSI4: UserSubscriptions - User Subscription Management
+        # Purpose: Query all subscriptions for a user with status filtering
+        # Query Pattern: PK=user_id SK begins_with "ACTIVE#2025-10-10"
+        # Benefits:
+        # - Fast user subscription lookups
+        # - Status-based filtering (ACTIVE, TRIAL, CANCELLED)
+        # - Date-sorted for billing and analytics
+        # - Optimized projection for subscription management UI
+        self.trading_configurations_table.add_global_secondary_index(
+            index_name="UserSubscriptions",
+            partition_key=dynamodb.Attribute(name="user_id", type=dynamodb.AttributeType.STRING),
+            sort_key=dynamodb.Attribute(name="subscription_status_date", type=dynamodb.AttributeType.STRING),
+            projection_type=dynamodb.ProjectionType.INCLUDE,
+            non_key_attributes=[
+                "subscription_id", "template_basket_id", "template_owner_id",
+                "status", "pricing", "performance_tracking", "partner_api_key_id",
+                "partner_id", "auto_linked_broker_account", "entity_type"
+            ]
+        )
+
+        # GSI5: TemplateSubscribers - Reverse lookup for execution
+        # Purpose: Find all users subscribed to a specific template basket
+        # Query Pattern: PK=template_basket_id SK begins_with "ACTIVE#"
+        # Benefits:
+        # - Execution engine discovers subscribers
+        # - Admin changes propagate to all subscribers
+        # - Efficient subscriber analytics
+        # - Partner revenue attribution
+        self.trading_configurations_table.add_global_secondary_index(
+            index_name="TemplateSubscribers",
+            partition_key=dynamodb.Attribute(name="template_basket_id", type=dynamodb.AttributeType.STRING),
+            sort_key=dynamodb.Attribute(name="subscription_status_date", type=dynamodb.AttributeType.STRING),
+            projection_type=dynamodb.ProjectionType.INCLUDE,
+            non_key_attributes=[
+                "user_id", "subscription_id", "status", "auto_linked_broker_account",
+                "partner_id", "created_at"
+            ]
+        )
+
         # Table 2: Execution History for time-series data (Traditional Table)
         self.execution_history_table = dynamodb.Table(
             self, f"ExecutionHistory{self.deploy_env.title()}",
@@ -192,7 +246,11 @@ class OptionsTradeStack(Stack):
             ('basket-manager', 'Strategy management/basket_manager.py'),
             ('strategy-manager', 'Strategy management/strategy_manager.py'),
             ('basket-broker-allocator', 'Strategy management/basket_broker_allocator.py'),
-            ('subscription-manager', 'Strategy management/subscription_manager.py'),
+
+            # B2B2C Marketplace Integration (New)
+            ('marketplace-manager', 'Marketplace/marketplace_manager.py'),
+            ('subscription-manager', 'Marketplace/subscription_manager.py'),
+            ('partner-api-manager', 'Marketplace/partner_api_manager.py'),
 
             # Execution Engine
             ('strategy-executor', 'Execution engine/strategy_executor.py'),
@@ -587,6 +645,195 @@ class OptionsTradeStack(Stack):
                                         authorization_type=apigateway.AuthorizationType.COGNITO,
                                         authorizer=authorizer
                                         )
+
+        # =============================================================================
+        # Marketplace & B2B2C Integration - Admin & User Endpoints
+        # =============================================================================
+
+        # Public marketplace browsing (requires authentication)
+        marketplace_resource = options_resource.add_resource("marketplace")
+
+        # GET /options/marketplace/templates - Browse marketplace templates
+        marketplace_templates_resource = marketplace_resource.add_resource("templates")
+        marketplace_templates_resource.add_method("GET",
+                                                  apigateway.LambdaIntegration(self.lambda_functions['marketplace-manager']),
+                                                  authorization_type=apigateway.AuthorizationType.COGNITO,
+                                                  authorizer=authorizer
+                                                  )
+
+        # POST /options/marketplace/subscribe/{basket_id} - Subscribe to template
+        marketplace_subscribe_resource = marketplace_resource.add_resource("subscribe")
+        marketplace_subscribe_basket_resource = marketplace_subscribe_resource.add_resource("{basket_id}")
+        marketplace_subscribe_basket_resource.add_method("POST",
+                                                         apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
+                                                         authorization_type=apigateway.AuthorizationType.COGNITO,
+                                                         authorizer=authorizer
+                                                         )
+
+        # User subscription management
+        user_resource = options_resource.add_resource("user")
+
+        # GET /options/user/subscriptions - Get user's subscriptions
+        user_subscriptions_resource = user_resource.add_resource("subscriptions")
+        user_subscriptions_resource.add_method("GET",
+                                               apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
+                                               authorization_type=apigateway.AuthorizationType.COGNITO,
+                                               authorizer=authorizer
+                                               )
+
+        # User subscription management by ID
+        user_subscription_id_resource = user_subscriptions_resource.add_resource("{subscription_id}")
+
+        # GET /options/user/subscriptions/{subscription_id} - Get subscription details
+        user_subscription_id_resource.add_method("GET",
+                                                 apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
+                                                 authorization_type=apigateway.AuthorizationType.COGNITO,
+                                                 authorizer=authorizer
+                                                 )
+
+        # PUT /options/user/subscriptions/{subscription_id} - Update subscription
+        user_subscription_id_resource.add_method("PUT",
+                                                 apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
+                                                 authorization_type=apigateway.AuthorizationType.COGNITO,
+                                                 authorizer=authorizer
+                                                 )
+
+        # DELETE /options/user/subscriptions/{subscription_id} - Cancel subscription
+        user_subscription_id_resource.add_method("DELETE",
+                                                 apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
+                                                 authorization_type=apigateway.AuthorizationType.COGNITO,
+                                                 authorizer=authorizer
+                                                 )
+
+        # PUT /options/user/subscriptions/{subscription_id}/pause - Pause subscription
+        user_pause_resource = user_subscription_id_resource.add_resource("pause")
+        user_pause_resource.add_method("PUT",
+                                       apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
+                                       authorization_type=apigateway.AuthorizationType.COGNITO,
+                                       authorizer=authorizer
+                                       )
+
+        # PUT /options/user/subscriptions/{subscription_id}/resume - Resume subscription
+        user_resume_resource = user_subscription_id_resource.add_resource("resume")
+        user_resume_resource.add_method("PUT",
+                                        apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
+                                        authorization_type=apigateway.AuthorizationType.COGNITO,
+                                        authorizer=authorizer
+                                        )
+
+        # Admin marketplace management (requires Admins group)
+        admin_resource = options_resource.add_resource("admin")
+
+        # POST /options/admin/marketplace/enable/{basket_id} - Enable marketplace for basket
+        admin_marketplace_resource = admin_resource.add_resource("marketplace")
+        admin_marketplace_enable_resource = admin_marketplace_resource.add_resource("enable")
+        admin_enable_basket_resource = admin_marketplace_enable_resource.add_resource("{basket_id}")
+        admin_enable_basket_resource.add_method("POST",
+                                                apigateway.LambdaIntegration(self.lambda_functions['marketplace-manager']),
+                                                authorization_type=apigateway.AuthorizationType.COGNITO,
+                                                authorizer=authorizer
+                                                )
+
+        # PUT /options/admin/marketplace/disable/{basket_id} - Disable marketplace for basket
+        admin_marketplace_disable_resource = admin_marketplace_resource.add_resource("disable")
+        admin_disable_basket_resource = admin_marketplace_disable_resource.add_resource("{basket_id}")
+        admin_disable_basket_resource.add_method("PUT",
+                                                 apigateway.LambdaIntegration(self.lambda_functions['marketplace-manager']),
+                                                 authorization_type=apigateway.AuthorizationType.COGNITO,
+                                                 authorizer=authorizer
+                                                 )
+
+        # Partner API key management
+        admin_partners_resource = admin_resource.add_resource("partner-api-keys")
+
+        # POST /options/admin/partner-api-keys - Create partner API key
+        admin_partners_resource.add_method("POST",
+                                          apigateway.LambdaIntegration(self.lambda_functions['partner-api-manager']),
+                                          authorization_type=apigateway.AuthorizationType.COGNITO,
+                                          authorizer=authorizer
+                                          )
+
+        # GET /options/admin/partner-api-keys - List partner API keys
+        admin_partners_resource.add_method("GET",
+                                          apigateway.LambdaIntegration(self.lambda_functions['partner-api-manager']),
+                                          authorization_type=apigateway.AuthorizationType.COGNITO,
+                                          authorizer=authorizer
+                                          )
+
+        # PUT /options/admin/partner-api-keys/{key_id} - Update partner API key
+        admin_partner_key_resource = admin_partners_resource.add_resource("{key_id}")
+        admin_partner_key_resource.add_method("PUT",
+                                             apigateway.LambdaIntegration(self.lambda_functions['partner-api-manager']),
+                                             authorization_type=apigateway.AuthorizationType.COGNITO,
+                                             authorizer=authorizer
+                                             )
+
+        # DELETE /options/admin/partner-api-keys/{key_id} - Revoke partner API key
+        admin_partner_key_resource.add_method("DELETE",
+                                             apigateway.LambdaIntegration(self.lambda_functions['partner-api-manager']),
+                                             authorization_type=apigateway.AuthorizationType.COGNITO,
+                                             authorizer=authorizer
+                                             )
+
+        # =============================================================================
+        # Partner API Endpoints (No Cognito auth - uses custom Partner API auth)
+        # =============================================================================
+
+        # Partner marketplace browsing (Partner API authentication)
+        partner_resource = self.api.root.add_resource("partner")
+
+        # GET /partner/marketplace/templates - Browse templates via Partner API
+        partner_marketplace_resource = partner_resource.add_resource("marketplace")
+        partner_templates_resource = partner_marketplace_resource.add_resource("templates")
+        partner_templates_resource.add_method("GET",
+                                             apigateway.LambdaIntegration(self.lambda_functions['marketplace-manager']),
+                                             authorization_type=apigateway.AuthorizationType.NONE
+                                             )
+
+        # POST /partner/marketplace/subscribe - Partner API subscription
+        partner_subscribe_resource = partner_marketplace_resource.add_resource("subscribe")
+        partner_subscribe_resource.add_method("POST",
+                                             apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
+                                             authorization_type=apigateway.AuthorizationType.NONE
+                                             )
+
+        # Partner subscription management endpoints
+        partner_subscriptions_resource = partner_resource.add_resource("subscriptions")
+
+        # GET /partner/subscriptions - List all partner subscriptions
+        partner_subscriptions_resource.add_method("GET",
+                                                 apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
+                                                 authorization_type=apigateway.AuthorizationType.NONE
+                                                 )
+
+        # Partner subscription management by ID
+        partner_subscription_id_resource = partner_subscriptions_resource.add_resource("{subscription_id}")
+
+        # GET /partner/subscriptions/{subscription_id} - Get subscription details
+        partner_subscription_id_resource.add_method("GET",
+                                                   apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
+                                                   authorization_type=apigateway.AuthorizationType.NONE
+                                                   )
+
+        # DELETE /partner/subscriptions/{subscription_id} - Cancel subscription
+        partner_subscription_id_resource.add_method("DELETE",
+                                                   apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
+                                                   authorization_type=apigateway.AuthorizationType.NONE
+                                                   )
+
+        # PUT /partner/subscriptions/{subscription_id}/pause - Pause subscription
+        partner_pause_resource = partner_subscription_id_resource.add_resource("pause")
+        partner_pause_resource.add_method("PUT",
+                                         apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
+                                         authorization_type=apigateway.AuthorizationType.NONE
+                                         )
+
+        # PUT /partner/subscriptions/{subscription_id}/resume - Resume subscription
+        partner_resume_resource = partner_subscription_id_resource.add_resource("resume")
+        partner_resume_resource.add_method("PUT",
+                                          apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
+                                          authorization_type=apigateway.AuthorizationType.NONE
+                                          )
 
     def _create_websocket_api(self):
         """Create WebSocket API for real-time updates"""

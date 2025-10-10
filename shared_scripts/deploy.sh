@@ -193,6 +193,48 @@ if [ $? -eq 0 ]; then
             echo "   • API Gateway with authentication endpoints"
             echo "   • Lambda functions for user and broker operations"
             echo "   • Secrets Manager for secure credential storage"
+            echo ""
+
+            # Get User Pool ID from stack outputs
+            USER_POOL_ID=$(aws cloudformation describe-stacks \
+                --stack-name "$STACK_NAME" \
+                --query 'Stacks[0].Outputs[?OutputKey==`UserPoolId`].OutputValue' \
+                --output text \
+                $PROFILE_FLAG 2>/dev/null)
+
+            if [ -n "$USER_POOL_ID" ]; then
+                echo "🔐 Cognito User Pool ID: $USER_POOL_ID"
+                echo ""
+                echo "👤 To add admin users to the Admins group, run:"
+                echo "   aws cognito-idp admin-add-user-to-group \\"
+                echo "     --user-pool-id $USER_POOL_ID \\"
+                echo "     --username YOUR_ADMIN_EMAIL \\"
+                echo "     --group-name Admins \\"
+                echo "     --profile $AWS_PROFILE"
+                echo ""
+
+                # Optional: Prompt to add admin user now
+                read -p "Would you like to add an admin user now? (y/N): " -n 1 -r
+                echo
+                if [[ $REPLY =~ ^[Yy]$ ]]; then
+                    read -p "Enter admin email: " ADMIN_EMAIL
+                    if [ -n "$ADMIN_EMAIL" ]; then
+                        echo "Adding $ADMIN_EMAIL to Admins group..."
+                        aws cognito-idp admin-add-user-to-group \
+                            --user-pool-id "$USER_POOL_ID" \
+                            --username "$ADMIN_EMAIL" \
+                            --group-name Admins \
+                            --profile "$AWS_PROFILE" 2>/dev/null
+
+                        if [ $? -eq 0 ]; then
+                            echo "✅ Successfully added $ADMIN_EMAIL to Admins group"
+                        else
+                            echo "⚠️  User may not exist yet. They will be added to Admins group after first login/signup."
+                            echo "   Re-run the command above after user creation."
+                        fi
+                    fi
+                fi
+            fi
             ;;
         "options-strategy-platform")
             echo "📋 Options Strategy Platform deployed:"
