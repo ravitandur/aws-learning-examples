@@ -10,7 +10,7 @@
     "dev": {
       "description": "Development environment for active development and testing",
       "removal_policy": "DESTROY",
-      "cors_origins": ["http://localhost:3000", "https://dev.quantleap.in"],
+      "cors_origins": ["http://localhost:3000", "https://dev.quantleap.in", "https://d6m57ifpi5gll.cloudfront.net"],
       "log_retention_days": 7,
       "enable_point_in_time_recovery": false,
       "token_validity_hours": 24,
@@ -75,6 +75,11 @@
           }
         }
       }
+    },
+    "frontend": {
+      "stack_name": "frontend-hosting-stack",
+      "description": "React frontend hosting with S3 and CloudFront",
+      "dependencies": ["auth_broker", "options_trading"]
     }
   }
 }

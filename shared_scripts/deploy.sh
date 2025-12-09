@@ -40,6 +40,7 @@ if [ -z "$PROJECT" ] || [ -z "$ENVIRONMENT" ] || [ -z "$AWS_PROFILE" ]; then
     echo "Available projects:"
     echo "  • user-auth-broker-management    - User authentication and broker account management"
     echo "  • options-strategy-platform      - Complete options trading platform"
+    echo "  • frontend-infrastructure        - React frontend hosting (S3 + CloudFront)"
     echo ""
     echo "Example: $0 -p options-strategy-platform -e dev -a account2"
     exit 1
@@ -60,7 +61,7 @@ PROJECT_DIR="$ROOT_DIR/$PROJECT"
 if [ ! -d "$PROJECT_DIR" ]; then
     echo "Error: Project directory '$PROJECT' does not exist"
     echo "Available projects:"
-    ls -d */ | grep -E "(user-auth-broker-management|options-strategy-platform)" | sed 's/\///g' | sed 's/^/  • /'
+    ls -d */ | grep -E "(user-auth-broker-management|options-strategy-platform|frontend-infrastructure)" | sed 's/\///g' | sed 's/^/  • /'
     exit 1
 fi
 
@@ -155,6 +156,9 @@ case "$PROJECT" in
     "options-strategy-platform")
         STACK_SUFFIX="options-trading-stack"
         ;;
+    "frontend-infrastructure")
+        STACK_SUFFIX="frontend-hosting-stack"
+        ;;
     *)
         echo "Error: Unknown project stack mapping for: $PROJECT"
         exit 1
@@ -243,6 +247,32 @@ if [ $? -eq 0 ]; then
             echo "   • Multi-broker execution engine"
             echo "   • Real-time market data and position tracking"
             echo "   • Performance analytics and risk management"
+            ;;
+        "frontend-infrastructure")
+            echo "📋 Frontend Hosting Infrastructure deployed:"
+            echo "   • S3 bucket for static assets"
+            echo "   • CloudFront distribution with HTTPS"
+            echo "   • SPA routing configured"
+            echo ""
+
+            # Get stack outputs
+            BUCKET_NAME=$(aws cloudformation describe-stacks \
+                --stack-name "$STACK_NAME" \
+                --query 'Stacks[0].Outputs[?OutputKey==`FrontendBucketName`].OutputValue' \
+                --output text \
+                $PROFILE_FLAG 2>/dev/null)
+
+            CF_DOMAIN=$(aws cloudformation describe-stacks \
+                --stack-name "$STACK_NAME" \
+                --query 'Stacks[0].Outputs[?OutputKey==`CloudFrontDomainName`].OutputValue' \
+                --output text \
+                $PROFILE_FLAG 2>/dev/null)
+
+            echo "🌐 CloudFront URL: https://$CF_DOMAIN"
+            echo "📦 S3 Bucket: $BUCKET_NAME"
+            echo ""
+            echo "To deploy frontend code, run:"
+            echo "   $ROOT_DIR/shared_scripts/deploy-frontend.sh -e $ENVIRONMENT -a $AWS_PROFILE"
             ;;
     esac
     
