@@ -39,9 +39,10 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
     
     Supports endpoints:
     - POST /broker-accounts/{client_id}/oauth/login
-    - POST /broker-accounts/{client_id}/oauth/callback  
+    - POST /broker-accounts/{client_id}/oauth/callback
     - GET  /broker-accounts/{client_id}/oauth/status
-    
+    - POST /broker-accounts/{client_id}/oauth/refresh
+
     Automatically detects broker type from broker account and routes to appropriate handler
     """
     
@@ -99,8 +100,9 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
         # Validate HTTP method for action
         valid_methods = {
             'login': ['POST'],
-            'callback': ['POST'], 
-            'status': ['GET']
+            'callback': ['POST'],
+            'status': ['GET'],
+            'refresh': ['POST']
         }
         
         if oauth_action not in valid_methods:

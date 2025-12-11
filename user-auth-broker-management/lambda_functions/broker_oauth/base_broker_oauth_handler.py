@@ -100,15 +100,30 @@ class BaseBrokerOAuthHandler(ABC):
     def check_token_validity(self, token_data: Dict[str, Any]) -> bool:
         """
         Check if stored token is still valid
-        
+
         Args:
             token_data: Stored token data
-            
+
         Returns:
             True if token is valid, False otherwise
         """
         pass
-    
+
+    def refresh_token(self, refresh_token: str) -> Dict[str, Any]:
+        """
+        Refresh OAuth token using refresh token (optional - not all brokers support this)
+
+        Args:
+            refresh_token: Refresh token from previous authentication
+
+        Returns:
+            Dictionary containing new access token and metadata
+
+        Raises:
+            NotImplementedError: If broker doesn't support token refresh
+        """
+        raise NotImplementedError(f"{self.broker_name} does not support token refresh")
+
     # Common utility methods
     
     def generate_state(self, user_id: str, client_id: str) -> str:
@@ -758,6 +773,89 @@ class BaseBrokerOAuthHandler(ABC):
             })
             return self.create_error_response(
                 'Failed to get OAuth status',
+                str(e),
+                500
+            )
+
+    def handle_oauth_refresh(self, user_id: str, client_id: str) -> Dict[str, Any]:
+        """
+        Handle OAuth token refresh for brokers that support it
+
+        Args:
+            user_id: User ID from JWT token
+            client_id: Client ID from path parameters
+
+        Returns:
+            HTTP response with refreshed token data or error
+        """
+        try:
+            # Get existing OAuth tokens
+            tokens = self.get_oauth_tokens(user_id, client_id)
+
+            if not tokens:
+                return self.create_error_response(
+                    'No OAuth tokens found',
+                    'Please authenticate first before refreshing',
+                    400
+                )
+
+            refresh_token_value = tokens.get('refresh_token')
+            if not refresh_token_value:
+                return self.create_error_response(
+                    'No refresh token available',
+                    f'{self.broker_name} does not have a refresh token stored',
+                    400
+                )
+
+            # Refresh the token using broker-specific logic
+            token_data = self.refresh_token(refresh_token_value)
+
+            # Get API key from existing tokens
+            api_key = tokens.get('api_key', '')
+
+            # Store updated OAuth tokens
+            token_secret_arn = self.store_oauth_tokens(
+                user_id, client_id, token_data, api_key
+            )
+
+            if not token_secret_arn:
+                return self.create_error_response(
+                    'Failed to store refreshed tokens',
+                    'Unable to store refreshed authentication tokens',
+                    500
+                )
+
+            # Update broker account
+            expires_at = self.get_token_expiry(token_data)
+            self.update_broker_account_oauth_status(
+                user_id, client_id, token_secret_arn, expires_at
+            )
+
+            log_user_action(logger, user_id, "oauth_token_refreshed", {
+                "client_id": client_id,
+                "broker_name": self.broker_name
+            })
+
+            return self.create_success_response({
+                'token_expires_at': expires_at.isoformat(),
+                'login_time': datetime.now(timezone.utc).isoformat()
+            }, 'OAuth token refreshed successfully')
+
+        except NotImplementedError as e:
+            return self.create_error_response(
+                'Token refresh not supported',
+                str(e),
+                400
+            )
+        except Exception as e:
+            logger.error("OAuth token refresh failed", extra={
+                "error": str(e),
+                "user_id": user_id,
+                "client_id": client_id,
+                "broker": self.broker_name
+            })
+            return self.create_error_response(
+                'OAuth token refresh failed',
                 str(e),
                 500
             )

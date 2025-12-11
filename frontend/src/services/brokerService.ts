@@ -200,6 +200,25 @@ class BrokerService {
   }
 
   /**
+   * Refresh OAuth token for brokers that support token refresh (e.g., Zebu)
+   */
+  async refreshOAuthToken(clientId: string): Promise<ApiResponse<{
+    token_expires_at: string;
+    login_time: string;
+  }>> {
+    try {
+      const response = await apiClient.post<ApiResponse<{
+        token_expires_at: string;
+        login_time: string;
+      }>>(`/broker-accounts/${clientId}/oauth/refresh`);
+
+      return response;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Failed to refresh OAuth token');
+    }
+  }
+
+  /**
    * Validate API key format for different brokers
    */
   static validateApiKey(brokerName: string, apiKey: string): boolean {
@@ -247,6 +266,43 @@ class BrokerService {
           ],
           apiKeyLabel: 'Zerodha API Key',
           apiSecretLabel: 'Zerodha API Secret'
+        };
+      case 'zebu':
+        return {
+          title: 'Zebu MYNT OAuth Setup',
+          steps: [
+            '1. Log in to go.mynt.in',
+            '2. Register an OAuth application',
+            '3. Set redirect URL: http://localhost:3000/oauth/callback',
+            '4. Copy Client ID and Client Secret from your OAuth app',
+            '5. Add credentials below to enable OAuth login'
+          ],
+          apiKeyLabel: 'API Key (Client ID)',
+          apiSecretLabel: 'API Secret (Client Secret)'
+        };
+      case 'angel':
+        return {
+          title: 'Angel One SmartAPI Setup',
+          steps: [
+            '1. Log in to Angel One SmartAPI portal',
+            '2. Create a new app to get API credentials',
+            '3. Copy API Key and Secret',
+            '4. Note: You will also need TOTP for login'
+          ],
+          apiKeyLabel: 'Angel One API Key',
+          apiSecretLabel: 'Angel One API Secret'
+        };
+      case 'finvasia':
+        return {
+          title: 'Finvasia Shoonya Setup',
+          steps: [
+            '1. Log in to Finvasia/Shoonya',
+            '2. Request API access from support',
+            '3. Get your Vendor Code and App Key',
+            '4. Copy credentials below'
+          ],
+          apiKeyLabel: 'Vendor Code',
+          apiSecretLabel: 'App Key'
         };
       default:
         return {

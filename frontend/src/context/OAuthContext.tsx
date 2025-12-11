@@ -6,6 +6,7 @@
 import React, { createContext, useContext, useReducer, ReactNode, useCallback, useEffect } from 'react';
 import { OAuthService } from '../services/oauth/OAuthService';
 import { ZerodhaOAuthStrategy } from '../services/oauth/strategies/ZerodhaOAuthStrategy';
+import { ZebuOAuthStrategy } from '../services/oauth/strategies/ZebuOAuthStrategy';
 import {
   AuthStatus,
   OAuthInitParams,
@@ -14,7 +15,7 @@ import {
   AuthResult,
   OAuthEvent
 } from '../types/oauth';
-import { zerodhaConfig } from '../config/brokerConfigs';
+import { zerodhaConfig, zebuConfig } from '../config/brokerConfigs';
 
 /**
  * OAuth state interface
@@ -155,7 +156,8 @@ function getOAuthService(): OAuthService {
     
     // Register broker strategies
     oauthService.registerStrategy('zerodha', new ZerodhaOAuthStrategy(zerodhaConfig, config.baseApiUrl));
-    
+    oauthService.registerStrategy('zebu', new ZebuOAuthStrategy(zebuConfig, config.baseApiUrl));
+
     // TODO: Register other broker strategies when implemented
     // oauthService.registerStrategy('angel', new AngelOneOAuthStrategy(angelOneConfig, config.baseApiUrl));
     // oauthService.registerStrategy('finvasia', new FinvasiaOAuthStrategy(finvasiaConfig, config.baseApiUrl));
@@ -179,7 +181,7 @@ export const OAuthProvider: React.FC<OAuthProviderProps> = ({ children }) => {
 
   // Initialize OAuth service
   useEffect(() => {
-    const service = getOAuthService();
+    getOAuthService();
     dispatch({ type: 'SET_INITIALIZED', payload: true });
   }, []);
 

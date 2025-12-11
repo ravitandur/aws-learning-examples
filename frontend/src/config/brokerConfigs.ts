@@ -68,23 +68,24 @@ export const finvasiaConfig: BrokerOAuthConfig = {
 };
 
 /**
- * Zebu OAuth Configuration
+ * Zebu MYNT OAuth Configuration
+ * Tokens are refreshable with ~1 hour validity
  */
 export const zebuConfig: BrokerOAuthConfig = {
   brokerName: 'zebu',
-  displayName: 'Zebu',
+  displayName: 'Zebu MYNT',
   authFlow: 'popup',
-  tokenType: 'session',
-  expiryType: 'daily',
-  requiresDaily: true,
+  tokenType: 'bearer',
+  expiryType: 'refresh',
+  requiresDaily: false,
   popupDimensions: {
-    width: 550,
+    width: 500,
     height: 650
   },
   scopes: [],
   metadata: {
-    tokenExpiryTime: '3:30 PM IST',
-    refreshable: false,
+    tokenExpiryTime: '1 hour',
+    refreshable: true,
     multiStep: false
   }
 };

@@ -206,12 +206,12 @@ class OAuthFactory:
     def handle_oauth_status(self, broker_name: str, user_id: str, client_id: str) -> Dict[str, any]:
         """
         Handle OAuth status check for any broker
-        
+
         Args:
             broker_name: Name of the broker
             user_id: User ID from JWT token
             client_id: Client ID from path parameters
-            
+
         Returns:
             HTTP response dict
         """
@@ -228,9 +228,37 @@ class OAuthFactory:
                     'message': f'OAuth is not supported for broker: {broker_name}'
                 })
             }
-        
+
         return handler.handle_oauth_status(user_id, client_id)
-    
+
+    def handle_oauth_refresh(self, broker_name: str, user_id: str, client_id: str) -> Dict[str, any]:
+        """
+        Handle OAuth token refresh for brokers that support it
+
+        Args:
+            broker_name: Name of the broker
+            user_id: User ID from JWT token
+            client_id: Client ID from path parameters
+
+        Returns:
+            HTTP response dict
+        """
+        handler = self.get_handler(broker_name)
+        if not handler:
+            return {
+                'statusCode': 400,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({
+                    'error': 'Broker not supported',
+                    'message': f'OAuth is not supported for broker: {broker_name}'
+                })
+            }
+
+        return handler.handle_oauth_refresh(user_id, client_id)
+
     def handle_broker_detection(self, user_id: str, client_id: str) -> Dict[str, any]:
         """
         Auto-detect broker from existing broker account and route accordingly
@@ -358,6 +386,8 @@ def route_oauth_request(broker_name: str, action: str, user_id: str, client_id: 
         return factory.handle_oauth_callback(broker_name, user_id, client_id, callback_params or {})
     elif action == 'status':
         return factory.handle_oauth_status(broker_name, user_id, client_id)
+    elif action == 'refresh':
+        return factory.handle_oauth_refresh(broker_name, user_id, client_id)
     else:
         return {
             'statusCode': 400,

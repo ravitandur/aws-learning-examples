@@ -125,22 +125,25 @@ BROKER_CONFIGS: Dict[str, BrokerOAuthConfig] = {
         popup_height=650
     ),
     
-    # Zebu
+    # Zebu MYNT API
     'zebu': BrokerOAuthConfig(
         broker_name='zebu',
-        display_name='Zebu',
+        display_name='Zebu MYNT',
         oauth_flow=OAuthFlow.POPUP,
-        token_type=TokenType.SESSION,
-        expiry_pattern=ExpiryPattern.DAILY,
-        oauth_base_url='https://kambala.zebu.in/connect/login',
-        requires_daily_auth=True,
-        supports_refresh=False,
+        token_type=TokenType.BEARER,
+        expiry_pattern=ExpiryPattern.REFRESH,
+        oauth_base_url='https://go.mynt.in/OAuthlogin/authorize/oauth',
+        token_exchange_url='https://go.mynt.in/NorenWClientAPI/GenAcsTok',
+        requires_daily_auth=False,
+        supports_refresh=True,
         supports_revoke=False,
-        token_validity_hours=18,
-        daily_expiry_time='06:00:00',
+        token_validity_hours=1,  # Access token expires in ~1 hour (3600 seconds)
+        daily_expiry_time=None,
         timezone='Asia/Kolkata',
+        api_key_pattern=r'^[a-zA-Z0-9_-]{10,50}$',  # Vendor code pattern
+        api_secret_pattern=r'^[a-zA-Z0-9_-]{10,100}$',  # App key pattern
         popup_width=500,
-        popup_height=600
+        popup_height=650
     ),
     
     # Upstox
