@@ -15,11 +15,22 @@ const OAuthCallback: React.FC = () => {
       try {
         // Extract parameters from URL
         const urlParams = new URLSearchParams(window.location.search);
-        const requestToken = urlParams.get('request_token');
+        // Zerodha uses 'request_token', Zebu uses 'code'
+        const requestToken = urlParams.get('request_token') || urlParams.get('code');
         const state = urlParams.get('state');
         const status = urlParams.get('status');
         const error = urlParams.get('error');
         const errorDescription = urlParams.get('error_description');
+
+        // Debug: Log all URL parameters for troubleshooting
+        console.log('OAuth Callback URL:', window.location.href);
+        console.log('OAuth Callback params:', {
+          request_token: urlParams.get('request_token'),
+          code: urlParams.get('code'),
+          state,
+          status,
+          error
+        });
 
         // Get broker details from localStorage (stored during OAuth initiation)
         const clientId = localStorage.getItem('oauth_client_id');
@@ -40,8 +51,8 @@ const OAuthCallback: React.FC = () => {
         }
         
         // Validate required parameters based on broker
-        if (!requestToken && storedBroker.toLowerCase() === 'zerodha') {
-          throw new Error(`No request token received from ${storedBroker}. Please try again.`);
+        if (!requestToken) {
+          throw new Error(`No authorization code received from ${storedBroker}. Please try again.`);
         }
         
         // Use stored state if no state in URL (Zerodha doesn't return state in callback)
@@ -57,9 +68,10 @@ const OAuthCallback: React.FC = () => {
         // Use the OAuth context to handle the callback
         const callbackParams: any = {
           request_token: requestToken || undefined,
+          code: requestToken || undefined, // Also set as 'code' for Zebu compatibility
           state: finalState || undefined
         };
-        
+
         if (status) callbackParams.status = status;
         if (error) callbackParams.error = error;
         if (errorDescription) callbackParams.error_description = errorDescription;

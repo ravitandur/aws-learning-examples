@@ -264,8 +264,8 @@ class BrokerService {
             '4. Generate API secret for your app',
             '5. Copy both API key and secret to add here'
           ],
-          apiKeyLabel: 'Zerodha API Key',
-          apiSecretLabel: 'Zerodha API Secret'
+          apiKeyLabel: 'API Key',
+          apiSecretLabel: 'API Secret'
         };
       case 'zebu':
         return {
@@ -289,8 +289,8 @@ class BrokerService {
             '3. Copy API Key and Secret',
             '4. Note: You will also need TOTP for login'
           ],
-          apiKeyLabel: 'Angel One API Key',
-          apiSecretLabel: 'Angel One API Secret'
+          apiKeyLabel: 'API Key',
+          apiSecretLabel: 'API Secret'
         };
       case 'finvasia':
         return {
