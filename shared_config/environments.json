@@ -14,7 +14,13 @@
       "log_retention_days": 7,
       "enable_point_in_time_recovery": false,
       "token_validity_hours": 24,
-      "dashboard_prefix": "Dev"
+      "dashboard_prefix": "Dev",
+      "vpc": {
+        "cidr": "10.0.0.0/16",
+        "nat_gateways": 1,
+        "max_azs": 2,
+        "enable_vpc_endpoints": true
+      }
     },
     "staging": {
       "description": "Staging environment for pre-production testing and validation",
@@ -23,7 +29,13 @@
       "log_retention_days": 30,
       "enable_point_in_time_recovery": true,
       "token_validity_hours": 8,
-      "dashboard_prefix": "Staging"
+      "dashboard_prefix": "Staging",
+      "vpc": {
+        "cidr": "10.0.0.0/16",
+        "nat_gateways": 1,
+        "max_azs": 2,
+        "enable_vpc_endpoints": true
+      }
     },
     "production": {
       "description": "Production environment for live algorithmic trading platform",
@@ -32,7 +44,13 @@
       "log_retention_days": 90,
       "enable_point_in_time_recovery": true,
       "token_validity_hours": 1,
-      "dashboard_prefix": "Prod"
+      "dashboard_prefix": "Prod",
+      "vpc": {
+        "cidr": "10.0.0.0/16",
+        "nat_gateways": 2,
+        "max_azs": 2,
+        "enable_vpc_endpoints": true
+      }
     }
   },
   "aws": {

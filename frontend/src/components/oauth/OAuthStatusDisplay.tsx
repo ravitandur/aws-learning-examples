@@ -57,14 +57,17 @@ export const OAuthStatusDisplay: React.FC<OAuthStatusDisplayProps> = ({
 
   const getStatusDisplay = () => {
     if (authStatus.hasToken && authStatus.isValid) {
-      const expiryDate = authStatus.expiresAt 
-        ? new Date(authStatus.expiresAt).toLocaleTimeString('en-IN', {
+      const expiryDate = authStatus.expiresAt
+        ? new Date(authStatus.expiresAt).toLocaleString('en-IN', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
             timeZone: 'Asia/Kolkata'
           })
         : 'Unknown';
-      
+
       return (
         <div className="flex items-center justify-between text-sm">
           <span className="text-gray-500 dark:text-gray-400 flex items-center">

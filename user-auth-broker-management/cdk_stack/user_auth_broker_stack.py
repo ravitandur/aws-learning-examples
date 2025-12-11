@@ -10,6 +10,7 @@ from aws_cdk import (
     aws_iam as iam,
     aws_logs as logs,
     aws_cloudwatch as cloudwatch,
+    aws_ec2 as ec2,
     CfnOutput
 )
 from constructs import Construct
@@ -179,6 +180,53 @@ class UserAuthBrokerStack(Stack):
             )
         )
 
+        # VPC for broker API outbound calls with static IP (NAT Gateway)
+        # This enables all Lambda functions making external broker API calls to use a single
+        # static IP that can be whitelisted by brokers like Zebu
+        vpc_config = self.env_config.get('vpc', {})
+        broker_vpc = ec2.Vpc(
+            self, f"BrokerVpc{self.deploy_env.title()}",
+            vpc_name=self.get_resource_name("broker-vpc"),
+            ip_addresses=ec2.IpAddresses.cidr(vpc_config.get('cidr', '10.0.0.0/16')),
+            max_azs=vpc_config.get('max_azs', 2),
+            nat_gateways=vpc_config.get('nat_gateways', 1),
+            subnet_configuration=[
+                ec2.SubnetConfiguration(
+                    name="Public",
+                    subnet_type=ec2.SubnetType.PUBLIC,
+                    cidr_mask=24
+                ),
+                ec2.SubnetConfiguration(
+                    name="Private",
+                    subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS,
+                    cidr_mask=24
+                )
+            ]
+        )
+
+        # VPC Endpoints for AWS services (reduces NAT traffic and cost)
+        # DynamoDB uses Gateway Endpoint (free)
+        broker_vpc.add_gateway_endpoint(
+            "DynamoDBEndpoint",
+            service=ec2.GatewayVpcEndpointAwsService.DYNAMODB
+        )
+
+        # Secrets Manager uses Interface Endpoint (reduces NAT traffic)
+        if vpc_config.get('enable_vpc_endpoints', True):
+            broker_vpc.add_interface_endpoint(
+                "SecretsManagerEndpoint",
+                service=ec2.InterfaceVpcEndpointAwsService.SECRETS_MANAGER
+            )
+
+        # Security group for Lambda functions that need to call external broker APIs
+        broker_lambda_sg = ec2.SecurityGroup(
+            self, f"BrokerLambdaSG{self.deploy_env.title()}",
+            vpc=broker_vpc,
+            security_group_name=self.get_resource_name("broker-lambda-sg"),
+            description="Security group for broker API Lambda functions",
+            allow_all_outbound=True  # Allow outbound to broker APIs
+        )
+
         # Lambda functions with logRetention (avoids redeploy LogGroup errors)
         # Removed explicit LogGroup creation to prevent "LogGroup already exists" errors on redeploy
 
@@ -330,6 +378,7 @@ class UserAuthBrokerStack(Stack):
         )
 
         # Lambda function for broker OAuth handling
+        # Placed in VPC with NAT Gateway for static IP (required for broker IP whitelisting)
         broker_oauth_lambda = _lambda.Function(
             self, f"AuthLambdaBrokerOauth{self.deploy_env.title()}",
             function_name=self.get_resource_name("auth-broker-oauth"),
@@ -343,9 +392,12 @@ class UserAuthBrokerStack(Stack):
             }),
             handler="refactored_oauth_handler.lambda_handler",
             timeout=Duration.seconds(30),
-            log_retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7 
-                           else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30 
+            log_retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7
+                           else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30
                            else logs.RetentionDays.THREE_MONTHS,
+            vpc=broker_vpc,
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
+            security_groups=[broker_lambda_sg],
             environment={
                 "ENVIRONMENT": self.deploy_env,
                 "STAGE": self.deploy_env,
@@ -357,6 +409,7 @@ class UserAuthBrokerStack(Stack):
         )
 
         # Lambda function for broker connection testing
+        # Placed in VPC with NAT Gateway for static IP (required for broker IP whitelisting)
         broker_connection_test_lambda = _lambda.Function(
             self, f"AuthLambdaBrokerConnectionTest{self.deploy_env.title()}",
             function_name=self.get_resource_name("auth-broker-connection-test"),
@@ -364,9 +417,12 @@ class UserAuthBrokerStack(Stack):
             code=_lambda.Code.from_asset("lambda_functions/broker_accounts"),
             handler="connection_tester.lambda_handler",
             timeout=Duration.seconds(30),
-            log_retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7 
-                           else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30 
+            log_retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7
+                           else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30
                            else logs.RetentionDays.THREE_MONTHS,
+            vpc=broker_vpc,
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS),
+            security_groups=[broker_lambda_sg],
             environment={
                 "ENVIRONMENT": self.deploy_env,
                 "COMPANY_PREFIX": self.company_prefix,
@@ -734,3 +790,29 @@ class UserAuthBrokerStack(Stack):
             value=f"https://console.aws.amazon.com/cloudwatch/home?region={self.region}#dashboards:name={dashboard.dashboard_name}",
             description="CloudWatch Dashboard URL"
         )
+
+        # VPC outputs for cross-stack usage (options trading stack can import for broker execution)
+        CfnOutput(
+            self, "BrokerVpcId",
+            value=broker_vpc.vpc_id,
+            description="VPC ID for broker API Lambda functions",
+            export_name=f"{self.stack_name}-BrokerVpcId"
+        )
+
+        CfnOutput(
+            self, "BrokerVpcPrivateSubnets",
+            value=",".join([subnet.subnet_id for subnet in broker_vpc.private_subnets]),
+            description="Private subnet IDs for broker Lambda functions",
+            export_name=f"{self.stack_name}-BrokerVpcPrivateSubnets"
+        )
+
+        CfnOutput(
+            self, "BrokerLambdaSecurityGroup",
+            value=broker_lambda_sg.security_group_id,
+            description="Security group ID for broker Lambda functions",
+            export_name=f"{self.stack_name}-BrokerLambdaSG"
+        )
+
+        # Note: NAT Gateway Elastic IP can be found via AWS Console (VPC > NAT Gateways)
+        # or via CLI: aws ec2 describe-nat-gateways --profile account2 --region ap-south-1
+        # This IP should be provided to Zebu for whitelisting

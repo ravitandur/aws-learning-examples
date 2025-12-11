@@ -6,6 +6,7 @@ Reference: myntapi Python library (https://pypi.org/project/myntapi/)
 """
 
 import json
+import hashlib
 import requests
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Tuple, Optional
@@ -40,8 +41,8 @@ class ZebuOAuthStrategy(BaseBrokerOAuthHandler):
     """
 
     # Zebu OAuth API endpoints (based on myntapi library)
-    OAUTH_TOKEN_URL = 'https://go.mynt.in/NorenWClientTP/QuickAuth'
-    TOKEN_REFRESH_URL = 'https://go.mynt.in/NorenWClientTP/RefreshToken'
+    OAUTH_TOKEN_URL = 'https://go.mynt.in/NorenWClientAPI/GenAcsTok'
+    TOKEN_REFRESH_URL = 'https://go.mynt.in/NorenWClientAPI/RefreshToken'
 
     def __init__(self):
         super().__init__('zebu')
@@ -94,7 +95,7 @@ class ZebuOAuthStrategy(BaseBrokerOAuthHandler):
     def exchange_token(self, request_token: str, api_key: str, api_secret: str) -> Dict[str, Any]:
         """
         Exchange Zebu authorization code for access token
-        Based on myntapi library's Oauth_login_using_code method
+        Based on myntapi library's __get_access_token method
 
         Args:
             request_token: Authorization code received from OAuth callback
@@ -105,28 +106,35 @@ class ZebuOAuthStrategy(BaseBrokerOAuthHandler):
             Dictionary containing access token and metadata
         """
         try:
-            # Zebu OAuth token exchange - uses client_id, client_secret, and code
-            # Based on myntapi's Oauth_login_using_code pattern
-            payload = {
-                "client_id": api_key,
-                "client_secret": api_secret,
-                "code": request_token
+            # Generate checksum: SHA256(client_id + client_secret + code)
+            # This matches the myntapi library implementation
+            checksum_data = f"{api_key}{api_secret}{request_token}"
+            checksum = hashlib.sha256(checksum_data.encode()).hexdigest()
+
+            # Zebu expects: jData={"code":"...", "checksum":"..."}
+            # Content-Type: text/plain (not JSON!)
+            payload_dict = {
+                "code": request_token,
+                "checksum": checksum
             }
+            payload = f'jData={json.dumps(payload_dict)}'
 
             logger.info("Exchanging authorization code for access token", extra={
                 "client_id": api_key[:8] + "***" if len(api_key) > 8 else "***",
                 "code_length": len(request_token),
+                "checksum_length": len(checksum),
                 "broker": self.broker_name
             })
 
             # Make request to Zebu OAuth token endpoint
+            # Zebu requires Content-Type: text/plain with jData= prefix
             headers = {
-                'Content-Type': 'application/json'
+                'Content-Type': 'text/plain'
             }
 
             response = requests.post(
                 self.OAUTH_TOKEN_URL,
-                json=payload,
+                data=payload,
                 headers=headers,
                 timeout=30
             )
@@ -214,16 +222,35 @@ class ZebuOAuthStrategy(BaseBrokerOAuthHandler):
         Returns:
             Expiry datetime in UTC
         """
-        # Zebu tokens expire based on expires_in (typically 3600 seconds = 1 hour)
-        expires_in = token_data.get('expires_in', 3600)
+        # Zebu returns expires_in which could be:
+        # 1. A Unix timestamp (epoch seconds) - large number like 1773242619
+        # 2. Seconds until expiry - small number like 3600
+        # 3. A string that needs to be converted to int
+        expires_in_raw = token_data.get('expires_in', 3600)
+
+        # Convert to int if string
+        try:
+            expires_in = int(expires_in_raw)
+        except (ValueError, TypeError):
+            expires_in = 3600  # Default to 1 hour if conversion fails
 
         now_utc = datetime.now(timezone.utc)
-        expiry_utc = now_utc + timedelta(seconds=expires_in)
+
+        # If expires_in is a Unix timestamp (> year 2020 in epoch = 1577836800)
+        # treat it as absolute expiry time, otherwise treat as seconds from now
+        if expires_in > 1577836800:
+            # It's a Unix timestamp - convert directly to datetime
+            expiry_utc = datetime.fromtimestamp(expires_in, tz=timezone.utc)
+        else:
+            # It's seconds until expiry
+            expiry_utc = now_utc + timedelta(seconds=expires_in)
 
         logger.info("Calculated token expiry", extra={
             "current_utc": now_utc.isoformat(),
             "expiry_utc": expiry_utc.isoformat(),
-            "expires_in_seconds": expires_in,
+            "expires_in_raw": str(expires_in_raw),
+            "expires_in_parsed": expires_in,
+            "is_timestamp": expires_in > 1577836800,
             "broker": self.broker_name
         })
 
