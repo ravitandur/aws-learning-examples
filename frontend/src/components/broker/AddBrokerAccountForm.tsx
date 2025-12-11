@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { X, Eye, EyeOff } from 'lucide-react';
 import { CreateBrokerAccount } from '../../types';
 import ErrorAlert from '../common/ErrorAlert';
+import { BrokerService } from '../../services/brokerService';
 
 interface AddBrokerAccountFormProps {
   open: boolean;
@@ -31,6 +32,11 @@ const AddBrokerAccountForm: React.FC<AddBrokerAccountFormProps> = ({
   
   const [showApiSecret, setShowApiSecret] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof CreateBrokerAccount, string>>>({});
+
+  // Get broker-specific labels and instructions
+  const brokerInstructions = useMemo(() => {
+    return BrokerService.getBrokerInstructions(formData.broker_name);
+  }, [formData.broker_name]);
 
   const handleInputChange = (field: keyof CreateBrokerAccount) => (
     event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -217,7 +223,7 @@ const AddBrokerAccountForm: React.FC<AddBrokerAccountFormProps> = ({
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                API Key *
+                {brokerInstructions.apiKeyLabel} *
               </label>
               <input
                 type="text"
@@ -228,7 +234,7 @@ const AddBrokerAccountForm: React.FC<AddBrokerAccountFormProps> = ({
                     ? 'border-red-300 dark:border-red-600'
                     : 'border-gray-300 dark:border-gray-600'
                 }`}
-                placeholder="Your API Key"
+                placeholder={`Your ${brokerInstructions.apiKeyLabel}`}
               />
               {fieldErrors.api_key && (
                 <p className="mt-1 text-xs text-red-600">{fieldErrors.api_key}</p>
@@ -237,7 +243,7 @@ const AddBrokerAccountForm: React.FC<AddBrokerAccountFormProps> = ({
 
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                API Secret *
+                {brokerInstructions.apiSecretLabel} *
               </label>
               <div className="relative">
                 <input
@@ -249,7 +255,7 @@ const AddBrokerAccountForm: React.FC<AddBrokerAccountFormProps> = ({
                       ? 'border-red-300 dark:border-red-600'
                       : 'border-gray-300 dark:border-gray-600'
                   }`}
-                  placeholder="Your API Secret"
+                  placeholder={`Your ${brokerInstructions.apiSecretLabel}`}
                 />
                 <button
                   type="button"
