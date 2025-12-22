@@ -1,12 +1,9 @@
-import json
 import logging
 
 from aws_cdk import (
     Stack,
     aws_dynamodb as dynamodb,
     aws_lambda as _lambda,
-    aws_lambda_event_sources as lambda_event_sources,
-    aws_sqs as sqs,
     aws_apigateway as apigateway,
     aws_iam as iam,
     aws_events as events,
@@ -17,7 +14,6 @@ from aws_cdk import (
     aws_cloudwatch as cloudwatch,
     aws_cognito as cognito,
     aws_stepfunctions as stepfunctions,
-    aws_stepfunctions_tasks as tasks,
     Duration,
     RemovalPolicy,
     CfnOutput,
@@ -47,6 +43,9 @@ class OptionsTradeStack(Stack):
 
         # Create hybrid architecture tables
         self._create_hybrid_tables()
+
+        # Create Lambda layers
+        self._create_lambda_layers()
 
         # Create Lambda functions
         self._create_lambda_functions()
@@ -195,6 +194,49 @@ class OptionsTradeStack(Stack):
             ]
         )
 
+        # GSI6: OrdersByStatus - Order Status Filtering and Real-time Updates
+        # Purpose: Query orders by status for orders page filtering
+        # Query Pattern: PK=user_id SK begins_with "status#timestamp"
+        # Sort Key Format: "{status}#{timestamp}" (e.g., "OPEN#2025-12-11T09:30:00Z")
+        # Benefits:
+        # - Filter orders by status (PENDING, PLACED, OPEN, FILLED, CANCELLED, REJECTED)
+        # - Chronological ordering within status
+        # - Efficient real-time order tracking
+        # - WebSocket update broadcasting
+        self.trading_configurations_table.add_global_secondary_index(
+            index_name="OrdersByStatus",
+            partition_key=dynamodb.Attribute(name="user_id", type=dynamodb.AttributeType.STRING),
+            sort_key=dynamodb.Attribute(name="order_status_key", type=dynamodb.AttributeType.STRING),
+            projection_type=dynamodb.ProjectionType.INCLUDE,
+            non_key_attributes=[
+                "order_id", "strategy_id", "basket_id", "broker_id", "client_id",
+                "broker_order_id", "order_type", "transaction_type", "trading_mode",
+                "exchange", "symbol", "quantity", "price", "trigger_price", "status",
+                "fill_price", "filled_quantity", "execution_type", "placed_at", "updated_at"
+            ]
+        )
+
+        # GSI7: TodayExecutions - Today's Execution Timeline Discovery
+        # Purpose: Get all strategies executing today with entry/exit times
+        # Query Pattern: PK=user_id SK begins_with "execution_date#entry_time"
+        # Sort Key Format: "{date}#{entry_time}" (e.g., "2025-12-11#09:30")
+        # Benefits:
+        # - Today's timeline view with entry/exit countdown
+        # - Chronological strategy execution ordering
+        # - Quick status check for active/pending strategies
+        # - Dashboard summary of daily execution plan
+        self.trading_configurations_table.add_global_secondary_index(
+            index_name="TodayExecutions",
+            partition_key=dynamodb.Attribute(name="user_id", type=dynamodb.AttributeType.STRING),
+            sort_key=dynamodb.Attribute(name="today_execution_key", type=dynamodb.AttributeType.STRING),
+            projection_type=dynamodb.ProjectionType.INCLUDE,
+            non_key_attributes=[
+                "strategy_id", "basket_id", "strategy_name", "execution_date",
+                "entry_time", "exit_time", "status", "execution_status",
+                "underlying", "strategy_type", "trading_mode", "broker_allocations"
+            ]
+        )
+
         # Table 2: Execution History for time-series data (Traditional Table)
         self.execution_history_table = dynamodb.Table(
             self, f"ExecutionHistory{self.deploy_env.title()}",
@@ -221,6 +263,45 @@ class OptionsTradeStack(Stack):
             sort_key=dynamodb.Attribute(name="execution_timestamp", type=dynamodb.AttributeType.STRING),
         )
 
+        # Table 3: WebSocket Connections - Real-time Update Infrastructure
+        # Purpose: Track active WebSocket connections for real-time order/position updates
+        # TTL: Auto-cleanup stale connections after 24 hours
+        self.websocket_connections_table = dynamodb.Table(
+            self, f"WebSocketConnections{self.deploy_env.title()}",
+            table_name=self.get_resource_name("websocket-connections"),
+            partition_key=dynamodb.Attribute(name="connection_id", type=dynamodb.AttributeType.STRING),
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
+            removal_policy=removal_policy,
+            time_to_live_attribute="ttl",  # Auto-cleanup stale connections
+        )
+
+        # GSI: ConnectionsByUser - Find all connections for a specific user
+        # Purpose: Broadcast updates to all user's active connections
+        # Query Pattern: PK=user_id SK=connected_at (for connection ordering)
+        self.websocket_connections_table.add_global_secondary_index(
+            index_name="ConnectionsByUser",
+            partition_key=dynamodb.Attribute(name="user_id", type=dynamodb.AttributeType.STRING),
+            sort_key=dynamodb.Attribute(name="connected_at", type=dynamodb.AttributeType.STRING),
+            projection_type=dynamodb.ProjectionType.ALL
+        )
+
+    def _create_lambda_layers(self):
+        """Create Lambda layers for shared dependencies"""
+
+        # Trading Dependencies Layer - contains requests and other broker API dependencies
+        # To add more dependencies:
+        # 1. Update lambda_layers/trading_dependencies/requirements.txt
+        # 2. Run: pip3 install -r requirements.txt -t python/ --platform manylinux2014_x86_64 --only-binary=:all: --python-version 3.11
+        # 3. Redeploy the stack
+        self.trading_dependencies_layer = _lambda.LayerVersion(
+            self, f"TradingDependenciesLayer{self.deploy_env.title()}",
+            layer_version_name=self.get_resource_name("trading-dependencies-layer"),
+            description="Trading dependencies including requests for broker API calls",
+            code=_lambda.Code.from_asset("lambda_layers/trading_dependencies"),
+            compatible_runtimes=[_lambda.Runtime.PYTHON_3_11],
+            removal_policy=self.get_removal_policy(),
+        )
+
     def _create_lambda_functions(self):
         """Create all Lambda functions for options trading"""
 
@@ -236,6 +317,8 @@ class OptionsTradeStack(Stack):
             # Phase 1 Hybrid Architecture - Two tables only
             "TRADING_CONFIGURATIONS_TABLE": self.trading_configurations_table.table_name,
             "EXECUTION_HISTORY_TABLE": self.execution_history_table.table_name,
+            # WebSocket connections for real-time updates
+            "WEBSOCKET_CONNECTIONS_TABLE": self.websocket_connections_table.table_name,
         }
 
         # Create Lambda functions (placeholder implementations for now)
@@ -246,11 +329,6 @@ class OptionsTradeStack(Stack):
             ('basket-manager', 'Strategy management/basket_manager.py'),
             ('strategy-manager', 'Strategy management/strategy_manager.py'),
             ('basket-broker-allocator', 'Strategy management/basket_broker_allocator.py'),
-
-            # B2B2C Marketplace Integration (New)
-            ('marketplace-manager', 'Marketplace/marketplace_manager.py'),
-            ('subscription-manager', 'Marketplace/subscription_manager.py'),
-            ('partner-api-manager', 'Marketplace/partner_api_manager.py'),
 
             # Execution Engine
             ('strategy-executor', 'Execution engine/strategy_executor.py'),
@@ -278,8 +356,20 @@ class OptionsTradeStack(Stack):
             ('strategy-scheduler', '🕐 SQS-to-Express Step Function launcher for time-based strategy execution'),
         ]
 
+        # Functions that need trading dependencies layer (requests for broker API calls)
+        functions_needing_trading_layer = [
+            'order-manager',
+            'position-manager',
+            'strategy-executor',
+            'single-strategy-executor',
+            'user-strategy-executor',
+        ]
+
         # Create Lambda functions with logRetention (avoids redeploy LogGroup errors)
         for function_name, description in lambda_configs:
+            # Determine if this function needs the trading dependencies layer
+            layers = [self.trading_dependencies_layer] if function_name in functions_needing_trading_layer else []
+
             self.lambda_functions[function_name] = _lambda.Function(
                 self, f"OptionsLambda{function_name.title().replace('-', '')}{self.deploy_env.title()}",
                 function_name=self.get_resource_name(f"options-{function_name}"),
@@ -289,6 +379,7 @@ class OptionsTradeStack(Stack):
                 environment=lambda_env,
                 timeout=Duration.seconds(30),
                 memory_size=512,
+                layers=layers,  # Attach trading dependencies layer if needed
                 log_retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7
                 else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30
                 else logs.RetentionDays.THREE_MONTHS,  # Use logRetention to avoid redeploy errors
@@ -331,119 +422,8 @@ class OptionsTradeStack(Stack):
                 )
             )
 
-    def _create_parallel_execution_infrastructure(self):
-        """
-        🚀 REVOLUTIONARY: Create parallel execution infrastructure for unlimited user scalability
-        
-        Components:
-        1. User-specific Step Function for parallel strategy execution
-        2. EventBridge rules for parallel user event routing  
-        3. IAM roles for cross-service integration
-        """
-        logger.info("🚀 Creating parallel execution infrastructure...")
-
-        # 1. Load user execution Step Function definition
-        import os
-        step_function_def_path = os.path.join(os.path.dirname(__file__), "..", "step_functions", "user_execution_definition.json")
-
-        # Create the user-specific Step Function for parallel execution
-        self.user_execution_state_machine = stepfunctions.StateMachine(
-            self, f"UserExecutionStateMachine{self.deploy_env.title()}",
-            state_machine_name=self.get_resource_name("user-strategy-execution"),
-            definition_body=stepfunctions.DefinitionBody.from_file(step_function_def_path),
-            state_machine_type=stepfunctions.StateMachineType.EXPRESS,
-            timeout=Duration.minutes(5),  # Express workflows have 5-minute limit
-            logs=stepfunctions.LogOptions(
-                destination=logs.LogGroup(
-                    self, f"UserExecutionStateMachineLogGroup{self.deploy_env.title()}",
-                    log_group_name=f"/aws/stepfunctions/{self.get_resource_name('user-execution')}",
-                    retention=logs.RetentionDays.ONE_WEEK if self.env_config.get('log_retention_days', 7) == 7 else logs.RetentionDays.ONE_MONTH,
-                    removal_policy=self.get_removal_policy()
-                ),
-                level=stepfunctions.LogLevel.ALL
-            )
-        )
-
-        # 2. Create EventBridge rules for parallel user execution events
-
-        # Custom event pattern for user-specific strategy execution
-        user_execution_event_pattern = {
-            "source": ["options.strategy.scheduler"],
-            "detail-type": ["User Strategy Execution Request"],
-            "detail": {
-                "parallel_execution": [True],
-                "user_id": [{"exists": True}],
-                "execution_time": [{"exists": True}]
-            }
-        }
-
-        # EventBridge rule for user-specific strategy execution
-        user_execution_rule = events.Rule(
-            self, f"UserExecutionRule{self.deploy_env.title()}",
-            rule_name=self.get_resource_name("user-strategy-execution-rule"),
-            description="🚀 Route user-specific strategy execution events to parallel Step Functions",
-            event_pattern=user_execution_event_pattern,
-            enabled=True
-        )
-
-        # Add Step Function as target for user execution events
-        user_execution_rule.add_target(
-            targets.SfnStateMachine(
-                self.user_execution_state_machine,
-                input=events.RuleTargetInput.from_event_path("$.detail")
-            )
-        )
-
-        # 3. Grant permissions for cross-service integration
-
-        # Grant EventBridge permission to invoke user execution Step Function
-        self.user_execution_state_machine.grant_start_execution(iam.ServicePrincipal("events.amazonaws.com"))
-
-        # Grant user strategy executor Lambda access to execution log table
-        user_strategy_executor_lambda = self.lambda_functions['user-strategy-executor']
-        self.execution_history_table.grant_read_write_data(user_strategy_executor_lambda)
-
-        # Grant user strategy executor Lambda access to trading configurations table (for validation)
-        self.trading_configurations_table.grant_read_data(user_strategy_executor_lambda)
-
-        # Grant schedule strategy trigger Lambda permission to emit EventBridge events
-        # Find the schedule strategy trigger Lambda (may have different naming)
-        schedule_trigger_lambda = None
-        for lambda_name, lambda_function in self.lambda_functions.items():
-            if 'schedule' in lambda_name or 'strategy-executor' in lambda_name:
-                schedule_trigger_lambda = lambda_function
-                break
-
-        if schedule_trigger_lambda:
-            schedule_trigger_lambda.add_to_role_policy(
-                iam.PolicyStatement(
-                    effect=iam.Effect.ALLOW,
-                    actions=[
-                        "events:PutEvents"
-                    ],
-                    resources=["*"]  # EventBridge PutEvents requires wildcard resource
-                )
-            )
-
-        # Create outputs for parallel execution infrastructure
-        CfnOutput(
-            self, "UserExecutionStateMachineArn",
-            value=self.user_execution_state_machine.state_machine_arn,
-            description="🚀 ARN of the user-specific strategy execution Step Function",
-            export_name=f"{self.stack_name}-UserExecutionStateMachineArn"
-        )
-
-        CfnOutput(
-            self, "UserExecutionRuleArn",
-            value=user_execution_rule.rule_arn,
-            description="🚀 ARN of the EventBridge rule for parallel user execution",
-            export_name=f"{self.stack_name}-UserExecutionRuleArn"
-        )
-
-        logger.info("🚀 PARALLEL EXECUTION INFRASTRUCTURE CREATED:")
-        logger.info(f"   - User Execution Step Function: {self.user_execution_state_machine.state_machine_arn}")
-        logger.info(f"   - User Execution EventBridge Rule: {user_execution_rule.rule_arn}")
-        logger.info(f"   - Parallel Processing: ENABLED for unlimited user scalability")
+    # NOTE: _create_parallel_execution_infrastructure() REMOVED
+    # Replaced by direct EventBridge → Lambda architecture (Strategy.Execution.Triggered events)
 
     def _create_api_gateway(self):
         """Create API Gateway with options trading endpoints"""
@@ -647,205 +627,198 @@ class OptionsTradeStack(Stack):
                                         )
 
         # =============================================================================
-        # Marketplace & B2B2C Integration - Admin & User Endpoints
+        # Trading Endpoints - Orders, Positions, Today's Executions
         # =============================================================================
 
-        # Public marketplace browsing (requires authentication)
-        marketplace_resource = options_resource.add_resource("marketplace")
+        trading_resource = options_resource.add_resource("trading")
 
-        # GET /options/marketplace/templates - Browse marketplace templates
-        marketplace_templates_resource = marketplace_resource.add_resource("templates")
-        marketplace_templates_resource.add_method("GET",
-                                                  apigateway.LambdaIntegration(self.lambda_functions['marketplace-manager']),
-                                                  authorization_type=apigateway.AuthorizationType.COGNITO,
-                                                  authorizer=authorizer
-                                                  )
+        # --- Orders Management ---
+        orders_resource = trading_resource.add_resource("orders")
 
-        # POST /options/marketplace/subscribe/{basket_id} - Subscribe to template
-        marketplace_subscribe_resource = marketplace_resource.add_resource("subscribe")
-        marketplace_subscribe_basket_resource = marketplace_subscribe_resource.add_resource("{basket_id}")
-        marketplace_subscribe_basket_resource.add_method("POST",
-                                                         apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
-                                                         authorization_type=apigateway.AuthorizationType.COGNITO,
-                                                         authorizer=authorizer
-                                                         )
+        # GET /options/trading/orders - List all orders with optional filters
+        orders_resource.add_method("GET",
+                                   apigateway.LambdaIntegration(self.lambda_functions['order-manager']),
+                                   authorization_type=apigateway.AuthorizationType.COGNITO,
+                                   authorizer=authorizer
+                                   )
 
-        # User subscription management
-        user_resource = options_resource.add_resource("user")
+        # POST /options/trading/orders - Place new order
+        orders_resource.add_method("POST",
+                                   apigateway.LambdaIntegration(self.lambda_functions['order-manager']),
+                                   authorization_type=apigateway.AuthorizationType.COGNITO,
+                                   authorizer=authorizer
+                                   )
 
-        # GET /options/user/subscriptions - Get user's subscriptions
-        user_subscriptions_resource = user_resource.add_resource("subscriptions")
-        user_subscriptions_resource.add_method("GET",
-                                               apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
-                                               authorization_type=apigateway.AuthorizationType.COGNITO,
-                                               authorizer=authorizer
-                                               )
+        # Individual order operations
+        order_id_resource = orders_resource.add_resource("{order_id}")
 
-        # User subscription management by ID
-        user_subscription_id_resource = user_subscriptions_resource.add_resource("{subscription_id}")
+        # GET /options/trading/orders/{order_id} - Get order details
+        order_id_resource.add_method("GET",
+                                     apigateway.LambdaIntegration(self.lambda_functions['order-manager']),
+                                     authorization_type=apigateway.AuthorizationType.COGNITO,
+                                     authorizer=authorizer
+                                     )
 
-        # GET /options/user/subscriptions/{subscription_id} - Get subscription details
-        user_subscription_id_resource.add_method("GET",
-                                                 apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
-                                                 authorization_type=apigateway.AuthorizationType.COGNITO,
-                                                 authorizer=authorizer
-                                                 )
+        # PUT /options/trading/orders/{order_id} - Modify order
+        order_id_resource.add_method("PUT",
+                                     apigateway.LambdaIntegration(self.lambda_functions['order-manager']),
+                                     authorization_type=apigateway.AuthorizationType.COGNITO,
+                                     authorizer=authorizer
+                                     )
 
-        # PUT /options/user/subscriptions/{subscription_id} - Update subscription
-        user_subscription_id_resource.add_method("PUT",
-                                                 apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
-                                                 authorization_type=apigateway.AuthorizationType.COGNITO,
-                                                 authorizer=authorizer
-                                                 )
+        # DELETE /options/trading/orders/{order_id} - Cancel order
+        order_id_resource.add_method("DELETE",
+                                     apigateway.LambdaIntegration(self.lambda_functions['order-manager']),
+                                     authorization_type=apigateway.AuthorizationType.COGNITO,
+                                     authorizer=authorizer
+                                     )
 
-        # DELETE /options/user/subscriptions/{subscription_id} - Cancel subscription
-        user_subscription_id_resource.add_method("DELETE",
-                                                 apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
-                                                 authorization_type=apigateway.AuthorizationType.COGNITO,
-                                                 authorizer=authorizer
-                                                 )
+        # --- Positions Management ---
+        positions_resource = trading_resource.add_resource("positions")
 
-        # PUT /options/user/subscriptions/{subscription_id}/pause - Pause subscription
-        user_pause_resource = user_subscription_id_resource.add_resource("pause")
-        user_pause_resource.add_method("PUT",
-                                       apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
-                                       authorization_type=apigateway.AuthorizationType.COGNITO,
-                                       authorizer=authorizer
-                                       )
+        # GET /options/trading/positions - Get all positions
+        positions_resource.add_method("GET",
+                                      apigateway.LambdaIntegration(self.lambda_functions['position-manager']),
+                                      authorization_type=apigateway.AuthorizationType.COGNITO,
+                                      authorizer=authorizer
+                                      )
 
-        # PUT /options/user/subscriptions/{subscription_id}/resume - Resume subscription
-        user_resume_resource = user_subscription_id_resource.add_resource("resume")
-        user_resume_resource.add_method("PUT",
-                                        apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
+        # GET /options/trading/positions/summary - Get P&L summary
+        positions_summary_resource = positions_resource.add_resource("summary")
+        positions_summary_resource.add_method("GET",
+                                              apigateway.LambdaIntegration(self.lambda_functions['position-manager']),
+                                              authorization_type=apigateway.AuthorizationType.COGNITO,
+                                              authorizer=authorizer
+                                              )
+
+        # Individual position operations
+        position_id_resource = positions_resource.add_resource("{position_id}")
+
+        # GET /options/trading/positions/{position_id} - Get position details
+        position_id_resource.add_method("GET",
+                                        apigateway.LambdaIntegration(self.lambda_functions['position-manager']),
                                         authorization_type=apigateway.AuthorizationType.COGNITO,
                                         authorizer=authorizer
                                         )
 
-        # Admin marketplace management (requires Admins group)
-        admin_resource = options_resource.add_resource("admin")
-
-        # POST /options/admin/marketplace/enable/{basket_id} - Enable marketplace for basket
-        admin_marketplace_resource = admin_resource.add_resource("marketplace")
-        admin_marketplace_enable_resource = admin_marketplace_resource.add_resource("enable")
-        admin_enable_basket_resource = admin_marketplace_enable_resource.add_resource("{basket_id}")
-        admin_enable_basket_resource.add_method("POST",
-                                                apigateway.LambdaIntegration(self.lambda_functions['marketplace-manager']),
+        # POST /options/trading/positions/{position_id}/square-off - Square off position
+        position_square_off_resource = position_id_resource.add_resource("square-off")
+        position_square_off_resource.add_method("POST",
+                                                apigateway.LambdaIntegration(self.lambda_functions['position-manager']),
                                                 authorization_type=apigateway.AuthorizationType.COGNITO,
                                                 authorizer=authorizer
                                                 )
 
-        # PUT /options/admin/marketplace/disable/{basket_id} - Disable marketplace for basket
-        admin_marketplace_disable_resource = admin_marketplace_resource.add_resource("disable")
-        admin_disable_basket_resource = admin_marketplace_disable_resource.add_resource("{basket_id}")
-        admin_disable_basket_resource.add_method("PUT",
-                                                 apigateway.LambdaIntegration(self.lambda_functions['marketplace-manager']),
-                                                 authorization_type=apigateway.AuthorizationType.COGNITO,
-                                                 authorizer=authorizer
-                                                 )
+        # --- Today's Executions Timeline ---
+        today_resource = trading_resource.add_resource("today")
 
-        # Partner API key management
-        admin_partners_resource = admin_resource.add_resource("partner-api-keys")
+        # GET /options/trading/today - Get today's execution timeline
+        today_resource.add_method("GET",
+                                  apigateway.LambdaIntegration(self.lambda_functions['strategy-executor']),
+                                  authorization_type=apigateway.AuthorizationType.COGNITO,
+                                  authorizer=authorizer
+                                  )
 
-        # POST /options/admin/partner-api-keys - Create partner API key
-        admin_partners_resource.add_method("POST",
-                                          apigateway.LambdaIntegration(self.lambda_functions['partner-api-manager']),
+        # GET /options/trading/today/summary - Get today's P&L summary
+        today_summary_resource = today_resource.add_resource("summary")
+        today_summary_resource.add_method("GET",
+                                          apigateway.LambdaIntegration(self.lambda_functions['position-manager']),
                                           authorization_type=apigateway.AuthorizationType.COGNITO,
                                           authorizer=authorizer
-                                          )
-
-        # GET /options/admin/partner-api-keys - List partner API keys
-        admin_partners_resource.add_method("GET",
-                                          apigateway.LambdaIntegration(self.lambda_functions['partner-api-manager']),
-                                          authorization_type=apigateway.AuthorizationType.COGNITO,
-                                          authorizer=authorizer
-                                          )
-
-        # PUT /options/admin/partner-api-keys/{key_id} - Update partner API key
-        admin_partner_key_resource = admin_partners_resource.add_resource("{key_id}")
-        admin_partner_key_resource.add_method("PUT",
-                                             apigateway.LambdaIntegration(self.lambda_functions['partner-api-manager']),
-                                             authorization_type=apigateway.AuthorizationType.COGNITO,
-                                             authorizer=authorizer
-                                             )
-
-        # DELETE /options/admin/partner-api-keys/{key_id} - Revoke partner API key
-        admin_partner_key_resource.add_method("DELETE",
-                                             apigateway.LambdaIntegration(self.lambda_functions['partner-api-manager']),
-                                             authorization_type=apigateway.AuthorizationType.COGNITO,
-                                             authorizer=authorizer
-                                             )
-
-        # =============================================================================
-        # Partner API Endpoints (No Cognito auth - uses custom Partner API auth)
-        # =============================================================================
-
-        # Partner marketplace browsing (Partner API authentication)
-        partner_resource = self.api.root.add_resource("partner")
-
-        # GET /partner/marketplace/templates - Browse templates via Partner API
-        partner_marketplace_resource = partner_resource.add_resource("marketplace")
-        partner_templates_resource = partner_marketplace_resource.add_resource("templates")
-        partner_templates_resource.add_method("GET",
-                                             apigateway.LambdaIntegration(self.lambda_functions['marketplace-manager']),
-                                             authorization_type=apigateway.AuthorizationType.NONE
-                                             )
-
-        # POST /partner/marketplace/subscribe - Partner API subscription
-        partner_subscribe_resource = partner_marketplace_resource.add_resource("subscribe")
-        partner_subscribe_resource.add_method("POST",
-                                             apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
-                                             authorization_type=apigateway.AuthorizationType.NONE
-                                             )
-
-        # Partner subscription management endpoints
-        partner_subscriptions_resource = partner_resource.add_resource("subscriptions")
-
-        # GET /partner/subscriptions - List all partner subscriptions
-        partner_subscriptions_resource.add_method("GET",
-                                                 apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
-                                                 authorization_type=apigateway.AuthorizationType.NONE
-                                                 )
-
-        # Partner subscription management by ID
-        partner_subscription_id_resource = partner_subscriptions_resource.add_resource("{subscription_id}")
-
-        # GET /partner/subscriptions/{subscription_id} - Get subscription details
-        partner_subscription_id_resource.add_method("GET",
-                                                   apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
-                                                   authorization_type=apigateway.AuthorizationType.NONE
-                                                   )
-
-        # DELETE /partner/subscriptions/{subscription_id} - Cancel subscription
-        partner_subscription_id_resource.add_method("DELETE",
-                                                   apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
-                                                   authorization_type=apigateway.AuthorizationType.NONE
-                                                   )
-
-        # PUT /partner/subscriptions/{subscription_id}/pause - Pause subscription
-        partner_pause_resource = partner_subscription_id_resource.add_resource("pause")
-        partner_pause_resource.add_method("PUT",
-                                         apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
-                                         authorization_type=apigateway.AuthorizationType.NONE
-                                         )
-
-        # PUT /partner/subscriptions/{subscription_id}/resume - Resume subscription
-        partner_resume_resource = partner_subscription_id_resource.add_resource("resume")
-        partner_resume_resource.add_method("PUT",
-                                          apigateway.LambdaIntegration(self.lambda_functions['subscription-manager']),
-                                          authorization_type=apigateway.AuthorizationType.NONE
                                           )
 
     def _create_websocket_api(self):
-        """Create WebSocket API for real-time updates"""
+        """Create WebSocket API for real-time updates with handler integrations"""
 
         if not self.options_config.get('enable_realtime_websocket', True):
             return
 
-        # Create WebSocket API
+        # Common environment variables for WebSocket handlers
+        ws_lambda_env = {
+            "ENVIRONMENT": self.deploy_env,
+            "COMPANY_PREFIX": self.company_prefix,
+            "PROJECT_NAME": self.project_name,
+            "REGION": self.region,
+            "WEBSOCKET_CONNECTIONS_TABLE": self.websocket_connections_table.table_name,
+            "TRADING_CONFIGURATIONS_TABLE": self.trading_configurations_table.table_name,
+        }
+
+        # Create WebSocket connect handler Lambda
+        self.ws_connect_handler = _lambda.Function(
+            self, f"WsConnectHandler{self.deploy_env.title()}",
+            function_name=self.get_resource_name("ws-connect-handler"),
+            runtime=_lambda.Runtime.PYTHON_3_11,
+            code=_lambda.Code.from_asset("lambda_functions"),
+            handler="websocket.connect_handler.lambda_handler",
+            environment=ws_lambda_env,
+            timeout=Duration.seconds(10),
+            memory_size=256,
+            log_retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7
+            else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30
+            else logs.RetentionDays.THREE_MONTHS,
+            description="WebSocket $connect route handler - authenticate and store connection"
+        )
+
+        # Create WebSocket disconnect handler Lambda
+        self.ws_disconnect_handler = _lambda.Function(
+            self, f"WsDisconnectHandler{self.deploy_env.title()}",
+            function_name=self.get_resource_name("ws-disconnect-handler"),
+            runtime=_lambda.Runtime.PYTHON_3_11,
+            code=_lambda.Code.from_asset("lambda_functions"),
+            handler="websocket.disconnect_handler.lambda_handler",
+            environment=ws_lambda_env,
+            timeout=Duration.seconds(10),
+            memory_size=256,
+            log_retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7
+            else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30
+            else logs.RetentionDays.THREE_MONTHS,
+            description="WebSocket $disconnect route handler - cleanup connection"
+        )
+
+        # Create WebSocket message handler Lambda
+        self.ws_message_handler = _lambda.Function(
+            self, f"WsMessageHandler{self.deploy_env.title()}",
+            function_name=self.get_resource_name("ws-message-handler"),
+            runtime=_lambda.Runtime.PYTHON_3_11,
+            code=_lambda.Code.from_asset("lambda_functions"),
+            handler="websocket.message_handler.lambda_handler",
+            environment=ws_lambda_env,
+            timeout=Duration.seconds(30),
+            memory_size=256,
+            log_retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7
+            else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30
+            else logs.RetentionDays.THREE_MONTHS,
+            description="WebSocket $default route handler - process messages"
+        )
+
+        # Grant DynamoDB permissions to WebSocket handlers
+        for ws_handler in [self.ws_connect_handler, self.ws_disconnect_handler, self.ws_message_handler]:
+            self.websocket_connections_table.grant_read_write_data(ws_handler)
+            self.trading_configurations_table.grant_read_data(ws_handler)
+
+        # Create WebSocket API with route integrations
         self.websocket_api = apigatewayv2.WebSocketApi(
             self, f"OptionsWebSocketApi{self.deploy_env.title()}",
             api_name=self.get_resource_name("options-websocket"),
             description=f"Options Trading WebSocket API - {self.deploy_env} environment",
+            connect_route_options=apigatewayv2.WebSocketRouteOptions(
+                integration=integrations.WebSocketLambdaIntegration(
+                    "ConnectIntegration",
+                    self.ws_connect_handler
+                )
+            ),
+            disconnect_route_options=apigatewayv2.WebSocketRouteOptions(
+                integration=integrations.WebSocketLambdaIntegration(
+                    "DisconnectIntegration",
+                    self.ws_disconnect_handler
+                )
+            ),
+            default_route_options=apigatewayv2.WebSocketRouteOptions(
+                integration=integrations.WebSocketLambdaIntegration(
+                    "DefaultIntegration",
+                    self.ws_message_handler
+                )
+            ),
         )
 
         # Add WebSocket stage
@@ -856,6 +829,21 @@ class OptionsTradeStack(Stack):
             auto_deploy=True,
         )
 
+        # Grant WebSocket API management permissions to all WebSocket handlers
+        # This allows handlers to send messages back to connected clients
+        for ws_handler in [self.ws_connect_handler, self.ws_disconnect_handler, self.ws_message_handler]:
+            ws_handler.add_to_role_policy(
+                iam.PolicyStatement(
+                    actions=["execute-api:ManageConnections"],
+                    resources=[
+                        f"arn:aws:execute-api:{self.region}:{self.account}:{self.websocket_api.api_id}/{self.deploy_env}/*"
+                    ]
+                )
+            )
+
+        # Store WebSocket URL in environment for broadcaster Lambda
+        self.websocket_endpoint = f"https://{self.websocket_api.api_id}.execute-api.{self.region}.amazonaws.com/{self.deploy_env}"
+
     def _create_event_driven_execution_architecture(self):
         """
         Create sophisticated event-driven execution architecture
@@ -865,23 +853,19 @@ class OptionsTradeStack(Stack):
         # Create event emitter Lambda with EventBridge cron for timing events
         self._create_event_emitter_lambda()
 
-        # Create Strategic EventBridge Rules for high-traffic times
-        self._create_strategic_eventbridge_rules()
-
-        # Create SQS infrastructure for batch processing
-        self._create_sqs_infrastructure()
-
-        # Create Express Step Functions for strategy execution
-        self._create_express_execution_state_machine()
-
-        # Create Individual Strategy Execution Step Function (Ultimate Parallelization)
-        self._create_individual_strategy_execution_state_machine()
-
-        # Create Single Strategy Express Step Function for SQS-triggered scheduling
-        self._create_single_strategy_express_step_function()
 
         # Create event handlers for different event types
         self._create_event_handlers()
+
+        # NOTE: Removed unused Step Functions (cleaned up architecture):
+        # - user-strategy-execution (replaced by direct EventBridge → Lambda)
+        # - express-execution (replaced by direct EventBridge → Lambda)
+        # - individual-strategy-execution (replaced by direct EventBridge → Lambda)
+        # - batch-strategy-executor (replaced by direct EventBridge → Lambda)
+        # - single-strategy-standard/express-execution (replaced by direct EventBridge → Lambda)
+        #
+        # New architecture uses only master-precision-timer Step Function:
+        # EventBridge Cron → master-precision-timer → event_emitter → EventBridge events → Lambda handlers
 
     def _create_event_emitter_lambda(self):
         """Create event emitter Lambda for timing events"""
@@ -943,583 +927,64 @@ class OptionsTradeStack(Stack):
         # Create Step Functions Express for TRUE 0-second precision timing
         self._create_master_precision_timer_step_function()
 
-    def _create_strategic_eventbridge_rules(self):
-        """
-        Create EventBridge rules for high-traffic strategic times (80% coverage)
-        Provides instant execution for common strategy times
-        """
-
-        # Strategic times that handle 80% of all strategy executions
-        strategic_times = [
-            ("09:15", "market-open", "Market opening - initial strategies"),
-            ("09:30", "main-entry-1", "Primary entry time - most strategies"),
-            ("10:00", "main-entry-2", "Secondary entry time"),
-            ("13:00", "post-lunch", "Post-lunch entry strategies"),
-            ("15:20", "main-exit", "Primary exit time - most strategies"),
-            ("15:25", "emergency-close", "Emergency close before market close")
-        ]
-
-        self.strategic_rules = {}
-
-        for time_slot, phase_name, description in strategic_times:
-            hour, minute = time_slot.split(":")
-
-            # Convert IST to UTC for EventBridge cron
-            # IST = UTC + 5:30, so UTC = IST - 5:30
-            utc_hour = int(hour) - 5
-            utc_minute = int(minute) - 30
-
-            # Handle minute underflow
-            if utc_minute < 0:
-                utc_minute += 60
-                utc_hour -= 1
-
-            # Handle hour underflow (next day scheduling)
-            if utc_hour < 0:
-                utc_hour += 24
-
-            # Create EventBridge rule
-            rule = events.Rule(
-                self, f"StrategicRule{time_slot.replace(':', '')}{self.deploy_env.title()}",
-                rule_name=self.get_resource_name(f"strategic-{phase_name}"),
-                description=f"{description} at {time_slot} IST",
-                schedule=events.Schedule.cron(
-                    minute=str(utc_minute),
-                    hour=str(utc_hour),
-                    month="*",
-                    year="*",
-                    week_day="MON-FRI"  # Only weekdays
-                ),
-                enabled=True
-            )
-
-            # Target the strategy executor directly for strategic times
-            rule.add_target(targets.LambdaFunction(
-                self.lambda_functions['strategy-executor'],
-                event=events.RuleTargetInput.from_object({
-                    "execution_time": time_slot,
-                    "trigger_type": "STRATEGIC",
-                    "market_phase": phase_name,
-                    "source": "aws.events"
-                })
-            ))
-
-            self.strategic_rules[phase_name] = rule
-
-        # NOTE: Master Step Function removed in favor of pure EventBridge cron approach
-        # EventBridge cron provides better precision and lower cost than continuous Step Function loops
-
-    def _create_sqs_infrastructure(self):
-        """
-        🚀 Create SQS infrastructure for batch strategy processing
-        Industry-standard messaging pattern with unlimited scalability
-        """
-
-        # Create Dead Letter Queue for strategy batches
-        self.strategy_batch_dlq = sqs.Queue(
-            self, f"StrategyBatchDLQ{self.deploy_env.title()}",
-            queue_name=self.get_resource_name("strategy-batch-dlq"),
-            removal_policy=self.get_removal_policy()
-        )
-
-        # Create main SQS queue for strategy batches
-        self.strategy_batch_queue = sqs.Queue(
-            self, f"StrategyBatchQueue{self.deploy_env.title()}",
-            queue_name=self.get_resource_name("strategy-batch-queue"),
-            visibility_timeout=Duration.seconds(300),  # 5 minutes for Step Function processing
-            receive_message_wait_time=Duration.seconds(20),  # Long polling
-            dead_letter_queue=sqs.DeadLetterQueue(
-                max_receive_count=3,
-                queue=self.strategy_batch_dlq
-            ),
-            removal_policy=self.get_removal_policy()
-        )
-
-        # Create Dead Letter Queue for single strategy processing
-        self.single_strategy_dlq = sqs.Queue(
-            self, f"SingleStrategyDLQ{self.deploy_env.title()}",
-            queue_name=self.get_resource_name("single-strategy-dlq"),
-            removal_policy=self.get_removal_policy()
-        )
-
-        # Create SQS queue for single strategy execution (user-specific events)
-        self.single_strategy_queue = sqs.Queue(
-            self, f"SingleStrategyQueue{self.deploy_env.title()}",
-            queue_name=self.get_resource_name("single-strategy-queue"),
-            visibility_timeout=Duration.seconds(180),  # 3 minutes for single strategy processing
-            receive_message_wait_time=Duration.seconds(20),  # Long polling
-            dead_letter_queue=sqs.DeadLetterQueue(
-                max_receive_count=3,
-                queue=self.single_strategy_dlq
-            ),
-            removal_policy=self.get_removal_policy()
-        )
-
-        # Create Step Function Launcher Lambda
-        self.step_function_launcher = _lambda.Function(
-            self, f"StepFunctionLauncher{self.deploy_env.title()}",
-            function_name=self.get_resource_name("step-function-launcher"),
-            runtime=_lambda.Runtime.PYTHON_3_11,
-            code=_lambda.Code.from_asset("lambda_functions"),
-            handler="option_baskets.step_function_launcher.lambda_handler",
-            environment={
-                "ENVIRONMENT": self.deploy_env,
-                "COMPANY_PREFIX": self.company_prefix,
-                "PROJECT_NAME": self.project_name,
-                "REGION": self.region,
-                "TRADING_CONFIGURATIONS_TABLE": self.trading_configurations_table.table_name,
-                "EXECUTION_HISTORY_TABLE": self.execution_history_table.table_name,
-            },
-            timeout=Duration.seconds(60),
-            memory_size=512,
-            log_retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7
-            else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30
-            else logs.RetentionDays.THREE_MONTHS,
-            description="🚀 SQS-triggered Lambda that launches Step Functions with batch processing and timing precision"
-        )
-
-        # Add SQS event source to Step Function Launcher
-        self.step_function_launcher.add_event_source(
-            lambda_event_sources.SqsEventSource(
-                self.strategy_batch_queue,
-                batch_size=1,  # Process one batch at a time for optimal Step Function launching
-                max_batching_window=Duration.seconds(5)
-            )
-        )
-
-        # Grant DynamoDB permissions to Step Function Launcher
-        for table in [self.trading_configurations_table, self.execution_history_table]:
-            table.grant_read_data(self.step_function_launcher)
-
-        # Create outputs for SQS infrastructure
-        CfnOutput(
-            self, "StrategyBatchQueueUrl",
-            value=self.strategy_batch_queue.queue_url,
-            description="🚀 SQS Queue URL for strategy batch processing",
-            export_name=f"{self.stack_name}-StrategyBatchQueueUrl"
-        )
-
-        CfnOutput(
-            self, "StepFunctionLauncherArn",
-            value=self.step_function_launcher.function_arn,
-            description="🚀 ARN of the Step Function Launcher Lambda",
-            export_name=f"{self.stack_name}-StepFunctionLauncherArn"
-        )
-
-    def _create_express_execution_state_machine(self):
-        """
-        Create Express Step Function for strategy execution with Wait states
-        Provides second-level timing precision at 98% cost savings
-        """
-
-        # Wait for execution time
-        wait_for_execution = stepfunctions.Wait(
-            self, "WaitForExecution",
-            time=stepfunctions.WaitTime.seconds_path("$.wait_seconds")
-        )
-
-        # Final market validation before execution
-        validate_market = tasks.LambdaInvoke(
-            self, "ValidateMarket",
-            lambda_function=self.lambda_functions['market-data-fetcher'],
-            payload=stepfunctions.TaskInput.from_object({
-                "action": "VALIDATE_MARKET_OPEN"
-            }),
-            result_path="$.market_validation"
-        )
-
-        # Execute strategies in parallel
-        execute_strategies_parallel = stepfunctions.Parallel(
-            self, "ExecuteStrategiesParallel"
-        )
-
-        # Add parallel execution branch for each user's strategies
-        execute_user_strategies = tasks.LambdaInvoke(
-            self, "ExecuteUserStrategies",
-            lambda_function=self.lambda_functions['strategy-executor'],
-            payload=stepfunctions.TaskInput.from_object({
-                "action": "EXECUTE_USER_STRATEGIES",
-                "strategies.$": "$.strategies",
-                "execution_time.$": "$.execution_time",
-                "trigger_type": "EXPRESS_STEP_FUNCTION"
-            }),
-            result_path="$.execution_results"
-        )
-
-        execute_strategies_parallel.branch(execute_user_strategies)
-
-        # Record execution results
-        record_results = tasks.LambdaInvoke(
-            self, "RecordResults",
-            lambda_function=self.lambda_functions['performance-calculator'],
-            payload=stepfunctions.TaskInput.from_object({
-                "action": "RECORD_EXECUTION_RESULTS",
-                "results.$": "$.execution_results",
-                "execution_time.$": "$.execution_time"
-            })
-        )
-
-        # Choice for market validation
-        should_execute = stepfunctions.Choice(self, "ShouldExecute")
-
-        # Skip execution if market closed
-        skip_execution = stepfunctions.Succeed(self, "MarketClosedSkipExecution")
-
-        # Define Express Step Function flow
-        definition = wait_for_execution \
-            .next(validate_market) \
-            .next(should_execute \
-                  .when(stepfunctions.Condition.boolean_equals("$.market_validation.market_open", True),
-                        execute_strategies_parallel.next(record_results)) \
-                  .otherwise(skip_execution)
-                  )
-
-        # Create Express Step Function for cost efficiency
-        self.express_execution_state_machine = stepfunctions.StateMachine(
-            self, f"ExpressExecutionStateMachine{self.deploy_env.title()}",
-            state_machine_name=self.get_resource_name("express-execution"),
-            definition=definition,
-            state_machine_type=stepfunctions.StateMachineType.EXPRESS,
-            logs=stepfunctions.LogOptions(
-                destination=logs.LogGroup(
-                    self, f"ExpressExecutionLogGroup{self.deploy_env.title()}",
-                    log_group_name=f"/aws/stepfunctions/{self.get_resource_name('express-execution')}",
-                    retention=logs.RetentionDays.ONE_WEEK if self.env_config['log_retention_days'] == 7
-                    else logs.RetentionDays.ONE_MONTH if self.env_config['log_retention_days'] == 30
-                    else logs.RetentionDays.THREE_MONTHS,
-                    removal_policy=self.get_removal_policy()
-                ),
-                level=stepfunctions.LogLevel.ERROR,  # Express only supports ERROR level
-                include_execution_data=False
-            )
-        )
-
-        # Create EventBridge rule to trigger Express Step Function from strategy discovery
-        self._create_strategy_execution_eventbridge_rule()
-
-    def _create_strategy_execution_eventbridge_rule(self):
-        """
-        Create EventBridge rule to trigger Express Step Function when strategies are discovered.
-        
-        This completes the architecture chain:
-        Schedule Strategy Trigger → EventBridge Event → Express Step Function → Strategy Executor
-        """
-
-        # EventBridge rule to capture strategy execution trigger events
-        self.strategy_execution_rule = events.Rule(
-            self, f"StrategyExecutionRule{self.deploy_env.title()}",
-            rule_name=self.get_resource_name("strategy-execution-trigger"),
-            description="Triggers Express Step Function when strategies are discovered for execution",
-            event_pattern=events.EventPattern(
-                source=["options.trading.execution"],
-                detail_type=["Strategy Execution Trigger"],
-                detail={
-                    "event_type": ["TRIGGER_STRATEGY_EXECUTION"]
-                }
-            ),
-            enabled=True
-        )
-
-        # Add Express Step Function as target
-        self.strategy_execution_rule.add_target(
-            targets.SfnStateMachine(
-                self.express_execution_state_machine,
-                input=events.RuleTargetInput.from_object({
-                    # Map EventBridge event data to Step Function input
-                    "strategies.$": "$.detail.strategies",
-                    "execution_time.$": "$.detail.execution_time",
-                    "execution_datetime.$": "$.detail.execution_datetime",
-                    "wait_seconds.$": "$.detail.wait_seconds",
-                    "strategy_count.$": "$.detail.strategy_count",
-                    "market_phase.$": "$.detail.market_phase",
-                    "event_metadata": {
-                        "event_id.$": "$.detail.event_id",
-                        "trigger_source.$": "$.detail.trigger_source",
-                        "timestamp.$": "$.detail.timestamp",
-                        "priority.$": "$.detail.step_function_trigger.priority"
-                    }
-                }),
-                role=self._create_eventbridge_step_function_role()
-            )
-        )
-
-        # EventBridge rule created successfully
-
-    def _create_individual_strategy_execution_state_machine(self):
-        """
-        🚀 Create Express Step Function for Individual Strategy Execution (Ultimate Parallelization)
-        Provides revolutionary strategy-level parallelization with 0-query execution
-        """
-
-        # Load individual strategy execution Step Function definition
-        import os
-        import json
-        individual_step_function_def_path = os.path.join(
-            os.path.dirname(__file__), "..", "step_functions", "individual_strategy_execution_definition.json"
-        )
-
-        # Read and process the Step Function definition
-        with open(individual_step_function_def_path, 'r') as f:
-            definition_json = f.read()
-
-        # Replace placeholder with actual Lambda ARN
-        definition_json = definition_json.replace(
-            "${SingleStrategyExecutorLambdaArn}",
-            self.lambda_functions['single-strategy-executor'].function_arn
-        )
-
-        # Parse and create the definition
-        definition_dict = json.loads(definition_json)
-        definition_body = stepfunctions.DefinitionBody.from_string(json.dumps(definition_dict))
-
-        # Create the individual strategy execution Step Function
-        self.individual_strategy_execution_state_machine = stepfunctions.StateMachine(
-            self, f"IndividualStrategyExecutionStateMachine{self.deploy_env.title()}",
-            state_machine_name=self.get_resource_name("individual-strategy-execution"),
-            definition_body=definition_body,
-            state_machine_type=stepfunctions.StateMachineType.EXPRESS,
-            timeout=Duration.minutes(5),  # Express workflows have 5-minute limit
-            logs=stepfunctions.LogOptions(
-                destination=logs.LogGroup(
-                    self, f"IndividualStrategyExecutionLogGroup{self.deploy_env.title()}",
-                    log_group_name=f"/aws/stepfunctions/{self.get_resource_name('individual-strategy-execution')}",
-                    retention=logs.RetentionDays.ONE_WEEK if self.env_config.get('log_retention_days', 7) == 7 else logs.RetentionDays.ONE_MONTH,
-                    removal_policy=self.get_removal_policy()
-                ),
-                level=stepfunctions.LogLevel.ERROR,  # Express only supports ERROR level
-                include_execution_data=False
-            )
-        )
-
-        # 🚀 Create Batch Strategy Executor Step Function for SQS processing
-        self._create_batch_strategy_executor_step_function()
-
-        # Create EventBridge rule for individual strategy execution events
-        self._create_individual_strategy_execution_eventbridge_rule()
-
-        # Grant permissions for cross-service integration
-        self._grant_individual_strategy_execution_permissions()
-
-    def _create_individual_strategy_execution_eventbridge_rule(self):
-        """
-        Create EventBridge rule to trigger Express Step Function for individual strategy execution.
-        
-        This completes the ultimate parallelization architecture chain:
-        Schedule Strategy Trigger → Individual EventBridge Events → Express Step Functions → Single Strategy Executor
-        """
-
-        # EventBridge rule to capture individual strategy execution trigger events
-        self.individual_strategy_execution_rule = events.Rule(
-            self, f"IndividualStrategyExecutionRule{self.deploy_env.title()}",
-            rule_name=self.get_resource_name("individual-strategy-execution-trigger"),
-            description="Triggers Express Step Function for individual strategy execution (Ultimate Parallelization)",
-            event_pattern=events.EventPattern(
-                source=["options.trading.execution.ultimate.parallel"],
-                detail_type=["Individual Strategy Execution Trigger"],
-                detail={
-                    "event_type": ["INDIVIDUAL_STRATEGY_EXECUTION"],
-                    "execution_level": ["individual_strategy"]
-                }
-            ),
-            enabled=True
-        )
-
-        # Add Individual Strategy Express Step Function as target
-        self.individual_strategy_execution_rule.add_target(
-            targets.SfnStateMachine(
-                self.individual_strategy_execution_state_machine,
-                input=events.RuleTargetInput.from_object({
-                    # Map EventBridge event data to Step Function input
-                    "user_id.$": "$.detail.user_id",
-                    "strategy_id.$": "$.detail.strategy_id",
-                    "strategy_name.$": "$.detail.strategy_name",
-                    "execution_time.$": "$.detail.execution_time",
-                    "strategy.$": "$.detail.strategy",
-                    "execution_level": "individual_strategy",
-                    "parallel_execution": True,
-                    "event_metadata": {
-                        "event_id.$": "$.detail.event_id",
-                        "trigger_source.$": "$.detail.trigger_source",
-                        "timestamp.$": "$.detail.timestamp",
-                        "priority.$": "$.detail.step_function_trigger.priority",
-                        "ultimate_parallelization": True
-                    }
-                }),
-                role=self._create_individual_strategy_eventbridge_role()
-            )
-        )
-
-    def _create_batch_strategy_executor_step_function(self):
-        """
-        🚀 Create Batch Strategy Executor Step Function for SQS-triggered batch processing
-        
-        This Step Function processes strategy batches received from SQS with:
-        - Dynamic wait calculation for 0-second precision timing
-        - Map state for parallel batch processing
-        - Preserves revolutionary timing precision architecture
-        """
-
-        # Load batch strategy executor Step Function definition
-        import os
-        batch_step_function_def_path = os.path.join(
-            os.path.dirname(__file__), "..",
-            "step_functions", "batch_strategy_execution_definition.json"
-        )
-
-        # Read and process the Step Function definition
-        with open(batch_step_function_def_path, 'r') as f:
-            definition_json = f.read()
-
-        # Replace placeholder with actual Single Strategy Executor Lambda ARN
-        definition_json = definition_json.replace(
-            "${SingleStrategyExecutorLambdaArn}",
-            self.lambda_functions['single-strategy-executor'].function_arn
-        )
-
-        # Parse and create the definition
-        definition_dict = json.loads(definition_json)
-        definition_body = stepfunctions.DefinitionBody.from_string(json.dumps(definition_dict))
-
-        # Create the Batch Strategy Executor Step Function (Express for cost efficiency)
-        self.batch_strategy_executor_state_machine = stepfunctions.StateMachine(
-            self, f"BatchStrategyExecutorStateMachine{self.deploy_env.title()}",
-            state_machine_name=self.get_resource_name("batch-strategy-executor"),
-            definition_body=definition_body,
-            state_machine_type=stepfunctions.StateMachineType.EXPRESS,
-            timeout=Duration.minutes(5),  # Express workflows have 5-minute limit
-            logs=stepfunctions.LogOptions(
-                destination=logs.LogGroup(
-                    self, f"BatchStrategyExecutorLogGroup{self.deploy_env.title()}",
-                    log_group_name=f"/aws/stepfunctions/{self.get_resource_name('batch-strategy-executor')}",
-                    retention=logs.RetentionDays.ONE_WEEK if self.env_config.get('log_retention_days', 7) == 7 else logs.RetentionDays.ONE_MONTH,
-                    removal_policy=self.get_removal_policy()
-                ),
-                level=stepfunctions.LogLevel.ERROR,  # Express only supports ERROR level
-                include_execution_data=False
-            )
-        )
-
-        # Update Step Function Launcher environment with Batch Step Function ARN
-        self.step_function_launcher.add_environment(
-            "BATCH_STRATEGY_STEP_FUNCTION_ARN",
-            self.batch_strategy_executor_state_machine.state_machine_arn
-        )
-
-        # Grant Step Function Launcher permission to start Batch Strategy Executor executions
-        self.batch_strategy_executor_state_machine.grant_start_execution(self.step_function_launcher)
-
-        # Create output for Batch Strategy Executor Step Function
-        CfnOutput(
-            self, "BatchStrategyExecutorStepFunctionArn",
-            value=self.batch_strategy_executor_state_machine.state_machine_arn,
-            description="🚀 ARN of the Batch Strategy Executor Step Function for SQS processing",
-            export_name=f"{self.stack_name}-BatchStrategyExecutorStepFunctionArn"
-        )
-
-    def _create_individual_strategy_eventbridge_role(self):
-        """Create IAM role for EventBridge to invoke Individual Strategy Step Functions"""
-
-        individual_eventbridge_role = iam.Role(
-            self, f"IndividualStrategyEventBridgeRole{self.deploy_env.title()}",
-            role_name=self.get_resource_name("individual-strategy-eventbridge-role"),
-            assumed_by=iam.ServicePrincipal("events.amazonaws.com"),
-            description="Allows EventBridge to invoke Express Step Function for individual strategy execution"
-        )
-
-        # Grant permission to start Individual Strategy Step Function executions
-        individual_eventbridge_role.add_to_policy(
-            iam.PolicyStatement(
-                effect=iam.Effect.ALLOW,
-                actions=[
-                    "states:StartExecution"
-                ],
-                resources=[
-                    self.individual_strategy_execution_state_machine.state_machine_arn
-                ]
-            )
-        )
-
-        return individual_eventbridge_role
-
-    def _grant_individual_strategy_execution_permissions(self):
-        """Grant permissions for individual strategy execution Step Function"""
-
-        # Grant EventBridge permission to invoke individual strategy execution Step Function
-        self.individual_strategy_execution_state_machine.grant_start_execution(iam.ServicePrincipal("events.amazonaws.com"))
-
-        # Grant single strategy executor Lambda access to execution log table
-        single_strategy_executor_lambda = self.lambda_functions['single-strategy-executor']
-        self.execution_history_table.grant_read_write_data(single_strategy_executor_lambda)
-
-        # Grant single strategy executor Lambda access to trading configurations table (for validation)
-        self.trading_configurations_table.grant_read_data(single_strategy_executor_lambda)
-
-        # Create outputs for individual strategy execution infrastructure
-        CfnOutput(
-            self, "IndividualStrategyExecutionStateMachineArn",
-            value=self.individual_strategy_execution_state_machine.state_machine_arn,
-            description="🚀 ARN of the individual strategy execution Step Function (Ultimate Parallelization)",
-            export_name=f"{self.stack_name}-IndividualStrategyExecutionStateMachineArn"
-        )
-
-        CfnOutput(
-            self, "IndividualStrategyExecutionRuleArn",
-            value=self.individual_strategy_execution_rule.rule_arn,
-            description="🚀 ARN of the EventBridge rule for individual strategy execution",
-            export_name=f"{self.stack_name}-IndividualStrategyExecutionRuleArn"
-        )
-
-    def _create_eventbridge_step_function_role(self):
-        """Create IAM role for EventBridge to invoke Step Functions"""
-
-        eventbridge_step_function_role = iam.Role(
-            self, f"EventBridgeStepFunctionRole{self.deploy_env.title()}",
-            role_name=self.get_resource_name("eventbridge-stepfunctions-role"),
-            assumed_by=iam.ServicePrincipal("events.amazonaws.com"),
-            description="Allows EventBridge to invoke Express Step Function for strategy execution"
-        )
-
-        # Grant permission to start Step Function executions
-        eventbridge_step_function_role.add_to_policy(
-            iam.PolicyStatement(
-                effect=iam.Effect.ALLOW,
-                actions=[
-                    "states:StartExecution"
-                ],
-                resources=[
-                    self.express_execution_state_machine.state_machine_arn
-                ]
-            )
-        )
-
-        return eventbridge_step_function_role
+    # ============================================================================
+    # NOTE: REMOVED UNUSED INFRASTRUCTURE (December 2025 Cleanup)
+    # ============================================================================
+    # The following infrastructure was removed in favor of direct EventBridge → Lambda:
+    #
+    # REMOVED SQS Infrastructure:
+    # - _create_sqs_infrastructure() - strategy-batch-queue, single-strategy-queue, DLQs
+    # - step-function-launcher Lambda
+    #
+    # REMOVED Step Functions:
+    # - _create_express_execution_state_machine() - express-execution
+    # - _create_strategy_execution_eventbridge_rule() - strategy-execution-trigger
+    # - _create_individual_strategy_execution_state_machine() - individual-strategy-execution
+    # - _create_individual_strategy_execution_eventbridge_rule()
+    # - _create_batch_strategy_executor_step_function() - batch-strategy-executor
+    # - _create_individual_strategy_eventbridge_role()
+    # - _grant_individual_strategy_execution_permissions()
+    # - _create_eventbridge_step_function_role()
+    #
+    # NEW ARCHITECTURE: Direct EventBridge → Lambda
+    # - Source: qlalgo.options.trading
+    # - DetailType: Strategy.Execution.Triggered
+    # - Target: single-strategy-executor Lambda (direct invocation)
+    # ============================================================================
 
     def _create_event_handlers(self):
         """Create event handlers for different event types"""
 
         # Create event handler Lambda functions
         event_handler_configs = [
-            ("schedule-strategy-trigger", "Event handler for 5-minute strategy scheduling"),
-            ("stop-loss-checker", "Event handler for real-time stop loss monitoring"),
-            ("duplicate-order-checker", "Event handler for order deduplication"),
-            ("market-data-refresher", "Event handler for market data updates")
+            # Primary event handler - processes Active User Events
+            ("active-user-event-handler", "Process Active User Events and emit sub-events"),
+
+            # Sub-event handlers - individual handlers for each sub-event type
+            ("strategy-entry-handler", "Handle strategy entry triggers"),
+            ("strategy-exit-handler", "Handle strategy exit triggers"),
+            ("stop-loss-handler", "Handle stop loss monitoring and exits"),
+            ("target-profit-handler", "Handle target profit monitoring and exits"),
+            ("trailing-sl-handler", "Handle trailing stop loss adjustments"),
+            ("duplicate-order-handler", "Handle duplicate order detection"),
+            ("re-entry-handler", "Handle strategy re-entry conditions"),
+            ("re-execute-handler", "Handle failed execution retries"),
+            ("position-sync-handler", "Handle position sync across brokers")
         ]
 
         self.event_handlers = {}
 
         for handler_name, description in event_handler_configs:
             # Enhanced environment for event handlers
+            # NOTE: Step Functions and SQS removed - using direct EventBridge → Lambda
             handler_env = {
                 "ENVIRONMENT": self.deploy_env,
                 "COMPANY_PREFIX": self.company_prefix,
                 "REGION": self.region,
                 "TRADING_CONFIGURATIONS_TABLE": self.trading_configurations_table.table_name,
                 "EXECUTION_HISTORY_TABLE": self.execution_history_table.table_name,
-                "EXPRESS_EXECUTION_STATE_MACHINE_ARN": self.express_execution_state_machine.state_machine_arn,
-                # 🚀 SQS integration for batch processing
-                "STRATEGY_BATCH_QUEUE_URL": self.strategy_batch_queue.queue_url,
-                # 🚀 SQS integration for user-specific strategy processing
-                "SINGLE_STRATEGY_QUEUE_URL": self.single_strategy_queue.queue_url,
+                # 🚀 Cross-stack integration - broker accounts from auth stack
+                "BROKER_ACCOUNTS_TABLE": self.broker_accounts_table_name,
             }
 
             handler_lambda = _lambda.Function(
@@ -1541,15 +1006,7 @@ class OptionsTradeStack(Stack):
             for table in [self.trading_configurations_table, self.execution_history_table]:
                 table.grant_read_write_data(handler_lambda)
 
-            # Grant Step Functions execution permissions
-            handler_lambda.add_to_role_policy(
-                iam.PolicyStatement(
-                    actions=["states:StartExecution"],
-                    resources=[self.express_execution_state_machine.state_machine_arn]
-                )
-            )
-
-            # Grant EventBridge permissions
+            # Grant EventBridge permissions for emitting events
             handler_lambda.add_to_role_policy(
                 iam.PolicyStatement(
                     actions=["events:PutEvents"],
@@ -1557,11 +1014,21 @@ class OptionsTradeStack(Stack):
                 )
             )
 
-            # 🚀 Grant SQS permissions for schedule-strategy-trigger (both batch and single strategy queues)
-            if handler_name == "schedule-strategy-trigger":
-                self.strategy_batch_queue.grant_send_messages(handler_lambda)
-                self.single_strategy_queue.grant_send_messages(handler_lambda)
-                logger.info(f"🚀 Granted SQS send permissions to {handler_name} for both batch and single strategy processing")
+            # 🚀 Grant broker accounts table access for active-user-event-handler (cross-stack)
+            if handler_name == "active-user-event-handler":
+                handler_lambda.add_to_role_policy(
+                    iam.PolicyStatement(
+                        actions=[
+                            "dynamodb:Query",
+                            "dynamodb:GetItem"
+                        ],
+                        resources=[
+                            f"arn:aws:dynamodb:{self.region}:{self.account}:table/{self.broker_accounts_table_name}",
+                            f"arn:aws:dynamodb:{self.region}:{self.account}:table/{self.broker_accounts_table_name}/*"
+                        ]
+                    )
+                )
+                logger.info(f"🚀 Granted broker accounts table read permissions to {handler_name}")
 
             self.event_handlers[handler_name] = handler_lambda
 
@@ -1571,80 +1038,183 @@ class OptionsTradeStack(Stack):
     def _create_event_handler_rules(self):
         """Create EventBridge rules to trigger event handlers"""
 
-        # User-Specific Strategy Discovery - NEW: User-specific events from event_emitter
-        user_strategy_discovery_rule = events.Rule(
-            self, f"UserStrategyDiscoveryRule{self.deploy_env.title()}",
-            rule_name=self.get_resource_name("user-strategy-discovery"),
-            description="Trigger user-specific strategy discovery from event_emitter",
+        # ============================================================================
+        # ACTIVE USER EVENT - Primary event from event_emitter (v2.0 architecture)
+        # Each active user receives one comprehensive event with all sub-events
+        # ============================================================================
+        active_user_event_rule = events.Rule(
+            self, f"ActiveUserEventRule{self.deploy_env.title()}",
+            rule_name=self.get_resource_name("active-user-event"),
+            description="Process Active User Events containing all sub-events",
             event_pattern=events.EventPattern(
-                source=["options.trading.user.discovery"],
-                detail_type=["User Strategy Discovery"]
+                source=["options.trading.active_user"],
+                detail_type=["Active User Event"]
             )
         )
 
-        user_strategy_discovery_rule.add_target(
-            targets.LambdaFunction(self.event_handlers['schedule-strategy-trigger'])
+        active_user_event_rule.add_target(
+            targets.LambdaFunction(self.event_handlers['active-user-event-handler'])
         )
 
-        # Schedule Strategy Trigger - DEPRECATED: Global discovery approach 
-        # Kept for backwards compatibility, will be phased out in favor of user-specific events
-        schedule_trigger_rule = events.Rule(
-            self, f"ScheduleStrategyTriggerRule{self.deploy_env.title()}",
-            rule_name=self.get_resource_name("schedule-strategy-trigger"),
-            description="DEPRECATED: Global strategy scheduling (replaced by user-specific discovery)",
+        # ============================================================================
+        # SUB-EVENT RULES - Triggered by active_user_event_handler
+        # Industry-standard naming: Single source, detail_type for routing
+        # Source: qlalgo.options.trading
+        # Detail Type Pattern: {Category}.{Entity}.{Action}
+        # ============================================================================
+
+        # Strategy Entry Trigger - From active_user_event_handler
+        strategy_entry_rule = events.Rule(
+            self, f"StrategyEntryRule{self.deploy_env.title()}",
+            rule_name=self.get_resource_name("strategy-entry-trigger"),
+            description="Handle strategy entry sub-events",
             event_pattern=events.EventPattern(
-                source=["options.trading.scheduler"],
-                detail_type=["Schedule Strategy Trigger"]
+                source=["qlalgo.options.trading"],
+                detail_type=["Strategy.Entry.Triggered"]
             )
         )
 
-        schedule_trigger_rule.add_target(
-            targets.LambdaFunction(self.event_handlers['schedule-strategy-trigger'])
+        strategy_entry_rule.add_target(
+            targets.LambdaFunction(self.event_handlers['strategy-entry-handler'])
         )
 
-        # Stop Loss Check - every minute during market hours
-        stop_loss_rule = events.Rule(
-            self, f"StopLossCheckRule{self.deploy_env.title()}",
-            rule_name=self.get_resource_name("stop-loss-check"),
-            description="Check stop loss conditions every minute",
+        # Strategy Exit Trigger - From active_user_event_handler
+        strategy_exit_rule = events.Rule(
+            self, f"StrategyExitRule{self.deploy_env.title()}",
+            rule_name=self.get_resource_name("strategy-exit-trigger"),
+            description="Handle strategy exit sub-events",
             event_pattern=events.EventPattern(
-                source=["options.trading.risk"],
-                detail_type=["Check Stop Loss"]
+                source=["qlalgo.options.trading"],
+                detail_type=["Strategy.Exit.Triggered"]
             )
         )
 
-        stop_loss_rule.add_target(
-            targets.LambdaFunction(self.event_handlers['stop-loss-checker'])
+        strategy_exit_rule.add_target(
+            targets.LambdaFunction(self.event_handlers['strategy-exit-handler'])
         )
 
-        # Duplicate Order Check - every minute during market hours  
-        duplicate_check_rule = events.Rule(
-            self, f"DuplicateOrderCheckRule{self.deploy_env.title()}",
-            rule_name=self.get_resource_name("duplicate-order-check"),
-            description="Check for duplicate orders every minute",
+        # Stop Loss Check - From active_user_event_handler
+        user_stop_loss_rule = events.Rule(
+            self, f"UserStopLossCheckRule{self.deploy_env.title()}",
+            rule_name=self.get_resource_name("user-stop-loss-check"),
+            description="Handle user-specific stop loss sub-events",
             event_pattern=events.EventPattern(
-                source=["options.trading.validation"],
-                detail_type=["Check Duplicate Orders"]
+                source=["qlalgo.options.trading"],
+                detail_type=["Risk.StopLoss.Check"]
             )
         )
 
-        duplicate_check_rule.add_target(
-            targets.LambdaFunction(self.event_handlers['duplicate-order-checker'])
+        user_stop_loss_rule.add_target(
+            targets.LambdaFunction(self.event_handlers['stop-loss-handler'])
         )
 
-        # Market Data Refresh - every minute during market hours
-        market_data_rule = events.Rule(
-            self, f"MarketDataRefreshRule{self.deploy_env.title()}",
-            rule_name=self.get_resource_name("market-data-refresh"),
-            description="Refresh market data every minute",
+        # Target Profit Check - From active_user_event_handler
+        target_profit_rule = events.Rule(
+            self, f"TargetProfitCheckRule{self.deploy_env.title()}",
+            rule_name=self.get_resource_name("target-profit-check"),
+            description="Handle target profit sub-events",
             event_pattern=events.EventPattern(
-                source=["options.trading.market"],
-                detail_type=["Refresh Market Data"]
+                source=["qlalgo.options.trading"],
+                detail_type=["Risk.TargetProfit.Check"]
             )
         )
 
-        market_data_rule.add_target(
-            targets.LambdaFunction(self.event_handlers['market-data-refresher'])
+        target_profit_rule.add_target(
+            targets.LambdaFunction(self.event_handlers['target-profit-handler'])
+        )
+
+        # Trailing Stop Loss Check - From active_user_event_handler
+        trailing_sl_rule = events.Rule(
+            self, f"TrailingSlCheckRule{self.deploy_env.title()}",
+            rule_name=self.get_resource_name("trailing-sl-check"),
+            description="Handle trailing stop loss sub-events",
+            event_pattern=events.EventPattern(
+                source=["qlalgo.options.trading"],
+                detail_type=["Risk.TrailingSL.Check"]
+            )
+        )
+
+        trailing_sl_rule.add_target(
+            targets.LambdaFunction(self.event_handlers['trailing-sl-handler'])
+        )
+
+        # Duplicate Order Check - From active_user_event_handler
+        user_duplicate_order_rule = events.Rule(
+            self, f"UserDuplicateOrderRule{self.deploy_env.title()}",
+            rule_name=self.get_resource_name("user-duplicate-order-check"),
+            description="Handle user-specific duplicate order sub-events",
+            event_pattern=events.EventPattern(
+                source=["qlalgo.options.trading"],
+                detail_type=["Validation.DuplicateOrder.Check"]
+            )
+        )
+
+        user_duplicate_order_rule.add_target(
+            targets.LambdaFunction(self.event_handlers['duplicate-order-handler'])
+        )
+
+        # Re-Entry Check - From active_user_event_handler
+        re_entry_rule = events.Rule(
+            self, f"ReEntryCheckRule{self.deploy_env.title()}",
+            rule_name=self.get_resource_name("re-entry-check"),
+            description="Handle re-entry condition sub-events",
+            event_pattern=events.EventPattern(
+                source=["qlalgo.options.trading"],
+                detail_type=["Strategy.ReEntry.Check"]
+            )
+        )
+
+        re_entry_rule.add_target(
+            targets.LambdaFunction(self.event_handlers['re-entry-handler'])
+        )
+
+        # Re-Execute Check - From active_user_event_handler
+        re_execute_rule = events.Rule(
+            self, f"ReExecuteCheckRule{self.deploy_env.title()}",
+            rule_name=self.get_resource_name("re-execute-check"),
+            description="Handle re-execution sub-events for failed orders",
+            event_pattern=events.EventPattern(
+                source=["qlalgo.options.trading"],
+                detail_type=["Strategy.ReExecute.Check"]
+            )
+        )
+
+        re_execute_rule.add_target(
+            targets.LambdaFunction(self.event_handlers['re-execute-handler'])
+        )
+
+        # Position Sync - From active_user_event_handler
+        position_sync_rule = events.Rule(
+            self, f"PositionSyncRule{self.deploy_env.title()}",
+            rule_name=self.get_resource_name("position-sync"),
+            description="Handle position sync sub-events across brokers",
+            event_pattern=events.EventPattern(
+                source=["qlalgo.options.trading"],
+                detail_type=["Sync.Position.Triggered"]
+            )
+        )
+
+        position_sync_rule.add_target(
+            targets.LambdaFunction(self.event_handlers['position-sync-handler'])
+        )
+
+        # ============================================================================
+        # STRATEGY EXECUTION EVENT - From strategy_entry_handler / strategy_exit_handler
+        # Routes execution events directly to single-strategy-executor Lambda
+        # Pre-loaded allocation data passed in event (hybrid approach - Option 2)
+        # ============================================================================
+        strategy_execution_rule = events.Rule(
+            self, f"StrategyExecutionRule{self.deploy_env.title()}",
+            rule_name=self.get_resource_name("strategy-execution-triggered"),
+            description="Execute strategy with pre-loaded allocation data from entry/exit handlers",
+            event_pattern=events.EventPattern(
+                source=["qlalgo.options.trading"],
+                detail_type=["Strategy.Execution.Triggered"]
+            )
+        )
+
+        strategy_execution_rule.add_target(
+            targets.LambdaFunction(self.lambda_functions['single-strategy-executor'])
         )
 
     def _create_master_precision_timer_step_function(self):
@@ -1752,16 +1322,17 @@ class OptionsTradeStack(Stack):
         Runs at 9:15 AM IST (3:45 AM UTC) every weekday
         """
 
-        # Create EventBridge rule for market open (9:15 AM IST = 3:45 AM UTC)
+        # Create EventBridge rule for operational window start (8:55 AM IST = 3:25 AM UTC)
+        # This is a GENERIC operational window covering all exchanges (NSE, BSE, MCX, etc.)
         step_function_starter_rule = events.Rule(
             self, f"StepFunctionStarter{self.deploy_env.title()}",
             rule_name=self.get_resource_name("step-function-starter"),
-            description="Start precision timer Step Function at market open (9:00 AM IST)",
+            description="Start precision timer Step Function at operational window start (8:55 AM IST)",
             schedule=events.Schedule.cron(
-                minute="30",  # 45 minutes
-                hour="3",  # 3rd hour UTC = 9:00 AM IST (3:30 AM UTC)
-                month="*",  # Every month
-                year="*",  # Every year
+                minute="25",  # 25 minutes past the hour
+                hour="3",     # 3rd hour UTC = 8:55 AM IST (3:25 AM UTC)
+                month="*",    # Every month
+                year="*",     # Every year
                 week_day="MON-FRI"  # Weekdays only
             ),
             enabled=True
@@ -1772,12 +1343,14 @@ class OptionsTradeStack(Stack):
             targets.SfnStateMachine(
                 self.master_precision_timer,
                 input=events.RuleTargetInput.from_object({
-                    "trigger_type": "MARKET_OPEN_AUTO_START",
-                    "market_open_time": "09:15",
+                    "trigger_type": "OPERATIONAL_WINDOW_AUTO_START",
+                    "operational_start_time": "08:55",
+                    "operational_end_time": "23:55",
                     "trigger_source": "EVENTBRIDGE_CRON",
                     "execution_mode": "CONTINUOUS_STANDARD_WORKFLOW",
-                    "expected_duration": "6_HOURS_15_MINUTES",  # Market session length
-                    "precision_target": "0_SECOND_INSTITUTIONAL_GRADE"
+                    "expected_duration": "15_HOURS",  # 8:55 AM to 11:55 PM IST
+                    "precision_target": "0_SECOND_INSTITUTIONAL_GRADE",
+                    "note": "Generic operational window - exchange-specific hours handled at execution"
                 })
             )
         )
@@ -1785,98 +1358,8 @@ class OptionsTradeStack(Stack):
         # Store reference for monitoring
         self.step_function_starter_rule = step_function_starter_rule
 
-    def _create_single_strategy_express_step_function(self):
-        """
-        🕐 Create Express Step Function for Single Strategy Scheduling
-        SQS-triggered Express Step Function that waits until execution_time and invokes single_strategy_executor
-        """
-
-        # Load single strategy Express Step Function definition
-        import os
-        import json
-        single_strategy_step_function_def_path = os.path.join(
-            os.path.dirname(__file__), "..",
-            "step_functions", "single_strategy_express_execution.json"
-        )
-
-        # Read and process the Step Function definition
-        with open(single_strategy_step_function_def_path, 'r') as f:
-            definition_json = f.read()
-
-        # Replace placeholder with actual Single Strategy Executor Lambda ARN
-        definition_json = definition_json.replace(
-            "${SINGLE_STRATEGY_EXECUTOR_ARN}",
-            self.lambda_functions['single-strategy-executor'].function_arn
-        )
-
-        # Parse and create the definition
-        definition_dict = json.loads(definition_json)
-        definition_body = stepfunctions.DefinitionBody.from_string(json.dumps(definition_dict))
-
-        # Create the Single Strategy Express Step Function
-        self.single_strategy_express_state_machine = stepfunctions.StateMachine(
-            self, f"SingleStrategyStandardStateMachine{self.deploy_env.title()}",
-            state_machine_name=self.get_resource_name("single-strategy-standard-execution"),
-            definition_body=definition_body,
-            state_machine_type=stepfunctions.StateMachineType.STANDARD,
-            timeout=Duration.minutes(10),  # Express workflows have 5-minute limit (perfect for 3-minute max wait)
-
-        )
-
-        # Create the Single Strategy Express Step Function
-        self.single_strategy_express_state_machine_express = stepfunctions.StateMachine(
-            self, f"SingleStrategyExpressStateMachine{self.deploy_env.title()}",
-            state_machine_name=self.get_resource_name("single-strategy-express-execution"),
-            definition_body=definition_body,
-            state_machine_type=stepfunctions.StateMachineType.EXPRESS,
-            timeout=Duration.minutes(5),  # Express workflows have 5-minute limit (perfect for 3-minute max wait)
-            logs=stepfunctions.LogOptions(
-                destination=logs.LogGroup(
-                    self, f"SingleStrategyExpressLogGroup{self.deploy_env.title()}",
-                    log_group_name=f"/aws/stepfunctions/{self.get_resource_name('single-strategy-express-execution')}",
-                    retention=logs.RetentionDays.ONE_WEEK if self.env_config.get('log_retention_days', 7) == 7 else logs.RetentionDays.ONE_MONTH,
-                    removal_policy=self.get_removal_policy()
-                ),
-                level=stepfunctions.LogLevel.ERROR,  # Express only supports ERROR level
-                include_execution_data=False
-            )
-        )
-
-        # Update strategy-scheduler Lambda environment with Single Strategy Express Step Function ARN
-        strategy_scheduler_lambda = self.lambda_functions['strategy-scheduler']
-        strategy_scheduler_lambda.add_environment(
-            "SINGLE_STRATEGY_STEP_FUNCTION_ARN",
-            self.single_strategy_express_state_machine.state_machine_arn
-        )
-
-        # Grant strategy-scheduler Lambda permission to start Single Strategy Express Step Function executions
-        self.single_strategy_express_state_machine.grant_start_execution(strategy_scheduler_lambda)
-
-        # Grant Single Strategy Express Step Function permission to invoke single-strategy-executor Lambda
-        self.single_strategy_express_state_machine.add_to_role_policy(
-            iam.PolicyStatement(
-                effect=iam.Effect.ALLOW,
-                actions=["lambda:InvokeFunction"],
-                resources=[self.lambda_functions['single-strategy-executor'].function_arn]
-            )
-        )
-
-        # Create SQS event source mapping: single_strategy_queue → strategy_scheduler Lambda
-        strategy_scheduler_lambda.add_event_source(
-            lambda_event_sources.SqsEventSource(
-                self.single_strategy_queue,
-                batch_size=1,  # Process one strategy at a time for maximum parallelization
-                max_batching_window=Duration.seconds(5)
-            )
-        )
-
-        # Create output for Single Strategy Express Step Function
-        CfnOutput(
-            self, "SingleStrategyExpressStepFunctionArn",
-            value=self.single_strategy_express_state_machine.state_machine_arn,
-            description="🕐 ARN of the Single Strategy Express Step Function for SQS-triggered scheduling",
-            export_name=f"{self.stack_name}-SingleStrategyExpressStepFunctionArn"
-        )
+    # NOTE: _create_single_strategy_express_step_function() REMOVED
+    # Replaced by direct EventBridge → Lambda architecture (Strategy.Execution.Triggered events)
 
     def _create_cloudwatch_dashboard(self):
         """Create CloudWatch dashboard for monitoring"""
@@ -1930,20 +1413,11 @@ class OptionsTradeStack(Stack):
             export_name=f"{self.stack_name}-MasterPrecisionTimer"
         )
 
-        # 🚀 User-Specific Event Architecture Outputs (for monitoring and performance tracking)
-        # Note: user_strategy_discovery_rule is created in _create_event_handler_rules method
-        # Output for monitoring will be added as class variable in future iteration
+        # NOTE: SQS Queue outputs removed - using direct EventBridge → Lambda architecture
 
         CfnOutput(
-            self, "SingleStrategyQueueUrl",
-            value=self.single_strategy_queue.queue_url,
-            description="🚀 SQS Queue URL for single strategy execution (user-specific events)",
-            export_name=f"{self.stack_name}-SingleStrategyQueueUrl"
-        )
-
-        CfnOutput(
-            self, "SingleStrategyQueueArn",
-            value=self.single_strategy_queue.queue_arn,
-            description="🚀 SQS Queue ARN for monitoring single strategy processing",
-            export_name=f"{self.stack_name}-SingleStrategyQueueArn"
+            self, "TradingDependenciesLayerArn",
+            value=self.trading_dependencies_layer.layer_version_arn,
+            description="Trading Dependencies Lambda Layer ARN",
+            export_name=f"{self.stack_name}-TradingDependenciesLayerArn"
         )

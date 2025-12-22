@@ -1,1 +1,0 @@
-{"errorMessage": "name 'log_lambda_event' is not defined", "errorType": "NameError", "requestId": "f3d4626a-39b4-4781-b237-11b25abb69e8", "stackTrace": ["  File \"/var/task/option_baskets/schedule_strategy_trigger.py\", line 28, in lambda_handler\n    log_lambda_event(logger, event, context)\n"]}

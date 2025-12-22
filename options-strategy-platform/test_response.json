@@ -1,1 +1,0 @@
-{"statusCode": 200, "body": "{\"success\": true, \"current_time_ist\": \"09:12\", \"market_phase\": \"AFTER_HOURS\", \"events_emitted\": 1, \"emission_results\": [{\"event_type\": \"Refresh Market Data\", \"status\": \"SUCCESS\", \"event_id\": \"c9836e25-a44c-8363-1d22-499709fc8db4\"}], \"message\": \"Events successfully emitted at 09:12 IST\"}"}

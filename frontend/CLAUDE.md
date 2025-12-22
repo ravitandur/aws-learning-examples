@@ -38,19 +38,19 @@ All React pages MUST follow this exact pattern for consistency:
 ```tsx
 const PageComponent: React.FC = () => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <h1 className="text-2xl font-bold">Page Title</h1>
-      
+
       {/* Content sections with consistent spacing */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Stat cards or content blocks */}
       </div>
-      
+
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
           {/* Header section */}
         </div>
-        <div className="p-6">
+        <div className="p-4">
           {/* Main content */}
         </div>
       </div>
@@ -59,12 +59,14 @@ const PageComponent: React.FC = () => {
 };
 ```
 
-### Critical Layout Rules
-1. **Root Container**: ALWAYS use `<div className="space-y-6">` - never add width constraints
+### Critical Layout Rules (2025 Industry Standard - Minimized Margins)
+1. **Root Container**: ALWAYS use `<div className="space-y-4">` - never add width constraints
 2. **Page Titles**: ALWAYS use `text-2xl font-bold` - never text-3xl
-3. **Section Spacing**: Use `space-y-6` between major sections
-4. **Cards**: Use `bg-white dark:bg-gray-800 rounded-lg shadow`
-5. **No Width Constraints**: Layout component handles responsive padding
+3. **Section Spacing**: Use `space-y-4` between major sections (16px gaps)
+4. **Grid Gaps**: Use `gap-4` for grids (16px gaps)
+5. **Card Padding**: Use `p-4` for card content (16px padding)
+6. **Cards**: Use `bg-white dark:bg-gray-800 rounded-lg shadow`
+7. **No Width Constraints**: Layout component handles responsive padding (`p-3 sm:p-4 lg:p-5`)
 
 ### Design System Components
 

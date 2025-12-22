@@ -418,7 +418,7 @@ const AllAllocationsPage: React.FC = () => {
 
       {/* Filters and Search */}
       <Card>
-        <CardContent className="p-6">
+        <CardContent className="p-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {/* Search */}
             <div className="relative">
@@ -540,7 +540,7 @@ const AllAllocationsPage: React.FC = () => {
             </div>
           </div>
         </CardHeader>
-        <CardContent className={allocationView === 'cards' ? 'p-6' : 'p-0'}>
+        <CardContent className={allocationView === 'cards' ? 'p-4' : 'p-0'}>
           {filteredAllocations.length === 0 ? (
             <div className="text-center py-8">
               <Network className="h-12 w-12 text-gray-400 mx-auto mb-4" />

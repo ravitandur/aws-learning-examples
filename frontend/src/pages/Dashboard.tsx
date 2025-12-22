@@ -90,7 +90,7 @@ const Dashboard: React.FC = () => {
       />
 
       {/* User Profile Summary */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
         <div className="flex items-center mb-4">
           <User className="w-5 h-5 text-blue-600 mr-2" />
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Profile Summary</h2>
@@ -120,9 +120,9 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {quickStats.map((stat, index) => (
-          <div key={index} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div key={index} className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
@@ -144,7 +144,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Getting Started Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           Getting Started
         </h2>

@@ -13,7 +13,7 @@ const Layout: React.FC = () => {
       <div className="lg:pl-64">
         <Header onMenuClick={() => setSidebarOpen(true)} />
         
-        <main className="p-4 sm:p-6 lg:p-8">
+        <main className="p-3 sm:p-4 lg:p-5">
           <Outlet />
         </main>
       </div>

@@ -4,11 +4,14 @@ import {
   BarChart3,
   Briefcase,
   Building2,
+  Calendar,
+  ClipboardList,
   LineChart,
   Network,
   PieChart,
   Settings,
   ShoppingBasket,
+  Target,
   User,
   Turtle,
   X,
@@ -38,6 +41,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { name: 'Brokers', path: '/brokers', icon: <Building2 className="w-5 h-5" /> },
     { name: 'Baskets', path: '/baskets', icon: <ShoppingBasket className="w-5 h-5" /> },
     { name: 'Allocations', path: '/allocations', icon: <Network className="w-5 h-5" /> },
+    { name: 'Today', path: '/today', icon: <Calendar className="w-5 h-5" /> },
+    { name: 'Orders', path: '/orders', icon: <ClipboardList className="w-5 h-5" /> },
+    { name: 'Positions', path: '/positions', icon: <Target className="w-5 h-5" /> },
     { name: 'Strategies', path: '/strategies', icon: <LineChart className="w-5 h-5" />, disabled: true },
     { name: 'Portfolio', path: '/portfolio', icon: <Briefcase className="w-5 h-5" />, disabled: true },
     { name: 'Analytics', path: '/analytics', icon: <PieChart className="w-5 h-5" />, disabled: true },
@@ -101,7 +107,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 overflow-y-auto">
+          <nav className="flex-1 px-3 py-4 overflow-y-auto">
             {/* Main Navigation */}
             <ul className="space-y-1">
               {navItems.map((item) => (

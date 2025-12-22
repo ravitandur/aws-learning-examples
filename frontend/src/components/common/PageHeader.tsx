@@ -175,8 +175,8 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   // Loading skeleton
   if (isLoading) {
     return (
-      <div className="mb-6">
-        <div className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 rounded-xl p-6 animate-pulse">
+      <div className="mb-4">
+        <div className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-md border border-gray-200/50 dark:border-gray-700/50 rounded-xl p-4 animate-pulse">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-3">
@@ -200,8 +200,8 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   }
 
   return (
-    <div className="mb-6">
-      <div className={`rounded-xl ${styles.background} ${styles.hoverAccent} p-6 transition-all duration-200`}>
+    <div className="mb-4">
+      <div className={`rounded-xl ${styles.background} ${styles.hoverAccent} p-4 transition-all duration-200`}>
         {/* Breadcrumbs */}
         <Breadcrumbs items={breadcrumbs} />
 

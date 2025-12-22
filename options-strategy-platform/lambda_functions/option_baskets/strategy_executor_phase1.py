@@ -2,7 +2,7 @@ import json
 import boto3
 import uuid
 from datetime import datetime, timezone, time, timedelta
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import os
 import sys
 from decimal import Decimal
@@ -22,6 +22,17 @@ sys.path.append('/var/task/option_baskets')  # Add option_baskets directory to p
 # Import shared logger directly
 from shared_utils.logger import setup_logger, log_lambda_event, log_user_action, log_api_response
 logger = setup_logger(__name__)
+
+# Import trading execution bridge and strategies
+try:
+    from trading.trading_execution_bridge import TradingExecutionBridge, get_trading_bridge
+    from trading.broker_trading_strategy import TradingMode, OrderStatus
+    from trading import get_trading_strategy
+    TRADING_BRIDGE_AVAILABLE = True
+    logger.info("Trading execution bridge loaded successfully")
+except ImportError as e:
+    TRADING_BRIDGE_AVAILABLE = False
+    logger.warning(f"Trading execution bridge not available, using simulation mode: {e}")
 
 
 def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
@@ -71,8 +82,17 @@ def lambda_handler(event: Dict[str, Any], context) -> Dict[str, Any]:
                         'message': 'User ID not found in request context'
                     })
                 }
-            
-            return handle_manual_execution(event, user_id, context)
+
+            # Route based on HTTP method
+            http_method = event.get('httpMethod', 'POST')
+            path = event.get('path', '')
+
+            if http_method == 'GET' and '/trading/today' in path:
+                # GET /trading/today - Return today's scheduled executions
+                return handle_get_today_executions(event, user_id)
+            else:
+                # POST - Manual strategy execution
+                return handle_manual_execution(event, user_id, context)
             
     except Exception as e:
         logger.error("Unexpected error in execution engine", extra={"error": str(e)})
@@ -278,6 +298,205 @@ def handle_manual_execution(event, user_id, context):
         }
 
 
+def handle_get_today_executions(event: Dict, user_id: str) -> Dict:
+    """
+    Get today's scheduled executions for the user.
+
+    Queries the UserScheduleDiscovery GSI to find all strategies
+    with entry or exit scheduled for today's weekday.
+
+    Returns:
+        List of executions with strategy details, entry/exit times, and countdown
+    """
+    try:
+        # Get current IST time and weekday
+        import pytz
+        ist = pytz.timezone('Asia/Kolkata')
+        now_ist = datetime.now(ist)
+        current_time = now_ist.strftime("%H:%M")
+        today_date = now_ist.strftime("%Y-%m-%d")
+
+        # Get weekday abbreviation (MON, TUE, WED, THU, FRI, SAT, SUN)
+        weekday_names = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
+        today_weekday = weekday_names[now_ist.weekday()]
+
+        logger.info(f"Fetching today's executions for user {user_id}", extra={
+            "weekday": today_weekday,
+            "current_time": current_time,
+            "date": today_date
+        })
+
+        # Initialize DynamoDB
+        dynamodb = boto3.resource('dynamodb', region_name=os.environ['REGION'])
+        trading_table = dynamodb.Table(os.environ['TRADING_CONFIGURATIONS_TABLE'])
+
+        # Query UserScheduleDiscovery GSI for today's weekday
+        # Schedule key format: SCHEDULE#{weekday}#{time}#{type}#{strategy_id}
+        response = trading_table.query(
+            IndexName='UserScheduleDiscovery',
+            KeyConditionExpression='user_id = :uid AND begins_with(schedule_key, :prefix)',
+            ExpressionAttributeValues={
+                ':uid': user_id,
+                ':prefix': f'SCHEDULE#{today_weekday}#'
+            }
+        )
+
+        schedule_items = response.get('Items', [])
+        logger.info(f"Found {len(schedule_items)} scheduled items for today")
+
+        # Group by strategy to combine entry and exit times
+        strategies_map = {}
+
+        for item in schedule_items:
+            strategy_id = item.get('strategy_id')
+            execution_type = item.get('execution_type', 'ENTRY')
+            execution_time = item.get('execution_time', '')
+
+            if strategy_id not in strategies_map:
+                strategies_map[strategy_id] = {
+                    'strategy_id': strategy_id,
+                    'basket_id': item.get('basket_id'),
+                    'status': item.get('status', 'ACTIVE'),
+                    'entry_time': None,
+                    'exit_time': None,
+                    'execution_status': 'PENDING'
+                }
+
+            if execution_type == 'ENTRY':
+                strategies_map[strategy_id]['entry_time'] = execution_time
+            elif execution_type == 'EXIT':
+                strategies_map[strategy_id]['exit_time'] = execution_time
+
+        # Now fetch full strategy details for each strategy
+        executions = []
+
+        for strategy_id, schedule_info in strategies_map.items():
+            # Get full strategy details
+            strategy_response = trading_table.get_item(
+                Key={
+                    'user_id': user_id,
+                    'sort_key': f'STRATEGY#{strategy_id}'
+                }
+            )
+
+            strategy = strategy_response.get('Item', {})
+
+            # Get basket details
+            basket_id = schedule_info.get('basket_id')
+            basket_name = ''
+            if basket_id:
+                basket_response = trading_table.get_item(
+                    Key={
+                        'user_id': user_id,
+                        'sort_key': f'BASKET#{basket_id}'
+                    }
+                )
+                basket = basket_response.get('Item', {})
+                basket_name = basket.get('basket_name', '')
+
+            # Calculate execution status and countdown
+            entry_time = schedule_info.get('entry_time')
+            exit_time = schedule_info.get('exit_time')
+            execution_status = 'PENDING'
+            countdown = None
+
+            if entry_time:
+                entry_minutes = int(entry_time.split(':')[0]) * 60 + int(entry_time.split(':')[1])
+                current_minutes = now_ist.hour * 60 + now_ist.minute
+
+                if current_minutes < entry_minutes:
+                    execution_status = 'PENDING'
+                    countdown = entry_minutes - current_minutes
+                elif exit_time:
+                    exit_minutes = int(exit_time.split(':')[0]) * 60 + int(exit_time.split(':')[1])
+                    if current_minutes < exit_minutes:
+                        execution_status = 'EXECUTING'
+                        countdown = exit_minutes - current_minutes
+                    else:
+                        execution_status = 'EXECUTED'
+                else:
+                    execution_status = 'EXECUTED'
+
+            # Get broker allocations for this strategy's basket
+            broker_allocations = []
+            if basket_id:
+                alloc_response = trading_table.query(
+                    IndexName='AllocationsByBasket',
+                    KeyConditionExpression='basket_id = :bid AND begins_with(entity_type_priority, :prefix)',
+                    ExpressionAttributeValues={
+                        ':bid': basket_id,
+                        ':prefix': 'ALLOCATION#'
+                    }
+                )
+                for alloc in alloc_response.get('Items', []):
+                    broker_allocations.append({
+                        'broker_id': alloc.get('broker_id'),
+                        'client_id': alloc.get('client_id'),
+                        'lots': alloc.get('lots', 1)
+                    })
+
+            executions.append({
+                'strategy_id': strategy_id,
+                'basket_id': basket_id,
+                'strategy_name': strategy.get('strategy_name', f'Strategy {strategy_id[:8]}'),
+                'basket_name': basket_name,
+                'underlying': strategy.get('underlying', 'NIFTY'),
+                'strategy_type': strategy.get('strategy_type', 'CUSTOM'),
+                'execution_date': today_date,
+                'entry_time': entry_time,
+                'exit_time': exit_time,
+                'status': schedule_info.get('status', 'ACTIVE'),
+                'execution_status': execution_status,
+                'trading_mode': strategy.get('trading_mode', 'PAPER'),
+                'broker_allocations': broker_allocations,
+                'countdown': countdown  # Minutes until next action
+            })
+
+        # Sort by entry time
+        executions.sort(key=lambda x: x.get('entry_time') or '23:59')
+
+        # Calculate summary
+        summary = {
+            'pending': len([e for e in executions if e['execution_status'] == 'PENDING']),
+            'executing': len([e for e in executions if e['execution_status'] == 'EXECUTING']),
+            'completed': len([e for e in executions if e['execution_status'] == 'EXECUTED']),
+            'failed': 0,
+            'total': len(executions)
+        }
+
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+                'Access-Control-Allow-Methods': 'GET,OPTIONS'
+            },
+            'body': json.dumps({
+                'success': True,
+                'executions': executions,
+                'summary': summary,
+                'current_time': current_time,
+                'weekday': today_weekday,
+                'date': today_date
+            }, cls=DecimalEncoder)
+        }
+
+    except Exception as e:
+        logger.error("Failed to get today's executions", extra={"error": str(e), "user_id": user_id})
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({
+                'error': 'Failed to get today executions',
+                'message': str(e)
+            })
+        }
+
+
 def execute_user_strategies_with_preloaded_data(user_id, strategies, execution_time, execution_table):
     """
     🚀 LEGACY FUNCTION: Execute strategies using preloaded broker allocation data
@@ -464,40 +683,86 @@ def execute_user_strategies(user_id, strategies, execution_time, trading_table, 
 def execute_broker_allocation_from_preloaded_data(user_id, strategy, allocation, execution_time):
     """
     🚀 REVOLUTIONARY: Execute broker allocation using preloaded data
-    This replaces the need for GSI1 queries and uses data directly from GSI3 projection
+    Routes to actual broker APIs (Zerodha, Zebu) or Paper trading based on trading_mode
     """
-    
+
     try:
         # Extract allocation details from preloaded data structure
-        broker_name = allocation.get('broker_name', 'unknown')
+        broker_name = allocation.get('broker_name', 'paper')
         client_id = allocation.get('client_id', 'unknown')
-        lot_size = allocation.get('lot_size', 1)
+        lot_multiplier = float(allocation.get('lot_multiplier', allocation.get('lot_size', 1)))
         allocation_id = allocation.get('allocation_id', f"preloaded_{uuid.uuid4().hex[:8]}")
-        
-        logger.info(f"🚀 Executing preloaded allocation: {lot_size} lots on {broker_name} (client: {client_id})")
-        
-        # Simulate order execution with preloaded data
-        simulated_execution = {
-            'allocation_id': allocation_id,
-            'broker_name': broker_name,
-            'client_id': client_id,
-            'lot_size': lot_size,
-            'execution_time': execution_time,
-            'status': 'SUCCESS',
-            'order_id': f"PRELOAD_{uuid.uuid4().hex[:8]}",  # Preloaded execution ID
-            'executed_price': Decimal('26.75'),  # Simulated price for preloaded execution
-            'executed_quantity': lot_size,
-            'execution_timestamp': datetime.now(timezone.utc).isoformat(),
-            'execution_method': 'PRELOADED_DATA_NO_QUERIES',
-            'broker_response': {
-                'message': 'Preloaded execution - Zero additional queries',
-                'latency_ms': 75,  # Faster since no database queries
-                'optimization': 'GSI3_PRELOADED'
+
+        # Determine trading mode from strategy or allocation
+        trading_mode_str = strategy.get('trading_mode', allocation.get('trading_mode', 'PAPER'))
+
+        logger.info(f"🚀 Executing preloaded allocation: {lot_multiplier}x on {broker_name} (client: {client_id}, mode: {trading_mode_str})")
+
+        # Get strategy legs
+        strategy_legs = strategy.get('legs', [])
+        strategy_id = strategy.get('strategy_id')
+        basket_id = strategy.get('basket_id')
+
+        if not strategy_legs:
+            logger.warning(f"No legs found for strategy {strategy_id}")
+            return {
+                'allocation_id': allocation_id,
+                'broker_name': broker_name,
+                'client_id': client_id,
+                'status': 'SKIPPED',
+                'message': 'No strategy legs to execute',
+                'execution_timestamp': datetime.now(timezone.utc).isoformat()
             }
-        }
-        
-        return simulated_execution
-        
+
+        # Use trading bridge if available, otherwise fall back to simulation
+        if TRADING_BRIDGE_AVAILABLE:
+            trading_mode = TradingMode.LIVE if trading_mode_str == 'LIVE' else TradingMode.PAPER
+
+            # Get or create trading bridge
+            bridge = get_trading_bridge()
+
+            # Execute all legs with this allocation
+            leg_executions = []
+            total_orders = 0
+            successful_orders = 0
+
+            for leg in strategy_legs:
+                leg_result = bridge.execute_leg_sync(
+                    user_id=user_id,
+                    strategy_id=strategy_id,
+                    basket_id=basket_id,
+                    leg_data=leg,
+                    allocation=allocation,
+                    trading_mode=trading_mode,
+                    execution_type='ENTRY',
+                    credentials=get_broker_credentials(user_id, broker_name, client_id)
+                )
+
+                leg_executions.append(leg_result)
+                total_orders += 1
+
+                if leg_result.get('status') in ['PENDING', 'PLACED', 'OPEN', 'FILLED', 'SUCCESS']:
+                    successful_orders += 1
+
+            return {
+                'allocation_id': allocation_id,
+                'broker_name': broker_name,
+                'client_id': client_id,
+                'lot_multiplier': lot_multiplier,
+                'execution_time': execution_time,
+                'status': 'SUCCESS' if successful_orders == total_orders else 'PARTIAL',
+                'total_orders': total_orders,
+                'successful_orders': successful_orders,
+                'leg_executions': leg_executions,
+                'execution_timestamp': datetime.now(timezone.utc).isoformat(),
+                'execution_method': 'BROKER_API' if trading_mode_str == 'LIVE' else 'PAPER_TRADING',
+                'trading_mode': trading_mode_str
+            }
+        else:
+            # Fallback to simulation mode
+            logger.info("Using simulation mode - trading bridge not available")
+            return execute_simulated_allocation(user_id, strategy, allocation, execution_time)
+
     except Exception as e:
         logger.error(f"Failed to execute preloaded broker allocation", extra={"error": str(e)})
         return {
@@ -509,21 +774,79 @@ def execute_broker_allocation_from_preloaded_data(user_id, strategy, allocation,
         }
 
 
+def get_broker_credentials(user_id: str, broker_name: str, client_id: str) -> Optional[Dict[str, str]]:
+    """
+    Retrieve broker credentials from Secrets Manager or broker accounts table.
+    Returns None for paper trading or if credentials not found.
+    """
+    try:
+        # For paper trading, no credentials needed
+        if broker_name.lower() == 'paper':
+            return None
+
+        # Try to get credentials from Secrets Manager
+        secrets_client = boto3.client('secretsmanager', region_name=os.environ.get('REGION', 'ap-south-1'))
+        secret_name = f"ql-algo-trading/{user_id}/{broker_name}/{client_id}"
+
+        try:
+            response = secrets_client.get_secret_value(SecretId=secret_name)
+            return json.loads(response['SecretString'])
+        except secrets_client.exceptions.ResourceNotFoundException:
+            logger.warning(f"Credentials not found for {broker_name}/{client_id}")
+            return None
+
+    except Exception as e:
+        logger.error(f"Failed to retrieve broker credentials: {e}")
+        return None
+
+
+def execute_simulated_allocation(user_id, strategy, allocation, execution_time):
+    """
+    Fallback simulation execution when trading bridge is not available.
+    """
+    broker_name = allocation.get('broker_name', 'unknown')
+    client_id = allocation.get('client_id', 'unknown')
+    lot_size = allocation.get('lot_size', 1)
+    allocation_id = allocation.get('allocation_id', f"sim_{uuid.uuid4().hex[:8]}")
+
+    return {
+        'allocation_id': allocation_id,
+        'broker_name': broker_name,
+        'client_id': client_id,
+        'lot_size': lot_size,
+        'execution_time': execution_time,
+        'status': 'SUCCESS',
+        'order_id': f"SIM_{uuid.uuid4().hex[:8]}",
+        'executed_price': Decimal('26.75'),
+        'executed_quantity': lot_size,
+        'execution_timestamp': datetime.now(timezone.utc).isoformat(),
+        'execution_method': 'SIMULATION_FALLBACK',
+        'broker_response': {
+            'message': 'Simulated execution - Trading bridge unavailable',
+            'latency_ms': 75
+        }
+    }
+
+
 def execute_basket_allocation_for_strategy(user_id, strategy, allocation, execution_time):
     """
     ✅ INDUSTRY BEST PRACTICE: Execute basket allocation for ALL strategy legs
-    This is the basket-level inheritance implementation
+    Routes to actual broker APIs (Zerodha, Zebu) or Paper trading based on trading_mode
     Final lots = strategy_leg_lots × basket_lot_multiplier
     """
-    
+
     try:
         allocation_id = allocation.get('allocation_id')
         client_id = allocation.get('client_id')
-        broker_name = allocation.get('broker_name')
+        broker_name = allocation.get('broker_name', 'paper')
         lot_multiplier = float(allocation.get('lot_multiplier', 1.0))
         strategy_id = strategy.get('strategy_id')
         strategy_name = strategy.get('strategy_name', 'Unknown')
-        
+        basket_id = strategy.get('basket_id')
+
+        # Determine trading mode
+        trading_mode_str = strategy.get('trading_mode', allocation.get('trading_mode', 'PAPER'))
+
         # Get strategy legs from the strategy object
         strategy_legs = strategy.get('legs', [])
         if not strategy_legs:
@@ -536,70 +859,79 @@ def execute_basket_allocation_for_strategy(user_id, strategy, allocation, execut
                 'message': 'No strategy legs to execute',
                 'execution_timestamp': datetime.now(timezone.utc).isoformat()
             }
-        
-        logger.info(f"✅ Executing basket allocation: {lot_multiplier}x multiplier on {broker_name} for {len(strategy_legs)} legs")
-        
-        # Execute all strategy legs with the basket allocation
-        leg_executions = []
-        total_lots_executed = 0
-        
-        for leg in strategy_legs:
-            leg_id = leg.get('leg_id')
-            base_lots = int(leg.get('lots', 1))  # Base lots defined in strategy leg
-            final_lots = int(base_lots * lot_multiplier)  # Apply basket multiplier
-            
-            # Simulate leg execution
-            leg_execution = {
-                'leg_id': leg_id,
+
+        logger.info(f"✅ Executing basket allocation: {lot_multiplier}x multiplier on {broker_name} for {len(strategy_legs)} legs (mode: {trading_mode_str})")
+
+        # Use trading bridge if available
+        if TRADING_BRIDGE_AVAILABLE:
+            trading_mode = TradingMode.LIVE if trading_mode_str == 'LIVE' else TradingMode.PAPER
+            bridge = get_trading_bridge()
+
+            # Execute all strategy legs with the basket allocation
+            leg_executions = []
+            total_lots_executed = 0
+            successful_orders = 0
+
+            for leg in strategy_legs:
+                leg_id = leg.get('leg_id')
+                base_lots = int(leg.get('lots', 1))
+                final_lots = int(base_lots * lot_multiplier)
+
+                # Execute via trading bridge
+                leg_result = bridge.execute_leg_sync(
+                    user_id=user_id,
+                    strategy_id=strategy_id,
+                    basket_id=basket_id,
+                    leg_data=leg,
+                    allocation=allocation,
+                    trading_mode=trading_mode,
+                    execution_type='ENTRY',
+                    credentials=get_broker_credentials(user_id, broker_name, client_id)
+                )
+
+                # Enrich result with basket allocation info
+                leg_result['leg_id'] = leg_id
+                leg_result['base_lots'] = base_lots
+                leg_result['lot_multiplier'] = lot_multiplier
+                leg_result['final_lots'] = final_lots
+                leg_result['allocation_method'] = 'BASKET_LEVEL_INHERITANCE'
+
+                leg_executions.append(leg_result)
+                total_lots_executed += final_lots
+
+                if leg_result.get('status') in ['PENDING', 'PLACED', 'OPEN', 'FILLED', 'SUCCESS']:
+                    successful_orders += 1
+
+                logger.info(f"   Leg {leg_id}: {base_lots} base lots × {lot_multiplier} = {final_lots} final lots -> {leg_result.get('status')}")
+
+            # Summary result for the basket allocation
+            basket_execution_result = {
                 'allocation_id': allocation_id,
-                'base_lots': base_lots,
-                'lot_multiplier': lot_multiplier,
-                'final_lots': final_lots,
+                'basket_id': basket_id,
+                'strategy_id': strategy_id,
+                'strategy_name': strategy_name,
                 'client_id': client_id,
                 'broker_name': broker_name,
+                'lot_multiplier': lot_multiplier,
                 'execution_time': execution_time,
-                'status': 'SUCCESS',
-                'order_id': f"BASKET_{uuid.uuid4().hex[:8]}",
-                'executed_price': Decimal('25.50'),  # Simulated price
-                'executed_quantity': final_lots,
+                'status': 'SUCCESS' if successful_orders == len(strategy_legs) else 'PARTIAL',
+                'legs_executed': len(leg_executions),
+                'successful_legs': successful_orders,
+                'total_lots_executed': total_lots_executed,
+                'leg_executions': leg_executions,
                 'execution_timestamp': datetime.now(timezone.utc).isoformat(),
-                'option_type': leg.get('option_type', 'CALL'),
-                'strike_price': leg.get('strike_price'),
-                'expiry_date': leg.get('expiry_date'),
-                'action': leg.get('action', 'BUY'),
-                'broker_response': {
-                    'message': f'Basket allocation executed - {base_lots} base lots × {lot_multiplier} multiplier = {final_lots} final lots',
-                    'latency_ms': 125,
-                    'allocation_method': 'BASKET_LEVEL_INHERITANCE'
-                }
+                'execution_method': 'BROKER_API' if trading_mode_str == 'LIVE' else 'PAPER_TRADING',
+                'trading_mode': trading_mode_str,
+                'inheritance_message': f'All {len(strategy_legs)} strategy legs inherit basket allocation: {lot_multiplier}x multiplier on {broker_name}'
             }
-            
-            leg_executions.append(leg_execution)
-            total_lots_executed += final_lots
-            
-            logger.info(f"   Leg {leg_id}: {base_lots} base lots × {lot_multiplier} = {final_lots} final lots")
-        
-        # Summary result for the basket allocation
-        basket_execution_result = {
-            'allocation_id': allocation_id,
-            'basket_id': strategy.get('basket_id'),
-            'strategy_id': strategy_id,
-            'strategy_name': strategy_name,
-            'client_id': client_id,
-            'broker_name': broker_name,
-            'lot_multiplier': lot_multiplier,
-            'execution_time': execution_time,
-            'status': 'SUCCESS',
-            'legs_executed': len(leg_executions),
-            'total_lots_executed': total_lots_executed,
-            'leg_executions': leg_executions,
-            'execution_timestamp': datetime.now(timezone.utc).isoformat(),
-            'execution_method': 'BASKET_LEVEL_ALLOCATION',
-            'inheritance_message': f'All {len(strategy_legs)} strategy legs inherit basket allocation: {lot_multiplier}x multiplier on {broker_name}'
-        }
-        
-        return basket_execution_result
-        
+
+            return basket_execution_result
+
+        else:
+            # Fallback to simulation mode
+            logger.info("Using simulation mode - trading bridge not available")
+            return execute_simulated_basket_allocation(user_id, strategy, allocation, execution_time)
+
     except Exception as e:
         logger.error(f"Failed to execute basket allocation {allocation.get('allocation_id')}", extra={"error": str(e)})
         return {
@@ -610,6 +942,73 @@ def execute_basket_allocation_for_strategy(user_id, strategy, allocation, execut
             'error': str(e),
             'execution_timestamp': datetime.now(timezone.utc).isoformat()
         }
+
+
+def execute_simulated_basket_allocation(user_id, strategy, allocation, execution_time):
+    """
+    Fallback simulation for basket allocation when trading bridge is not available.
+    """
+    allocation_id = allocation.get('allocation_id')
+    client_id = allocation.get('client_id')
+    broker_name = allocation.get('broker_name')
+    lot_multiplier = float(allocation.get('lot_multiplier', 1.0))
+    strategy_id = strategy.get('strategy_id')
+    strategy_name = strategy.get('strategy_name', 'Unknown')
+    strategy_legs = strategy.get('legs', [])
+
+    leg_executions = []
+    total_lots_executed = 0
+
+    for leg in strategy_legs:
+        leg_id = leg.get('leg_id')
+        base_lots = int(leg.get('lots', 1))
+        final_lots = int(base_lots * lot_multiplier)
+
+        leg_execution = {
+            'leg_id': leg_id,
+            'allocation_id': allocation_id,
+            'base_lots': base_lots,
+            'lot_multiplier': lot_multiplier,
+            'final_lots': final_lots,
+            'client_id': client_id,
+            'broker_name': broker_name,
+            'execution_time': execution_time,
+            'status': 'SUCCESS',
+            'order_id': f"SIM_BASKET_{uuid.uuid4().hex[:8]}",
+            'executed_price': Decimal('25.50'),
+            'executed_quantity': final_lots,
+            'execution_timestamp': datetime.now(timezone.utc).isoformat(),
+            'option_type': leg.get('option_type', 'CALL'),
+            'strike_price': leg.get('strike_price'),
+            'expiry_date': leg.get('expiry_date'),
+            'action': leg.get('action', 'BUY'),
+            'allocation_method': 'BASKET_LEVEL_INHERITANCE',
+            'broker_response': {
+                'message': f'Simulated basket allocation - {base_lots} base lots × {lot_multiplier} = {final_lots}',
+                'latency_ms': 125
+            }
+        }
+
+        leg_executions.append(leg_execution)
+        total_lots_executed += final_lots
+
+    return {
+        'allocation_id': allocation_id,
+        'basket_id': strategy.get('basket_id'),
+        'strategy_id': strategy_id,
+        'strategy_name': strategy_name,
+        'client_id': client_id,
+        'broker_name': broker_name,
+        'lot_multiplier': lot_multiplier,
+        'execution_time': execution_time,
+        'status': 'SUCCESS',
+        'legs_executed': len(leg_executions),
+        'total_lots_executed': total_lots_executed,
+        'leg_executions': leg_executions,
+        'execution_timestamp': datetime.now(timezone.utc).isoformat(),
+        'execution_method': 'SIMULATION_FALLBACK',
+        'inheritance_message': f'All {len(strategy_legs)} strategy legs simulated with basket allocation'
+    }
 
 
 def execute_leg_allocation(user_id, strategy, allocation, execution_time):

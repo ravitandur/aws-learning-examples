@@ -21,7 +21,7 @@ const StandardLayout: React.FC<StandardLayoutProps> = ({
   className = "" 
 }) => {
   return (
-    <div className={`space-y-6 ${className}`}>
+    <div className={`space-y-4 ${className}`}>
       {children}
     </div>
   );

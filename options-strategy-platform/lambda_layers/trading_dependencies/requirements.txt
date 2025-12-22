@@ -1,0 +1,12 @@
+# Trading Dependencies Lambda Layer
+# Add dependencies needed by trading Lambda functions here
+
+# HTTP requests for broker API calls
+requests>=2.28.0
+
+# Timezone handling for IST market hours
+pytz>=2023.3
+
+# Future dependencies can be added below:
+# websocket-client>=1.0.0  # For real-time broker connections
+# cryptography>=3.0.0      # For secure token handling
